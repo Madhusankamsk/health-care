@@ -4,9 +4,9 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { CreatePermissionForm } from "@/components/forms/CreatePermissionForm";
+import { CreateRoleForm } from "@/components/forms/CreateRoleForm";
 
-export function CreatePermissionModal() {
+export function CreateRoleModal() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -16,7 +16,7 @@ export function CreatePermissionModal() {
         onClick={() => setIsOpen(true)}
         className="h-10 px-4 text-xs sm:text-sm"
       >
-        Create permission
+        Create role
       </Button>
 
       {isOpen ? (
@@ -25,9 +25,9 @@ export function CreatePermissionModal() {
             <Card>
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold">Create permission</h2>
+                  <h2 className="text-lg font-semibold">Create role</h2>
                   <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                    Add a new permission key to the system.
+                    Add a new role to the system.
                   </p>
                 </div>
                 <button
@@ -39,7 +39,7 @@ export function CreatePermissionModal() {
                   ×
                 </button>
               </div>
-              <CreatePermissionForm />
+              <CreateRoleForm />
             </Card>
           </div>
         </div>

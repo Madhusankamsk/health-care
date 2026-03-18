@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import {
   createRole,
-  deleteRole,
   getRoleById,
   getRoles,
   getRolesWithPermissions,
+  deleteRoleIfSafe,
   updateRole,
 } from "../services/roleService";
 
@@ -45,7 +45,19 @@ export async function updateRoleHandler(req: Request, res: Response) {
 
 export async function deleteRoleHandler(req: Request, res: Response) {
   const { id } = req.params;
-  await deleteRole(id);
-  res.status(204).send();
+  try {
+    const result = await deleteRoleIfSafe(id);
+    if (!result || !result.deleted) {
+      return res.status(404).json({ message: "Role not found" });
+    }
+    return res.status(204).send();
+  } catch (error) {
+    return res.status(409).json({
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to delete role. Ensure it has no users and no permissions.",
+    });
+  }
 }
 

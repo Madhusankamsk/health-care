@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { Card } from "@/components/ui/Card";
-import { CreateRoleForm } from "@/components/forms/CreateRoleForm";
+import { CreateRoleModal } from "@/components/forms/CreateRoleModal";
+import { RolesTable } from "@/components/admin/RolesTable";
 import { getIsAuthenticated } from "@/lib/auth";
 import { backendJson, type BackendMeResponse } from "@/lib/backend";
 import { canAccessSuperAdmin } from "@/lib/adminAccess";
@@ -11,6 +12,8 @@ type Role = {
   id: string;
   roleName: string;
   description?: string | null;
+  permissions?: { permission: { permissionKey: string } }[];
+  users?: { id: string }[];
 };
 
 const PERMS = {
@@ -19,7 +22,7 @@ const PERMS = {
 } as const;
 
 async function getRoles(): Promise<Role[] | null> {
-  return backendJson<Role[]>("/api/roles");
+  return backendJson<Role[]>("/api/roles-with-permissions");
 }
 
 export default async function SuperAdminRolesPage() {
@@ -43,9 +46,9 @@ export default async function SuperAdminRolesPage() {
   return (
     <div className="flex flex-col gap-6">
       {canCreateRoles ? (
-        <Card title="Create role" description="Requires create privileges.">
-          <CreateRoleForm />
-        </Card>
+        <div className="flex justify-end">
+          <CreateRoleModal />
+        </div>
       ) : null}
 
       <Card title="All roles" description="Fetched from health-back.">
@@ -59,27 +62,7 @@ export default async function SuperAdminRolesPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="text-xs uppercase text-zinc-500 dark:text-zinc-400">
-                <tr>
-                  <th className="px-3 py-2">Role</th>
-                  <th className="px-3 py-2">Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                {roles.map((role) => (
-                  <tr
-                    key={role.id}
-                    className="border-t border-zinc-200 dark:border-zinc-800"
-                  >
-                    <td className="px-3 py-2 font-medium">{role.roleName}</td>
-                    <td className="px-3 py-2 text-zinc-600 dark:text-zinc-400">
-                      {role.description ?? "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <RolesTable roles={roles} />
           </div>
         )}
       </Card>
