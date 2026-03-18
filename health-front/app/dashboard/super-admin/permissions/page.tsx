@@ -44,13 +44,6 @@ export default async function SuperAdminPermissionsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Permissions</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          View permission keys in the system.
-        </p>
-      </header>
-
       {canCreatePermissions ? (
         <Card title="Create permission" description="Requires create privileges.">
           <CreatePermissionForm />

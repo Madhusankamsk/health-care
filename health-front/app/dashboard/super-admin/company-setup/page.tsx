@@ -143,13 +143,6 @@ export default function CompanySetupPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-1">
-        <h2 className="text-xl font-semibold tracking-tight">Company Setup</h2>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Manage white-label settings stored in <span className="font-mono text-xs">company_settings</span>.
-        </p>
-      </header>
-
       <Card title="Company settings" description="Super Admin only.">
         {isLoading ? (
           <div className="text-sm text-zinc-600 dark:text-zinc-400">
