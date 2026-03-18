@@ -71,6 +71,22 @@ async function main() {
     skipDuplicates: true,
   });
 
+  // Ensure a default company settings row exists (white-label configuration)
+  const existingCompanySettings = await prisma.companySettings.findFirst({
+    orderBy: { updatedAt: "desc" },
+  });
+  if (!existingCompanySettings) {
+    await prisma.companySettings.create({
+      data: {
+        companyName: "Moodify Health",
+        companyEmail: "support@moodify.health",
+        currencyCode: "LKR",
+        invoicePrefix: "INV-",
+        isSetupCompleted: false,
+      },
+    });
+  }
+
   const passwordHash = await bcrypt.hash(superAdminPassword, 10);
 
   // Create super admin user if not exists (with full details)
