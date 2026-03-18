@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 import { canAccessAdmin, canAccessSuperAdmin } from "@/lib/adminAccess";
 import { useMe } from "@/lib/useMe";
@@ -11,15 +12,26 @@ type NavItem = {
   label: string;
   requiresAdmin?: boolean;
   requiresSuperAdmin?: boolean;
+  children?: { href: string; label: string }[];
 };
 
 const navItems: NavItem[] = [
   { href: "/dashboard", label: "Overview" },
-  { href: "/dashboard/admin", label: "Admin", requiresAdmin: true },
+  {
+    href: "/dashboard/admin",
+    label: "Admin",
+    requiresAdmin: true,
+    children: [{ href: "/dashboard/admin/staff", label: "Staff" }],
+  },
   {
     href: "/dashboard/super-admin",
     label: "Super Admin",
     requiresSuperAdmin: true,
+    children: [
+      { href: "/dashboard/super-admin/company-setup", label: "Company Setup" },
+      { href: "/dashboard/super-admin/roles", label: "Roles" },
+      { href: "/dashboard/super-admin/permissions", label: "Permissions" },
+    ],
   },
 ];
 
@@ -46,6 +58,31 @@ export function Sidebar({ variant = "desktop", onNavigate }: SidebarProps) {
       ? canAccessSuperAdmin(meState.me.user.role, meState.me.permissions)
       : false;
 
+  const visibleItems = useMemo(() => {
+    return navItems.filter((item) => {
+      if (item.requiresAdmin) return canSeeAdmin;
+      if (item.requiresSuperAdmin) return canSeeSuperAdmin;
+      return true;
+    });
+  }, [canSeeAdmin, canSeeSuperAdmin]);
+
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+
+  // Auto-expand the group matching the current route.
+  useEffect(() => {
+    const next: Record<string, boolean> = {};
+    for (const item of visibleItems) {
+      if (item.children?.length) {
+        next[item.href] = pathname.startsWith(item.href);
+      }
+    }
+    setOpenGroups((prev) => ({ ...next, ...prev }));
+  }, [pathname, visibleItems]);
+
+  function toggleGroup(href: string) {
+    setOpenGroups((prev) => ({ ...prev, [href]: !prev[href] }));
+  }
+
   return (
     <aside
       className={[
@@ -62,28 +99,70 @@ export function Sidebar({ variant = "desktop", onNavigate }: SidebarProps) {
         </div>
 
         <nav className="flex flex-col gap-1">
-          {navItems
-            .filter((item) => {
-              if (item.requiresAdmin) return canSeeAdmin;
-              if (item.requiresSuperAdmin) return canSeeSuperAdmin;
-              return true;
-            })
-            .map((item) => {
+          {visibleItems.map((item) => {
+            const hasChildren = Boolean(item.children?.length);
             const active = isActive(pathname, item.href);
+            const isOpen = Boolean(openGroups[item.href]);
+
+            if (!hasChildren) {
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={[
+                    "rounded-xl px-3 py-2 text-sm transition-colors",
+                    active
+                      ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950"
+                      : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900",
+                  ].join(" ")}
+                  onClick={() => onNavigate?.()}
+                >
+                  {item.label}
+                </Link>
+              );
+            }
+
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={[
-                  "rounded-xl px-3 py-2 text-sm transition-colors",
-                  active
-                    ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950"
-                    : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900",
-                ].join(" ")}
-                onClick={() => onNavigate?.()}
-              >
-                {item.label}
-              </Link>
+              <div key={item.href} className="flex flex-col gap-1">
+                <button
+                  type="button"
+                  className={[
+                    "flex items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition-colors",
+                    active
+                      ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950"
+                      : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900",
+                  ].join(" ")}
+                  onClick={() => toggleGroup(item.href)}
+                >
+                  <span>{item.label}</span>
+                  <span className={["text-xs", isOpen ? "rotate-90" : ""].join(" ")}>
+                    ▶
+                  </span>
+                </button>
+
+                {isOpen ? (
+                  <div className="ml-2 flex flex-col gap-1 border-l border-zinc-200 pl-2 dark:border-zinc-800">
+                    {item.children!.map((child) => {
+                      const childActive = pathname === child.href;
+                      return (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          className={[
+                            "rounded-xl px-3 py-2 text-sm transition-colors",
+                            childActive
+                              ? "bg-zinc-100 text-zinc-950 dark:bg-zinc-900 dark:text-zinc-50"
+                              : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900",
+                          ].join(" ")}
+                          onClick={() => onNavigate?.()}
+                        >
+                          {child.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
             );
           })}
         </nav>

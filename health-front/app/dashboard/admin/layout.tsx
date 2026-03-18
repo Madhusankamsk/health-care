@@ -1,15 +1,9 @@
 import { redirect } from "next/navigation";
 
-import { AdminTabs } from "@/components/AdminTabs";
 import { Card } from "@/components/Card";
 import { getIsAuthenticated } from "@/lib/auth";
 import { backendJson, type BackendMeResponse } from "@/lib/backend";
-import { hasAnyPermission, isAdminRole } from "@/lib/rbac";
-
-const PERMS = {
-  viewRoles: ["roles:read", "role:read", "roles:list"],
-  viewPermissions: ["permissions:read", "permission:read", "permissions:list"],
-} as const;
+import { canAccessAdmin } from "@/lib/adminAccess";
 
 export default async function AdminLayout({
   children,
@@ -20,14 +14,7 @@ export default async function AdminLayout({
   const me = await backendJson<BackendMeResponse>("/api/me");
   if (!me) redirect("/dashboard");
 
-  const canViewRoles =
-    isAdminRole(me.user.role) ||
-    hasAnyPermission(me.permissions, [...PERMS.viewRoles]);
-  const canViewPermissions =
-    isAdminRole(me.user.role) ||
-    hasAnyPermission(me.permissions, [...PERMS.viewPermissions]);
-
-  if (!canViewRoles && !canViewPermissions) {
+  if (!canAccessAdmin(me.user.role, me.permissions)) {
     redirect("/dashboard");
   }
 
@@ -38,10 +25,6 @@ export default async function AdminLayout({
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           Admin actions are restricted by role/permissions.
         </p>
-        <AdminTabs
-          canViewRoles={canViewRoles}
-          canViewPermissions={canViewPermissions}
-        />
       </header>
 
       <Card>

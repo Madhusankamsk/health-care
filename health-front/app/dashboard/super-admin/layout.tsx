@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 
 import { Card } from "@/components/Card";
-import { SuperAdminTabs } from "@/components/SuperAdminTabs";
 import { backendJson, type BackendMeResponse } from "@/lib/backend";
 import { getIsAuthenticated } from "@/lib/auth";
 import { canAccessSuperAdmin } from "@/lib/adminAccess";
@@ -26,7 +25,6 @@ export default async function SuperAdminLayout({
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           High-privilege settings for system configuration.
         </p>
-        <SuperAdminTabs />
       </header>
 
       <Card>

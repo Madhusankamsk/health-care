@@ -4,7 +4,8 @@ import { Card } from "@/components/Card";
 import { CreatePermissionForm } from "@/components/CreatePermissionForm";
 import { getIsAuthenticated } from "@/lib/auth";
 import { backendJson, type BackendMeResponse } from "@/lib/backend";
-import { hasAnyPermission, isAdminRole } from "@/lib/rbac";
+import { canAccessSuperAdmin } from "@/lib/adminAccess";
+import { hasAnyPermission } from "@/lib/rbac";
 
 type Permission = {
   id: string;
@@ -25,19 +26,18 @@ async function getPermissions(): Promise<Permission[] | null> {
   return backendJson<Permission[]>("/api/permissions");
 }
 
-export default async function AdminPermissionsPage() {
+export default async function SuperAdminPermissionsPage() {
   const isAuthenticated = await getIsAuthenticated();
   if (!isAuthenticated) redirect("/");
 
   const me = await backendJson<BackendMeResponse>("/api/me");
   if (!me) redirect("/dashboard");
+  if (!canAccessSuperAdmin(me.user.role, me.permissions)) redirect("/dashboard");
   const canViewPermissions =
-    isAdminRole(me.user.role) ||
     hasAnyPermission(me.permissions, [...PERMS.view]);
   if (!canViewPermissions) redirect("/dashboard");
 
   const canCreatePermissions =
-    isAdminRole(me.user.role) ||
     hasAnyPermission(me.permissions, [...PERMS.create]);
 
   const permissions = await getPermissions();

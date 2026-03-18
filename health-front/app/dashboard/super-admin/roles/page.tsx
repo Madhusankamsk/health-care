@@ -4,7 +4,8 @@ import { Card } from "@/components/Card";
 import { CreateRoleForm } from "@/components/CreateRoleForm";
 import { getIsAuthenticated } from "@/lib/auth";
 import { backendJson, type BackendMeResponse } from "@/lib/backend";
-import { hasAnyPermission, isAdminRole } from "@/lib/rbac";
+import { canAccessSuperAdmin } from "@/lib/adminAccess";
+import { hasAnyPermission } from "@/lib/rbac";
 
 type Role = {
   id: string;
@@ -21,19 +22,20 @@ async function getRoles(): Promise<Role[] | null> {
   return backendJson<Role[]>("/api/roles");
 }
 
-export default async function AdminRolesPage() {
+export default async function SuperAdminRolesPage() {
   const isAuthenticated = await getIsAuthenticated();
   if (!isAuthenticated) redirect("/");
 
   const me = await backendJson<BackendMeResponse>("/api/me");
   if (!me) redirect("/dashboard");
 
+  if (!canAccessSuperAdmin(me.user.role, me.permissions)) redirect("/dashboard");
+
   const canViewRoles =
-    isAdminRole(me.user.role) || hasAnyPermission(me.permissions, [...PERMS.view]);
+    hasAnyPermission(me.permissions, [...PERMS.view]);
   if (!canViewRoles) redirect("/dashboard");
 
   const canCreateRoles =
-    isAdminRole(me.user.role) ||
     hasAnyPermission(me.permissions, [...PERMS.create]);
 
   const roles = await getRoles();

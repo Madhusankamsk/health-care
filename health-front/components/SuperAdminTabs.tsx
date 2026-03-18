@@ -10,6 +10,8 @@ type Tab = {
 
 const tabs: Tab[] = [
   { href: "/dashboard/super-admin/company-setup", label: "Company Setup" },
+  { href: "/dashboard/super-admin/roles", label: "Roles" },
+  { href: "/dashboard/super-admin/permissions", label: "Permissions" },
 ];
 
 export function SuperAdminTabs() {
