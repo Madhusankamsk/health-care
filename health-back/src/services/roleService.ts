@@ -8,6 +8,14 @@ export async function getRoles() {
   return prisma.role.findMany();
 }
 
+export async function getRolesWithPermissions() {
+  return prisma.role.findMany({
+    include: {
+      permissions: true,
+    },
+  });
+}
+
 export async function getRoleById(id: string) {
   return prisma.role.findUnique({ where: { id } });
 }

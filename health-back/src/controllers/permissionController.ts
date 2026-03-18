@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import {
   attachPermissionToRole,
   createPermission,
+  deletePermission,
   detachPermissionFromRole,
   getPermissions,
 } from "../services/permissionService";
@@ -36,5 +37,18 @@ export async function detachPermissionHandler(req: Request, res: Response) {
   }
   await detachPermissionFromRole(roleId, permissionId);
   res.status(204).send();
+}
+
+export async function deletePermissionHandler(req: Request, res: Response) {
+  const { id } = req.params;
+  try {
+    await deletePermission(id);
+    return res.status(204).send();
+  } catch {
+    return res.status(409).json({
+      message:
+        "Unable to delete permission. Detach it from all roles before deleting.",
+    });
+  }
 }
 

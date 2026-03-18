@@ -4,6 +4,7 @@ import { requireSuperAdmin } from "../middleware/superAdmin";
 import {
   attachPermissionHandler,
   createPermissionHandler,
+  deletePermissionHandler,
   detachPermissionHandler,
   listPermissions,
 } from "../controllers/permissionController";
@@ -12,6 +13,7 @@ import {
   deleteRoleHandler,
   getRoleHandler,
   listRoles,
+  listRolesWithPermissions,
   updateRoleHandler,
 } from "../controllers/roleController";
 import {
@@ -141,6 +143,7 @@ router.put("/company-settings", requireSuperAdmin, async (req, res) => {
 
 // Roles
 router.get("/roles", listRoles);
+router.get("/roles-with-permissions", listRolesWithPermissions);
 router.post("/roles", createRoleHandler);
 router.get("/roles/:id", getRoleHandler);
 router.put("/roles/:id", updateRoleHandler);
@@ -151,6 +154,7 @@ router.get("/permissions", listPermissions);
 router.post("/permissions", createPermissionHandler);
 router.post("/permissions/attach", attachPermissionHandler);
 router.post("/permissions/detach", detachPermissionHandler);
+router.delete("/permissions/:id", deletePermissionHandler);
 
 // Profiles
 router.get("/profiles", requireAnyPermission(["profiles:list"]), listProfiles);

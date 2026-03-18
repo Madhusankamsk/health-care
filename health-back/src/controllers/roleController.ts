@@ -1,8 +1,20 @@
 import { Request, Response } from "express";
-import { createRole, deleteRole, getRoleById, getRoles, updateRole } from "../services/roleService";
+import {
+  createRole,
+  deleteRole,
+  getRoleById,
+  getRoles,
+  getRolesWithPermissions,
+  updateRole,
+} from "../services/roleService";
 
 export async function listRoles(_req: Request, res: Response) {
   const roles = await getRoles();
+  res.json(roles);
+}
+
+export async function listRolesWithPermissions(_req: Request, res: Response) {
+  const roles = await getRolesWithPermissions();
   res.json(roles);
 }
 

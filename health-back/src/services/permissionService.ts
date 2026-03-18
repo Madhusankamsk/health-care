@@ -20,3 +20,9 @@ export async function detachPermissionFromRole(roleId: string, permissionId: str
   });
 }
 
+export async function deletePermission(permissionId: string) {
+  return prisma.permission.delete({
+    where: { id: permissionId },
+  });
+}
+

@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { Card } from "@/components/ui/Card";
-import { CreatePermissionForm } from "@/components/forms/CreatePermissionForm";
+import { RolePermissionMatrix } from "@/components/admin/RolePermissionMatrix";
+import { CreatePermissionModal } from "@/components/forms/CreatePermissionModal";
 import { getIsAuthenticated } from "@/lib/auth";
 import { backendJson, type BackendMeResponse } from "@/lib/backend";
 import { canAccessSuperAdmin } from "@/lib/adminAccess";
@@ -10,6 +11,12 @@ import { hasAnyPermission } from "@/lib/rbac";
 type Permission = {
   id: string;
   permissionKey: string;
+};
+
+type Role = {
+  id: string;
+  roleName: string;
+  description?: string | null;
 };
 
 const PERMS = {
@@ -26,6 +33,10 @@ async function getPermissions(): Promise<Permission[] | null> {
   return backendJson<Permission[]>("/api/permissions");
 }
 
+async function getRoles(): Promise<Role[] | null> {
+  return backendJson<Role[]>("/api/roles?include=permissions");
+}
+
 export default async function SuperAdminPermissionsPage() {
   const isAuthenticated = await getIsAuthenticated();
   if (!isAuthenticated) redirect("/");
@@ -40,38 +51,24 @@ export default async function SuperAdminPermissionsPage() {
   const canCreatePermissions =
     hasAnyPermission(me.permissions, [...PERMS.create]);
 
-  const permissions = await getPermissions();
+  const [permissions, roles] = await Promise.all([getPermissions(), getRoles()]);
 
   return (
     <div className="flex flex-col gap-6">
       {canCreatePermissions ? (
-        <Card title="Create permission" description="Requires create privileges.">
-          <CreatePermissionForm />
-        </Card>
+        <div className="flex justify-end">
+          <CreatePermissionModal />
+        </div>
       ) : null}
 
-      <Card title="All permissions" description="Fetched from health-back.">
-        {!permissions ? (
-          <div className="text-sm text-red-700 dark:text-red-300">
-            Failed to load permissions.
-          </div>
-        ) : permissions.length === 0 ? (
-          <div className="text-sm text-zinc-600 dark:text-zinc-400">
-            No permissions found.
-          </div>
-        ) : (
-          <ul className="grid gap-2 text-sm">
-            {permissions.map((p) => (
-              <li
-                key={p.id}
-                className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white px-3 py-2 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300"
-              >
-                <span className="font-mono text-xs">{p.permissionKey}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+      {roles && roles.length > 0 && permissions && permissions.length > 0 ? (
+        <Card
+          title="Role permission matrix"
+          description="Grant or revoke permissions for each role."
+        >
+          <RolePermissionMatrix roles={roles} permissions={permissions} />
+        </Card>
+      ) : null}
     </div>
   );
 }
