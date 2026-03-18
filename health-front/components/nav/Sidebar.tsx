@@ -134,10 +134,10 @@ export function Sidebar({
       className={[
         isDesktop
           ? [
-              "hidden shrink-0 border-r border-zinc-200 bg-white/60 backdrop-blur dark:border-zinc-800 dark:bg-black/30 md:block",
-              isCollapsed ? "w-20" : "w-64",
+              "hidden h-full shrink-0 border-r border-zinc-200 bg-white/60 backdrop-blur dark:border-zinc-800 dark:bg-black/30 md:block",
+              isCollapsed ? "md:w-16 lg:w-20" : "md:w-60 lg:w-64",
             ].join(" ")
-          : "w-full",
+          : "h-full w-full",
       ].join(" ")}
     >
       <div
@@ -148,9 +148,11 @@ export function Sidebar({
         ].join(" ")}
       >
         <div className="relative px-2 pt-2">
-          <p className="pr-10 pt-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-            {isCollapsed ? "Nav" : "Navigation"}
-          </p>
+          {isCollapsed ? null : (
+            <p className="pr-10 pt-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              Navigation
+            </p>
+          )}
 
           {isDesktop && onToggleCollapsed ? (
             <button

@@ -66,7 +66,7 @@ export function Header({
 
   return (
     <header className="border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-black/50">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
+      <div className="flex w-full items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-6">
           {isMenuButtonVisible ? (
             <button
