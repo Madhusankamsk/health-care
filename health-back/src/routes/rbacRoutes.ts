@@ -65,8 +65,9 @@ router.get("/me", async (req, res) => {
   });
 });
 
-// Company settings (white-label). Super admin only.
-router.get("/company-settings", requireSuperAdmin, async (_req, res) => {
+// Company settings (white-label). Any authenticated user can read.
+// Updating remains super-admin-only (see PUT below).
+router.get("/company-settings", async (_req, res) => {
   const settings = await prisma.companySettings.findFirst({
     orderBy: { updatedAt: "desc" },
   });

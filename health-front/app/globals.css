@@ -4,6 +4,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --brand-primary: #09090b;
+  --brand-secondary: #27272a;
 }
 
 :root.dark {

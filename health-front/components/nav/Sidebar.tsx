@@ -182,7 +182,7 @@ export function Sidebar({
                   className={[
                     "flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition-colors",
                     active
-                      ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950"
+                      ? "bg-(--brand-primary) text-white"
                       : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900",
                   ].join(" ")}
                   onClick={() => onNavigate?.()}
@@ -205,7 +205,7 @@ export function Sidebar({
                   className={[
                     "flex items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition-colors",
                     active
-                      ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950"
+                      ? "bg-(--brand-primary) text-white"
                       : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900",
                   ].join(" ")}
                   onClick={() => toggleGroup(item.href)}
