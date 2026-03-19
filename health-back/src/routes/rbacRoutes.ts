@@ -46,6 +46,13 @@ import {
   listPatientsHandler,
   updatePatientHandler,
 } from "../controllers/patientController";
+import {
+  createBookingHandler,
+  deleteBookingHandler,
+  getBookingHandler,
+  listBookingsHandler,
+  updateBookingHandler,
+} from "../controllers/bookingController";
 import { requireAnyPermission } from "../middleware/permissions";
 import prisma from "../prisma/client";
 
@@ -216,6 +223,13 @@ router.delete(
   requireAnyPermission(["patients:delete"]),
   deletePatientHandler,
 );
+
+// Bookings
+router.get("/bookings", requireAnyPermission(["bookings:list"]), listBookingsHandler);
+router.post("/bookings", requireAnyPermission(["bookings:create"]), createBookingHandler);
+router.get("/bookings/:id", requireAnyPermission(["bookings:read"]), getBookingHandler);
+router.put("/bookings/:id", requireAnyPermission(["bookings:update"]), updateBookingHandler);
+router.delete("/bookings/:id", requireAnyPermission(["bookings:delete"]), deleteBookingHandler);
 
 export default router;
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
+  CalendarCheck2,
   Building2,
   ChevronRight,
   Crown,
@@ -55,6 +56,20 @@ const navItems: NavItem[] = [
         label: "Patient",
         icon: <Stethoscope className="h-4 w-4" aria-hidden />,
         requiresAnyPermissions: ["patients:list", "patients:read"],
+      },
+    ],
+  },
+  {
+    href: "/dashboard/bookings",
+    label: "Bookings",
+    icon: <CalendarCheck2 className="h-4 w-4" aria-hidden />,
+    requiresAnyPermissions: ["bookings:list", "bookings:read"],
+    children: [
+      {
+        href: "/dashboard/bookings/manage-bookings",
+        label: "Manage Bookings",
+        icon: <CalendarCheck2 className="h-4 w-4" aria-hidden />,
+        requiresAnyPermissions: ["bookings:list", "bookings:read"],
       },
     ],
   },
