@@ -1,46 +1,33 @@
 import { redirect } from "next/navigation";
 
-import { StaffSectionTabs } from "@/components/admin/StaffSectionTabs";
-import { type StaffProfile } from "@/components/admin/StaffManager";
-import { type SubscriptionPlan } from "@/components/admin/SubscriptionPlanManager";
+import {
+  SubscriptionPlanManager,
+  type SubscriptionPlan,
+} from "@/components/admin/SubscriptionPlanManager";
 import { Card } from "@/components/ui/Card";
-import { getIsAuthenticated } from "@/lib/auth";
 import { canAccessAdmin } from "@/lib/adminAccess";
+import { getIsAuthenticated } from "@/lib/auth";
 import { backendJson, type BackendMeResponse } from "@/lib/backend";
 import { hasAnyPermission } from "@/lib/rbac";
 
-export default function AdminStaffPage() {
-  return <AdminStaffPageServer />;
-}
-
-type Role = { id: string; roleName: string; description?: string | null };
+type PlanTypeOption = { id: string; lookupKey: string; lookupValue: string };
 
 const PERMS = {
   view: ["profiles:list", "profiles:read"],
-  preview: ["profiles:read"],
   create: ["profiles:create"],
   edit: ["profiles:update"],
-  deactivate: ["profiles:deactivate"],
   delete: ["profiles:delete"],
 } as const;
 
-async function getProfiles() {
-  return backendJson<StaffProfile[]>("/api/profiles");
-}
-
-async function getRoles() {
-  return backendJson<Role[]>("/api/roles");
-}
-
-type PlanTypeOption = { id: string; lookupKey: string; lookupValue: string };
 async function getSubscriptionPlans() {
   return backendJson<SubscriptionPlan[]>("/api/subscription-plans");
 }
+
 async function getSubscriptionPlanTypes() {
   return backendJson<PlanTypeOption[]>("/api/subscription-plan-types");
 }
 
-async function AdminStaffPageServer() {
+export default async function AdminPlanSetupPage() {
   const isAuthenticated = await getIsAuthenticated();
   if (!isAuthenticated) redirect("/");
 
@@ -51,31 +38,19 @@ async function AdminStaffPageServer() {
   const canView = hasAnyPermission(me.permissions, [...PERMS.view]);
   if (!canView) redirect("/dashboard");
 
-  const canPreview = hasAnyPermission(me.permissions, [...PERMS.preview]);
   const canCreate = hasAnyPermission(me.permissions, [...PERMS.create]);
   const canEdit = hasAnyPermission(me.permissions, [...PERMS.edit]);
-  const canDeactivate = hasAnyPermission(me.permissions, [...PERMS.deactivate]);
   const canDelete = hasAnyPermission(me.permissions, [...PERMS.delete]);
 
-  const [profiles, roles, plans, planTypes] = await Promise.all([
-    getProfiles(),
-    getRoles(),
+  const [plans, planTypes] = await Promise.all([
     getSubscriptionPlans(),
     getSubscriptionPlanTypes(),
   ]);
 
   return (
     <div className="flex flex-col gap-6">
-      <Card title="Staff" description="Actions are controlled by permissions.">
-        {!profiles ? (
-          <div className="text-sm text-red-700 dark:text-red-300">
-            Failed to load staff list.
-          </div>
-        ) : !roles ? (
-          <div className="text-sm text-red-700 dark:text-red-300">
-            Failed to load roles.
-          </div>
-        ) : !plans ? (
+      <Card title="Plan Setup" description="Manage subscription plans.">
+        {!plans ? (
           <div className="text-sm text-red-700 dark:text-red-300">
             Failed to load subscription plans.
           </div>
@@ -84,15 +59,11 @@ async function AdminStaffPageServer() {
             Failed to load subscription plan types.
           </div>
         ) : (
-          <StaffSectionTabs
-            profiles={profiles}
-            roles={roles}
-            plans={plans}
+          <SubscriptionPlanManager
+            initialPlans={plans}
             planTypes={planTypes}
-            canPreview={canPreview}
             canCreate={canCreate}
             canEdit={canEdit}
-            canDeactivate={canDeactivate}
             canDelete={canDelete}
           />
         )}

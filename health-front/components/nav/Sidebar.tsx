@@ -97,6 +97,12 @@ const navItems: NavItem[] = [
         icon: <Users className="h-4 w-4" aria-hidden />,
         requiresAnyPermissions: ["medical_teams:list", "medical_teams:read"],
       },
+      {
+        href: "/dashboard/admin/plan-setup",
+        label: "Plan Setup",
+        icon: <Users className="h-4 w-4" aria-hidden />,
+        requiresAnyPermissions: ["profiles:list", "profiles:read"],
+      },
     ],
   },
   {

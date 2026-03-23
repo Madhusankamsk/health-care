@@ -53,6 +53,14 @@ import {
   listBookingsHandler,
   updateBookingHandler,
 } from "../controllers/bookingController";
+import {
+  createSubscriptionPlanHandler,
+  deleteSubscriptionPlanHandler,
+  getSubscriptionPlanHandler,
+  listSubscriptionPlansHandler,
+  listSubscriptionPlanTypesHandler,
+  updateSubscriptionPlanHandler,
+} from "../controllers/subscriptionPlanController";
 import { requireAnyPermission } from "../middleware/permissions";
 import prisma from "../prisma/client";
 
@@ -230,6 +238,38 @@ router.post("/bookings", requireAnyPermission(["bookings:create"]), createBookin
 router.get("/bookings/:id", requireAnyPermission(["bookings:read"]), getBookingHandler);
 router.put("/bookings/:id", requireAnyPermission(["bookings:update"]), updateBookingHandler);
 router.delete("/bookings/:id", requireAnyPermission(["bookings:delete"]), deleteBookingHandler);
+
+// Subscription plans
+router.get(
+  "/subscription-plan-types",
+  requireAnyPermission(["profiles:list"]),
+  listSubscriptionPlanTypesHandler,
+);
+router.get(
+  "/subscription-plans",
+  requireAnyPermission(["profiles:list"]),
+  listSubscriptionPlansHandler,
+);
+router.post(
+  "/subscription-plans",
+  requireAnyPermission(["profiles:create"]),
+  createSubscriptionPlanHandler,
+);
+router.get(
+  "/subscription-plans/:id",
+  requireAnyPermission(["profiles:read"]),
+  getSubscriptionPlanHandler,
+);
+router.put(
+  "/subscription-plans/:id",
+  requireAnyPermission(["profiles:update"]),
+  updateSubscriptionPlanHandler,
+);
+router.delete(
+  "/subscription-plans/:id",
+  requireAnyPermission(["profiles:delete"]),
+  deleteSubscriptionPlanHandler,
+);
 
 export default router;
 

@@ -83,6 +83,30 @@ async function main() {
     });
   }
 
+  // Ensure plan type lookups required by subscription plans
+  const subTypeCategory = await prisma.lookupCategory.upsert({
+    where: { categoryName: "SUB_TYPE" },
+    update: {},
+    create: { categoryName: "SUB_TYPE" },
+  });
+  const subTypeValues = [
+    { lookupKey: "INDIVIDUAL", lookupValue: "Individual" },
+    { lookupKey: "FAMILY", lookupValue: "Family" },
+    { lookupKey: "CORPORATE", lookupValue: "Corporate" },
+  ] as const;
+  for (const item of subTypeValues) {
+    await prisma.lookup.upsert({
+      where: { categoryId_lookupKey: { categoryId: subTypeCategory.id, lookupKey: item.lookupKey } },
+      update: { lookupValue: item.lookupValue, isActive: true },
+      create: {
+        categoryId: subTypeCategory.id,
+        lookupKey: item.lookupKey,
+        lookupValue: item.lookupValue,
+        isActive: true,
+      },
+    });
+  }
+
   // Attach ALL permissions to SuperAdmin role (idempotent)
   const allPermissions = await prisma.permission.findMany({
     select: { id: true },
@@ -233,12 +257,40 @@ async function main() {
     },
   });
 
+  const individualPlanType = await prisma.lookup.findFirst({
+    where: { categoryId: subTypeCategory.id, lookupKey: "INDIVIDUAL" },
+    select: { id: true },
+  });
+  if (individualPlanType) {
+    await prisma.subscriptionPlan.upsert({
+      where: { id: "plan-demo-001" },
+      update: {
+        planName: "Basic Individual",
+        planTypeId: individualPlanType.id,
+        price: 2500,
+        maxMembers: 1,
+        durationDays: 30,
+        isActive: true,
+      },
+      create: {
+        id: "plan-demo-001",
+        planName: "Basic Individual",
+        planTypeId: individualPlanType.id,
+        price: 2500,
+        maxMembers: 1,
+        durationDays: 30,
+        isActive: true,
+      },
+    });
+  }
+
   console.log("Super admin seeded.");
   console.log("Email:", superAdminEmail);
   console.log("Password:", superAdminPassword);
   console.log("Role:", superAdminRole.roleName);
   console.log("Permissions attached:", allPermissions.length);
   console.log("Demo data seeded: vehicle, team, patient, bookings.");
+  console.log("Subscription plan types and demo plan seeded.");
 }
 
 main()
