@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { toast } from "@/lib/toast";
 
 export type CompanySettingsDto = {
   id: string;
@@ -119,8 +120,11 @@ export function CompanySettingsForm({
 
       setSaveOk(true);
       applyBrandingFromForm();
+      toast.success("Company settings saved");
     } catch (e) {
-      setSaveError(e instanceof Error ? e.message : "Failed to save.");
+      const msg = e instanceof Error ? e.message : "Failed to save.";
+      setSaveError(msg);
+      toast.error(msg);
     } finally {
       setIsSaving(false);
     }

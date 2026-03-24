@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { toast } from "@/lib/toast";
 
 type FormState = {
   email: string;
@@ -82,6 +83,7 @@ export function LoginCard() {
       const message =
         error instanceof Error ? error.message : "Something went wrong.";
       setSubmitError(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }

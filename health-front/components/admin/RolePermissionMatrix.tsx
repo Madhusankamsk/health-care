@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { toast } from "@/lib/toast";
 
 type Role = {
   id: string;
@@ -29,6 +31,8 @@ export function RolePermissionMatrix({ roles, permissions }: RolePermissionMatri
   const [localPermissions, setLocalPermissions] = useState<Permission[]>(permissions);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [permissionPendingDelete, setPermissionPendingDelete] =
+    useState<Permission | null>(null);
 
   const sortedRoles = useMemo(
     () =>
@@ -135,16 +139,19 @@ export function RolePermissionMatrix({ roles, permissions }: RolePermissionMatri
         copy[roleId] = nextSet;
         return copy;
       });
-      setError(e instanceof Error ? e.message : "Something went wrong updating mapping.");
+      const msg = e instanceof Error ? e.message : "Something went wrong updating mapping.";
+      setError(msg);
+      toast.error(msg);
     }
   }
 
-  async function handleDeletePermission(permission: Permission) {
+  async function performDeletePermission(permission: Permission) {
     setError(null);
-    // Only allow delete when no role has this permission
     const attachedSomewhere = Object.values(mapping).some((set) => set.has(permission.id));
     if (attachedSomewhere) {
-      setError("Cannot delete a permission that is still attached to a role.");
+      const msg = "Cannot delete a permission that is still attached to a role.";
+      setError(msg);
+      toast.error(msg);
       return;
     }
 
@@ -157,13 +164,34 @@ export function RolePermissionMatrix({ roles, permissions }: RolePermissionMatri
         throw new Error(msg || "Failed to delete permission.");
       }
       setLocalPermissions((prev) => prev.filter((p) => p.id !== permission.id));
+      toast.success("Permission deleted");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong deleting permission.");
+      const msg = e instanceof Error ? e.message : "Something went wrong deleting permission.";
+      setError(msg);
+      toast.error(msg);
     }
   }
 
   return (
     <div className="flex flex-col gap-4">
+      <ConfirmModal
+        open={permissionPendingDelete !== null}
+        title="Delete permission?"
+        message={
+          permissionPendingDelete
+            ? `Are you sure you want to delete permission "${permissionPendingDelete.permissionKey}"? This cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        confirmVariant="delete"
+        onCancel={() => setPermissionPendingDelete(null)}
+        onConfirm={() => {
+          if (!permissionPendingDelete) return;
+          const perm = permissionPendingDelete;
+          setPermissionPendingDelete(null);
+          void performDeletePermission(perm);
+        }}
+      />
       {error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-200">
           {error}
@@ -205,7 +233,7 @@ export function RolePermissionMatrix({ roles, permissions }: RolePermissionMatri
                           type="button"
                           variant="delete"
                           className="h-7 px-2 text-[11px]"
-                          onClick={() => handleDeletePermission(perm)}
+                          onClick={() => setPermissionPendingDelete(perm)}
                         >
                           Delete
                         </Button>

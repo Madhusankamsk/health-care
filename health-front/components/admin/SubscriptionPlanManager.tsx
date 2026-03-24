@@ -4,7 +4,9 @@ import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { Input } from "@/components/ui/Input";
+import { toast } from "@/lib/toast";
 import { useEscapeKey } from "@/lib/useEscapeKey";
 
 export type SubscriptionPlan = {
@@ -30,6 +32,8 @@ type SubscriptionPlanManagerProps = {
 
 type Mode = "none" | "create" | "edit" | "preview";
 
+type ActionConfirm = null | { type: "edit" | "delete"; id: string };
+
 export function SubscriptionPlanManager({
   initialPlans,
   planTypes,
@@ -42,6 +46,7 @@ export function SubscriptionPlanManager({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [actionConfirm, setActionConfirm] = useState<ActionConfirm>(null);
 
   const selected = useMemo(() => {
     if (!selectedId) return null;
@@ -63,9 +68,8 @@ export function SubscriptionPlanManager({
     setPlans(next);
   }
 
-  async function handleDelete(id: string) {
+  async function performDelete(id: string) {
     setError(null);
-    if (!window.confirm("Delete this subscription plan?")) return;
     setBusyId(id);
     try {
       const res = await fetch(`/api/subscription-plans/${id}`, { method: "DELETE" });
@@ -74,12 +78,15 @@ export function SubscriptionPlanManager({
         throw new Error(msg || "Delete failed");
       }
       await refresh();
+      toast.success("Subscription plan deleted");
       if (selectedId === id) {
         setSelectedId(null);
         setMode("none");
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
+      const msg = e instanceof Error ? e.message : "Something went wrong";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setBusyId(null);
     }
@@ -87,6 +94,34 @@ export function SubscriptionPlanManager({
 
   return (
     <div className="flex flex-col gap-6">
+      <ConfirmModal
+        open={actionConfirm !== null}
+        title={
+          actionConfirm?.type === "delete"
+            ? "Delete subscription plan?"
+            : "Edit subscription plan?"
+        }
+        message={
+          actionConfirm?.type === "delete"
+            ? "Are you sure you want to delete this subscription plan? This cannot be undone."
+            : "Are you sure you want to edit this subscription plan?"
+        }
+        confirmLabel={actionConfirm?.type === "delete" ? "Delete" : "Continue"}
+        confirmVariant={actionConfirm?.type === "delete" ? "delete" : "edit"}
+        onCancel={() => setActionConfirm(null)}
+        onConfirm={() => {
+          if (!actionConfirm) return;
+          const { type, id } = actionConfirm;
+          setActionConfirm(null);
+          if (type === "delete") {
+            void performDelete(id);
+          } else {
+            setSelectedId(id);
+            setMode("edit");
+            setError(null);
+          }
+        }}
+      />
       {error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-200">
           {error}
@@ -117,8 +152,11 @@ export function SubscriptionPlanManager({
               setError(null);
               try {
                 await refresh();
+                toast.success("Subscription plans refreshed");
               } catch (e) {
-                setError(e instanceof Error ? e.message : "Something went wrong");
+                const msg = e instanceof Error ? e.message : "Something went wrong";
+                setError(msg);
+                toast.error(msg);
               }
             }}
           >
@@ -189,6 +227,7 @@ export function SubscriptionPlanManager({
                   }
                   await refresh();
                   setMode("none");
+                  toast.success("Subscription plan created");
                 }}
               />
             </Card>
@@ -263,6 +302,7 @@ export function SubscriptionPlanManager({
                   }
                   await refresh();
                   setMode("none");
+                  toast.success("Subscription plan updated");
                 }}
               />
             </Card>
@@ -387,10 +427,9 @@ export function SubscriptionPlanManager({
                           variant="edit"
                           className="h-9 px-3"
                           disabled={isBusy}
-                          onClick={() => {
-                            setSelectedId(plan.id);
-                            setMode("edit");
-                          }}
+                          onClick={() =>
+                            setActionConfirm({ type: "edit", id: plan.id })
+                          }
                         >
                           Edit
                         </Button>
@@ -401,7 +440,9 @@ export function SubscriptionPlanManager({
                           variant="delete"
                           className="h-9 px-3"
                           disabled={isBusy}
-                          onClick={() => handleDelete(plan.id)}
+                          onClick={() =>
+                            setActionConfirm({ type: "delete", id: plan.id })
+                          }
                         >
                           Delete
                         </Button>
@@ -483,7 +524,9 @@ function SubscriptionPlanForm({
           try {
             await onSubmit(values);
           } catch (e) {
-            setError(e instanceof Error ? e.message : "Something went wrong");
+            const msg = e instanceof Error ? e.message : "Something went wrong";
+            setError(msg);
+            toast.error(msg);
           } finally {
             setIsSubmitting(false);
           }

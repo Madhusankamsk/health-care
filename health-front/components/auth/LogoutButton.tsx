@@ -5,6 +5,7 @@ import { useState } from "react";
 import { LogOut } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
+import { toast } from "@/lib/toast";
 
 export function LogoutButton() {
   const router = useRouter();
@@ -14,6 +15,7 @@ export function LogoutButton() {
     setIsSubmitting(true);
     try {
       await fetch("/api/logout", { method: "POST" });
+      toast.success("Signed out");
       router.replace("/");
       router.refresh();
     } finally {

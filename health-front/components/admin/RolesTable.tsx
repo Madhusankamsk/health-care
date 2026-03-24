@@ -3,6 +3,8 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/Button";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { toast } from "@/lib/toast";
 
 type Role = {
   id: string;
@@ -15,10 +17,10 @@ type Role = {
 export function RolesTable({ roles }: { roles: Role[] }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  async function handleDelete(roleId: string) {
+  async function performDelete(roleId: string) {
     setError(null);
-    if (!window.confirm("Delete this role?")) return;
     setBusyId(roleId);
     try {
       const res = await fetch(`/api/roles/${roleId}`, { method: "DELETE" });
@@ -26,9 +28,12 @@ export function RolesTable({ roles }: { roles: Role[] }) {
         const msg = await res.text().catch(() => "");
         throw new Error(msg || "Failed to delete role");
       }
+      toast.success("Role deleted");
       window.location.reload();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong deleting role");
+      const msg = e instanceof Error ? e.message : "Something went wrong deleting role";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setBusyId(null);
     }
@@ -36,6 +41,20 @@ export function RolesTable({ roles }: { roles: Role[] }) {
 
   return (
     <div>
+      <ConfirmModal
+        open={deleteConfirmId !== null}
+        title="Delete this role?"
+        message="Are you sure you want to delete this role? This cannot be undone."
+        confirmLabel="Delete"
+        confirmVariant="delete"
+        onCancel={() => setDeleteConfirmId(null)}
+        onConfirm={() => {
+          if (!deleteConfirmId) return;
+          const id = deleteConfirmId;
+          setDeleteConfirmId(null);
+          void performDelete(id);
+        }}
+      />
       {error ? (
         <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-200">
           {error}
@@ -69,7 +88,7 @@ export function RolesTable({ roles }: { roles: Role[] }) {
                           variant="delete"
                           className="h-7 px-2 text-[11px]"
                           disabled={busyId === role.id}
-                          onClick={() => handleDelete(role.id)}
+                          onClick={() => setDeleteConfirmId(role.id)}
                         >
                           Delete
                         </Button>

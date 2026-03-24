@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { Input } from "@/components/ui/Input";
+import { toast } from "@/lib/toast";
 import { useEscapeKey } from "@/lib/useEscapeKey";
 
 export type Patient = {
@@ -49,6 +51,8 @@ type SubscriptionPlanOption = { id: string; planName: string };
 
 type Mode = "none" | "create" | "edit" | "preview";
 
+type ActionConfirm = null | { type: "edit" | "delete"; id: string };
+
 export function PatientManager({
   initialPatients,
   genders,
@@ -66,6 +70,7 @@ export function PatientManager({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [actionConfirm, setActionConfirm] = useState<ActionConfirm>(null);
 
   const selected = useMemo(() => {
     if (!selectedId) return null;
@@ -96,9 +101,8 @@ export function PatientManager({
     setPatients(next);
   }
 
-  async function handleDelete(id: string) {
+  async function performDelete(id: string) {
     setError(null);
-    if (!window.confirm("Delete this patient?")) return;
     setBusyId(id);
     try {
       const res = await fetch(`/api/patients/${id}`, { method: "DELETE" });
@@ -107,12 +111,15 @@ export function PatientManager({
         throw new Error(msg || "Failed to delete patient or not allowed");
       }
       await refresh();
+      toast.success("Patient deleted");
       if (selectedId === id) {
         setSelectedId(null);
         setMode("none");
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
+      const msg = e instanceof Error ? e.message : "Something went wrong";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setBusyId(null);
     }
@@ -120,6 +127,32 @@ export function PatientManager({
 
   return (
     <div className="flex flex-col gap-6">
+      <ConfirmModal
+        open={actionConfirm !== null}
+        title={
+          actionConfirm?.type === "delete" ? "Delete patient?" : "Edit patient?"
+        }
+        message={
+          actionConfirm?.type === "delete"
+            ? "Are you sure you want to delete this patient? This action cannot be undone."
+            : "Are you sure you want to edit this patient?"
+        }
+        confirmLabel={actionConfirm?.type === "delete" ? "Delete" : "Continue"}
+        confirmVariant={actionConfirm?.type === "delete" ? "delete" : "edit"}
+        onCancel={() => setActionConfirm(null)}
+        onConfirm={() => {
+          if (!actionConfirm) return;
+          const { type, id } = actionConfirm;
+          setActionConfirm(null);
+          if (type === "delete") {
+            void performDelete(id);
+          } else {
+            setSelectedId(id);
+            setMode("edit");
+            setError(null);
+          }
+        }}
+      />
       {error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-200">
           {error}
@@ -150,8 +183,11 @@ export function PatientManager({
               setError(null);
               try {
                 await refresh();
+                toast.success("Patients refreshed");
               } catch (e) {
-                setError(e instanceof Error ? e.message : "Something went wrong");
+                const msg = e instanceof Error ? e.message : "Something went wrong";
+                setError(msg);
+                toast.error(msg);
               }
             }}
           >
@@ -227,6 +263,7 @@ export function PatientManager({
                   }
                   await refresh();
                   setMode("none");
+                  toast.success("Patient created");
                 }}
               />
             </Card>
@@ -316,6 +353,7 @@ export function PatientManager({
                   }
                   await refresh();
                   setMode("none");
+                  toast.success("Patient updated");
                 }}
               />
             </Card>
@@ -485,11 +523,7 @@ export function PatientManager({
                           variant="edit"
                           className="h-9 px-3"
                           disabled={isBusy}
-                          onClick={() => {
-                            setSelectedId(p.id);
-                            setMode("edit");
-                            setError(null);
-                          }}
+                          onClick={() => setActionConfirm({ type: "edit", id: p.id })}
                         >
                           Edit
                         </Button>
@@ -500,7 +534,7 @@ export function PatientManager({
                           variant="delete"
                           className="h-9 px-3"
                           disabled={isBusy}
-                          onClick={() => handleDelete(p.id)}
+                          onClick={() => setActionConfirm({ type: "delete", id: p.id })}
                         >
                           Delete
                         </Button>
@@ -651,7 +685,9 @@ function PatientForm({
               subscriptionPlanId: values.subscriptionPlanId?.trim() || undefined,
             });
           } catch (e) {
-            setError(e instanceof Error ? e.message : "Something went wrong");
+            const msg = e instanceof Error ? e.message : "Something went wrong";
+            setError(msg);
+            toast.error(msg);
           } finally {
             setIsSubmitting(false);
           }

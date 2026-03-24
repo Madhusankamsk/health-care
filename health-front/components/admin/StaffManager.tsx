@@ -4,7 +4,9 @@ import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { Input } from "@/components/ui/Input";
+import { toast } from "@/lib/toast";
 import { useEscapeKey } from "@/lib/useEscapeKey";
 
 type Role = { id: string; roleName: string; description?: string | null };
@@ -32,6 +34,8 @@ type StaffManagerProps = {
 
 type Mode = "none" | "create" | "edit" | "preview";
 
+type ActionConfirm = null | { type: "edit" | "delete"; id: string };
+
 export function StaffManager({
   initialProfiles,
   roles,
@@ -46,6 +50,7 @@ export function StaffManager({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [actionConfirm, setActionConfirm] = useState<ActionConfirm>(null);
 
   const selected = useMemo(() => {
     if (!selectedId) return null;
@@ -76,16 +81,18 @@ export function StaffManager({
       const res = await fetch(`/api/profiles/${id}/deactivate`, { method: "POST" });
       if (!res.ok) throw new Error("Not allowed to deactivate or request failed");
       await refresh();
+      toast.success("Staff member marked inactive");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
+      const msg = e instanceof Error ? e.message : "Something went wrong";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setBusyId(null);
     }
   }
 
-  async function handleDelete(id: string) {
+  async function performDelete(id: string) {
     setError(null);
-    if (!window.confirm("Delete this staff member? This cannot be undone.")) return;
     setBusyId(id);
     try {
       const res = await fetch(`/api/profiles/${id}`, { method: "DELETE" });
@@ -107,6 +114,32 @@ export function StaffManager({
 
   return (
     <div className="flex flex-col gap-6">
+      <ConfirmModal
+        open={actionConfirm !== null}
+        title={
+          actionConfirm?.type === "delete" ? "Delete staff member?" : "Edit staff member?"
+        }
+        message={
+          actionConfirm?.type === "delete"
+            ? "Are you sure you want to delete this staff member? This cannot be undone."
+            : "Are you sure you want to edit this staff member?"
+        }
+        confirmLabel={actionConfirm?.type === "delete" ? "Delete" : "Continue"}
+        confirmVariant={actionConfirm?.type === "delete" ? "delete" : "edit"}
+        onCancel={() => setActionConfirm(null)}
+        onConfirm={() => {
+          if (!actionConfirm) return;
+          const { type, id } = actionConfirm;
+          setActionConfirm(null);
+          if (type === "delete") {
+            void performDelete(id);
+          } else {
+            setSelectedId(id);
+            setMode("edit");
+            setError(null);
+          }
+        }}
+      />
       {error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-200">
           {error}
@@ -137,8 +170,11 @@ export function StaffManager({
               setError(null);
               try {
                 await refresh();
+                toast.success("Staff list refreshed");
               } catch (e) {
-                setError(e instanceof Error ? e.message : "Something went wrong");
+                const msg = e instanceof Error ? e.message : "Something went wrong";
+                setError(msg);
+                toast.error(msg);
               }
             }}
           >
@@ -210,6 +246,7 @@ export function StaffManager({
                   }
                   await refresh();
                   setMode("none");
+                  toast.success("Staff member created");
                 }}
                 includePassword
               />
@@ -431,11 +468,9 @@ export function StaffManager({
                           variant="edit"
                           className="h-9 px-3"
                           disabled={isBusy}
-                          onClick={() => {
-                            setSelectedId(p.id);
-                            setMode("edit");
-                            setError(null);
-                          }}
+                          onClick={() =>
+                            setActionConfirm({ type: "edit", id: p.id })
+                          }
                         >
                           Edit
                         </Button>
@@ -457,7 +492,9 @@ export function StaffManager({
                           variant="delete"
                           className="h-9 px-3"
                           disabled={isBusy}
-                          onClick={() => handleDelete(p.id)}
+                          onClick={() =>
+                            setActionConfirm({ type: "delete", id: p.id })
+                          }
                         >
                           Delete
                         </Button>
@@ -562,7 +599,9 @@ function StaffForm({
 
             await onSubmit(payload);
           } catch (e) {
-            setError(e instanceof Error ? e.message : "Something went wrong");
+            const msg = e instanceof Error ? e.message : "Something went wrong";
+            setError(msg);
+            toast.error(msg);
           } finally {
             setIsSubmitting(false);
           }

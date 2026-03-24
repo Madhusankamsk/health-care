@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { toast } from "@/lib/toast";
 
 export function CreatePermissionForm() {
   const router = useRouter();
@@ -42,9 +43,12 @@ export function CreatePermissionForm() {
       }
 
       setPermissionKey("");
+      toast.success("Permission created");
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      const msg = e instanceof Error ? e.message : "Something went wrong.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }

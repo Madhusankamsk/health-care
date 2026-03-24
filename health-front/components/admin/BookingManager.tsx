@@ -4,7 +4,9 @@ import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { Input } from "@/components/ui/Input";
+import { toast } from "@/lib/toast";
 import { useEscapeKey } from "@/lib/useEscapeKey";
 
 export type Booking = {
@@ -33,6 +35,8 @@ type BookingManagerProps = {
 
 type Mode = "none" | "create" | "edit" | "preview";
 
+type ActionConfirm = null | { type: "edit" | "delete"; id: string };
+
 export function BookingManager({
   initialBookings,
   patients,
@@ -47,6 +51,7 @@ export function BookingManager({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [actionConfirm, setActionConfirm] = useState<ActionConfirm>(null);
 
   const selected = useMemo(() => {
     if (!selectedId) return null;
@@ -70,9 +75,8 @@ export function BookingManager({
     setBookings(next);
   }
 
-  async function handleDelete(id: string) {
+  async function performDelete(id: string) {
     setError(null);
-    if (!window.confirm("Delete this booking?")) return;
     setBusyId(id);
     try {
       const res = await fetch(`/api/bookings/${id}`, { method: "DELETE" });
@@ -81,12 +85,15 @@ export function BookingManager({
         throw new Error(msg || "Failed to delete booking");
       }
       await refresh();
+      toast.success("Booking deleted");
       if (selectedId === id) {
         setSelectedId(null);
         setMode("none");
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
+      const msg = e instanceof Error ? e.message : "Something went wrong";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setBusyId(null);
     }
@@ -94,6 +101,32 @@ export function BookingManager({
 
   return (
     <div className="flex flex-col gap-6">
+      <ConfirmModal
+        open={actionConfirm !== null}
+        title={
+          actionConfirm?.type === "delete" ? "Delete booking?" : "Edit booking?"
+        }
+        message={
+          actionConfirm?.type === "delete"
+            ? "Are you sure you want to delete this booking? This action cannot be undone."
+            : "Are you sure you want to edit this booking?"
+        }
+        confirmLabel={actionConfirm?.type === "delete" ? "Delete" : "Continue"}
+        confirmVariant={actionConfirm?.type === "delete" ? "delete" : "edit"}
+        onCancel={() => setActionConfirm(null)}
+        onConfirm={() => {
+          if (!actionConfirm) return;
+          const { type, id } = actionConfirm;
+          setActionConfirm(null);
+          if (type === "delete") {
+            void performDelete(id);
+          } else {
+            setSelectedId(id);
+            setMode("edit");
+            setError(null);
+          }
+        }}
+      />
       {error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-200">
           {error}
@@ -124,8 +157,11 @@ export function BookingManager({
               setError(null);
               try {
                 await refresh();
+                toast.success("Bookings refreshed");
               } catch (e) {
-                setError(e instanceof Error ? e.message : "Something went wrong");
+                const msg = e instanceof Error ? e.message : "Something went wrong";
+                setError(msg);
+                toast.error(msg);
               }
             }}
           >
@@ -198,6 +234,7 @@ export function BookingManager({
                   }
                   await refresh();
                   setMode("none");
+                  toast.success("Booking created");
                 }}
               />
             </Card>
@@ -398,11 +435,9 @@ export function BookingManager({
                           variant="edit"
                           className="h-9 px-3"
                           disabled={isBusy}
-                          onClick={() => {
-                            setSelectedId(booking.id);
-                            setMode("edit");
-                            setError(null);
-                          }}
+                          onClick={() =>
+                            setActionConfirm({ type: "edit", id: booking.id })
+                          }
                         >
                           Edit
                         </Button>
@@ -413,7 +448,9 @@ export function BookingManager({
                           variant="delete"
                           className="h-9 px-3"
                           disabled={isBusy}
-                          onClick={() => handleDelete(booking.id)}
+                          onClick={() =>
+                            setActionConfirm({ type: "delete", id: booking.id })
+                          }
                         >
                           Delete
                         </Button>
@@ -504,7 +541,9 @@ function BookingForm({
               locationGps: values.locationGps?.trim() || undefined,
             });
           } catch (e) {
-            setError(e instanceof Error ? e.message : "Something went wrong");
+            const msg = e instanceof Error ? e.message : "Something went wrong";
+            setError(msg);
+            toast.error(msg);
           } finally {
             setIsSubmitting(false);
           }
