@@ -203,7 +203,7 @@ export function RolePermissionMatrix({ roles, permissions }: RolePermissionMatri
                       {canDelete ? (
                         <Button
                           type="button"
-                          variant="secondary"
+                          variant="delete"
                           className="h-7 px-2 text-[11px]"
                           onClick={() => handleDeletePermission(perm)}
                         >

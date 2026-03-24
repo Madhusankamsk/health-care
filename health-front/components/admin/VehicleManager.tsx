@@ -54,7 +54,9 @@ export function VehicleManager({
       setMode("none");
       setError(null);
     },
-    mode === "create" && canCreate,
+    (mode === "create" && canCreate) ||
+      (mode === "edit" && canEdit) ||
+      (mode === "preview" && canPreview),
   );
 
   async function refresh() {
@@ -101,7 +103,7 @@ export function VehicleManager({
         <div className="flex items-center gap-2">
           {canCreate ? (
             <Button
-              variant="primary"
+              variant="create"
               className="h-10 px-4 text-xs sm:text-sm"
               onClick={() => {
                 setMode("create");
@@ -134,8 +136,15 @@ export function VehicleManager({
           role="dialog"
           aria-modal="true"
           aria-labelledby="create-vehicle-title"
+          onClick={() => {
+            setMode("none");
+            setError(null);
+          }}
         >
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto">
+          <div
+            className="max-h-[90vh] w-full max-w-3xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <Card>
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
@@ -163,6 +172,7 @@ export function VehicleManager({
               </div>
               <VehicleForm
                 layout="modal"
+                intent="create"
                 title="Create vehicle"
                 submitLabel="Create"
                 drivers={drivers}
@@ -191,66 +201,140 @@ export function VehicleManager({
       ) : null}
 
       {mode === "edit" && selected ? (
-        <VehicleForm
-          layout="card"
-          title="Edit vehicle"
-          submitLabel="Save changes"
-          drivers={drivers}
-          initial={{
-            vehicleNo: selected.vehicleNo,
-            model: selected.model ?? "",
-            status: selected.status,
-            currentDriverId: selected.currentDriverId ?? "",
-          }}
-          onCancel={() => setMode("none")}
-          onSubmit={async (data) => {
-            setError(null);
-            const res = await fetch(`/api/vehicles/${selected.id}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(data),
-            });
-            if (!res.ok) {
-              const msg = await res.text().catch(() => "");
-              throw new Error(msg || "Update failed");
-            }
-            await refresh();
+        <div
+          className="fixed inset-0 z-70 flex items-center justify-center bg-black/40 px-4 py-8"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-vehicle-title"
+          onClick={() => {
             setMode("none");
+            setError(null);
           }}
-        />
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-3xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Card>
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <h2
+                    id="edit-vehicle-title"
+                    className="text-lg font-semibold tracking-tight text-[var(--text-primary)]"
+                  >
+                    Edit vehicle
+                  </h2>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    Update vehicle details and assigned driver.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
+                  onClick={() => {
+                    setMode("none");
+                    setError(null);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <VehicleForm
+                layout="modal"
+                intent="edit"
+                title="Edit vehicle"
+                submitLabel="Save changes"
+                drivers={drivers}
+                initial={{
+                  vehicleNo: selected.vehicleNo,
+                  model: selected.model ?? "",
+                  status: selected.status,
+                  currentDriverId: selected.currentDriverId ?? "",
+                }}
+                onCancel={() => setMode("none")}
+                onSubmit={async (data) => {
+                  setError(null);
+                  const res = await fetch(`/api/vehicles/${selected.id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                  });
+                  if (!res.ok) {
+                    const msg = await res.text().catch(() => "");
+                    throw new Error(msg || "Update failed");
+                  }
+                  await refresh();
+                  setMode("none");
+                }}
+              />
+            </Card>
+          </div>
+        </div>
       ) : null}
 
       {mode === "preview" && selected ? (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <div className="text-lg font-semibold">Preview vehicle</div>
-              <div className="text-sm text-zinc-600 dark:text-zinc-400">
-                Read-only details.
+        <div
+          className="fixed inset-0 z-70 flex items-center justify-center bg-black/40 px-4 py-8"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="preview-vehicle-title"
+          onClick={() => {
+            setMode("none");
+            setError(null);
+          }}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-3xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Card>
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <h2
+                    id="preview-vehicle-title"
+                    className="text-lg font-semibold tracking-tight text-[var(--text-primary)]"
+                  >
+                    Preview vehicle
+                  </h2>
+                  <p className="text-sm text-[var(--text-secondary)]">Read-only details.</p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
+                  onClick={() => {
+                    setMode("none");
+                    setError(null);
+                  }}
+                >
+                  ×
+                </button>
               </div>
-            </div>
-            <Button variant="secondary" onClick={() => setMode("none")}>
-              Close
-            </Button>
+              <dl className="grid gap-3 text-sm sm:grid-cols-3">
+                <div>
+                  <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">
+                    Vehicle No
+                  </dt>
+                  <dd className="font-medium">{selected.vehicleNo}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Model</dt>
+                  <dd className="font-medium">{selected.model ?? "—"}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Status</dt>
+                  <dd className="font-medium">{selected.status}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">
+                    Current Driver
+                  </dt>
+                  <dd className="font-medium">{selected.currentDriver?.fullName ?? "—"}</dd>
+                </div>
+              </dl>
+            </Card>
           </div>
-          <dl className="grid gap-3 text-sm sm:grid-cols-3">
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Vehicle No</dt>
-              <dd className="font-medium">{selected.vehicleNo}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Model</dt>
-              <dd className="font-medium">{selected.model ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Status</dt>
-              <dd className="font-medium">{selected.status}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Current Driver</dt>
-              <dd className="font-medium">{selected.currentDriver?.fullName ?? "—"}</dd>
-            </div>
-          </dl>
         </div>
       ) : null}
 
@@ -281,7 +365,7 @@ export function VehicleManager({
                       {canPreview ? (
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="preview"
                           className="h-9 px-3"
                           disabled={isBusy}
                           onClick={() => {
@@ -296,7 +380,7 @@ export function VehicleManager({
                       {canEdit ? (
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="edit"
                           className="h-9 px-3"
                           disabled={isBusy}
                           onClick={() => {
@@ -311,7 +395,7 @@ export function VehicleManager({
                       {canDelete ? (
                         <Button
                           type="button"
-                          variant="secondary"
+                          variant="delete"
                           className="h-9 px-3"
                           disabled={isBusy}
                           onClick={() => handleDelete(v.id)}
@@ -341,6 +425,7 @@ type VehicleFormValues = {
 function VehicleForm({
   title,
   submitLabel,
+  intent,
   drivers,
   onCancel,
   onSubmit,
@@ -349,6 +434,7 @@ function VehicleForm({
 }: {
   title: string;
   submitLabel: string;
+  intent: "create" | "edit";
   drivers: DriverOption[];
   onCancel: () => void;
   onSubmit: (values: VehicleFormValues) => Promise<void>;
@@ -454,7 +540,11 @@ function VehicleForm({
           <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit" isLoading={isSubmitting}>
+          <Button
+            type="submit"
+            variant={intent === "create" ? "create" : "edit"}
+            isLoading={isSubmitting}
+          >
             {submitLabel}
           </Button>
         </div>

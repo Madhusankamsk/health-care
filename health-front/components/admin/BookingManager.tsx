@@ -58,7 +58,9 @@ export function BookingManager({
       setMode("none");
       setError(null);
     },
-    mode === "create" && canCreate,
+    (mode === "create" && canCreate) ||
+      (mode === "edit" && canEdit) ||
+      (mode === "preview" && canPreview),
   );
 
   async function refresh() {
@@ -105,7 +107,7 @@ export function BookingManager({
         <div className="flex items-center gap-2">
           {canCreate ? (
             <Button
-              variant="primary"
+              variant="create"
               className="h-10 px-4 text-xs sm:text-sm"
               onClick={() => {
                 setMode("create");
@@ -138,8 +140,15 @@ export function BookingManager({
           role="dialog"
           aria-modal="true"
           aria-labelledby="create-booking-title"
+          onClick={() => {
+            setMode("none");
+            setError(null);
+          }}
         >
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto">
+          <div
+            className="max-h-[90vh] w-full max-w-3xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <Card>
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
@@ -167,6 +176,7 @@ export function BookingManager({
               </div>
               <BookingForm
                 layout="modal"
+                intent="create"
                 title="Create booking"
                 submitLabel="Create"
                 patients={patients}
@@ -196,69 +206,147 @@ export function BookingManager({
       ) : null}
 
       {mode === "edit" && selected ? (
-        <BookingForm
-          layout="card"
-          title="Edit booking"
-          submitLabel="Save changes"
-          patients={patients}
-          teams={teams}
-          initial={{
-            patientId: selected.patientId,
-            teamId: selected.teamId,
-            scheduledDate: toDateTimeLocalInput(selected.scheduledDate),
-            status: selected.status,
-            locationGps: selected.locationGps ?? "",
-          }}
-          onCancel={() => setMode("none")}
-          onSubmit={async (values) => {
-            setError(null);
-            const res = await fetch(`/api/bookings/${selected.id}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(values),
-            });
-            if (!res.ok) {
-              const msg = await res.text().catch(() => "");
-              throw new Error(msg || "Update failed");
-            }
-            await refresh();
+        <div
+          className="fixed inset-0 z-70 flex items-center justify-center bg-black/40 px-4 py-8"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-booking-title"
+          onClick={() => {
             setMode("none");
+            setError(null);
           }}
-        />
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-3xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Card>
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <h2
+                    id="edit-booking-title"
+                    className="text-lg font-semibold tracking-tight text-[var(--text-primary)]"
+                  >
+                    Edit booking
+                  </h2>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    Update patient, team, schedule, status, and location details.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
+                  onClick={() => {
+                    setMode("none");
+                    setError(null);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <BookingForm
+                layout="modal"
+                intent="edit"
+                title="Edit booking"
+                submitLabel="Save changes"
+                patients={patients}
+                teams={teams}
+                initial={{
+                  patientId: selected.patientId,
+                  teamId: selected.teamId,
+                  scheduledDate: toDateTimeLocalInput(selected.scheduledDate),
+                  status: selected.status,
+                  locationGps: selected.locationGps ?? "",
+                }}
+                onCancel={() => setMode("none")}
+                onSubmit={async (values) => {
+                  setError(null);
+                  const res = await fetch(`/api/bookings/${selected.id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(values),
+                  });
+                  if (!res.ok) {
+                    const msg = await res.text().catch(() => "");
+                    throw new Error(msg || "Update failed");
+                  }
+                  await refresh();
+                  setMode("none");
+                }}
+              />
+            </Card>
+          </div>
+        </div>
       ) : null}
 
       {mode === "preview" && selected ? (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-          <div className="mb-4">
-            <div className="text-lg font-semibold">Preview booking</div>
-            <div className="text-sm text-zinc-600 dark:text-zinc-400">Read-only details.</div>
-          </div>
-          <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Patient</dt>
-              <dd className="font-medium">{selected.patient?.fullName ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Medical Team</dt>
-              <dd className="font-medium">{selected.team?.teamName ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Date & Time</dt>
-              <dd className="font-medium">{formatDateTime(selected.scheduledDate)}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Status</dt>
-              <dd className="font-medium">{selected.status}</dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Location GPS</dt>
-              <dd className="font-medium">{selected.locationGps ?? "—"}</dd>
-            </div>
-          </dl>
-          <div className="mt-4 flex justify-end">
-            <Button variant="secondary" onClick={() => setMode("none")}>
-              Close
-            </Button>
+        <div
+          className="fixed inset-0 z-70 flex items-center justify-center bg-black/40 px-4 py-8"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="preview-booking-title"
+          onClick={() => {
+            setMode("none");
+            setError(null);
+          }}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-3xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Card>
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <h2
+                    id="preview-booking-title"
+                    className="text-lg font-semibold tracking-tight text-[var(--text-primary)]"
+                  >
+                    Preview booking
+                  </h2>
+                  <p className="text-sm text-[var(--text-secondary)]">Read-only details.</p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
+                  onClick={() => {
+                    setMode("none");
+                    setError(null);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Patient</dt>
+                  <dd className="font-medium">{selected.patient?.fullName ?? "—"}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">
+                    Medical Team
+                  </dt>
+                  <dd className="font-medium">{selected.team?.teamName ?? "—"}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">
+                    Date & Time
+                  </dt>
+                  <dd className="font-medium">{formatDateTime(selected.scheduledDate)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Status</dt>
+                  <dd className="font-medium">{selected.status}</dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">
+                    Location GPS
+                  </dt>
+                  <dd className="font-medium">{selected.locationGps ?? "—"}</dd>
+                </div>
+              </dl>
+            </Card>
           </div>
         </div>
       ) : null}
@@ -292,7 +380,7 @@ export function BookingManager({
                       {canPreview ? (
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="preview"
                           className="h-9 px-3"
                           disabled={isBusy}
                           onClick={() => {
@@ -307,7 +395,7 @@ export function BookingManager({
                       {canEdit ? (
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="edit"
                           className="h-9 px-3"
                           disabled={isBusy}
                           onClick={() => {
@@ -322,7 +410,7 @@ export function BookingManager({
                       {canDelete ? (
                         <Button
                           type="button"
-                          variant="secondary"
+                          variant="delete"
                           className="h-9 px-3"
                           disabled={isBusy}
                           onClick={() => handleDelete(booking.id)}
@@ -353,6 +441,7 @@ type BookingFormValues = {
 function BookingForm({
   title,
   submitLabel,
+  intent,
   patients,
   teams,
   onCancel,
@@ -362,6 +451,7 @@ function BookingForm({
 }: {
   title: string;
   submitLabel: string;
+  intent: "create" | "edit";
   patients: PatientOption[];
   teams: TeamOption[];
   onCancel: () => void;
@@ -488,7 +578,11 @@ function BookingForm({
           <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit" isLoading={isSubmitting}>
+          <Button
+            type="submit"
+            variant={intent === "create" ? "create" : "edit"}
+            isLoading={isSubmitting}
+          >
             {submitLabel}
           </Button>
         </div>

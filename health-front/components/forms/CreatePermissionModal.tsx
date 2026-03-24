@@ -15,7 +15,7 @@ export function CreatePermissionModal() {
   return (
     <>
       <Button
-        variant="primary"
+        variant="create"
         onClick={() => setIsOpen(true)}
         className="h-10 px-4 text-xs sm:text-sm"
       >
@@ -23,8 +23,11 @@ export function CreatePermissionModal() {
       </Button>
 
       {isOpen ? (
-        <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/40 px-4">
-          <div className="max-w-lg flex-1">
+        <div
+          className="fixed inset-0 z-70 flex items-center justify-center bg-black/40 px-4"
+          onClick={() => setIsOpen(false)}
+        >
+          <div className="max-w-lg flex-1" onClick={(e) => e.stopPropagation()}>
             <Card>
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>

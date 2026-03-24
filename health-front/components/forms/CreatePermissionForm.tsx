@@ -70,6 +70,7 @@ export function CreatePermissionForm() {
       <div className="flex items-center justify-end">
         <Button
           type="submit"
+          variant="create"
           isLoading={isSubmitting}
           disabled={Boolean(validationError)}
         >

@@ -66,7 +66,7 @@ export function RolesTable({ roles }: { roles: Role[] }) {
                       {isEmpty && (role.users?.length ?? 0) === 0 ? (
                         <Button
                           type="button"
-                          variant="secondary"
+                          variant="delete"
                           className="h-7 px-2 text-[11px]"
                           disabled={busyId === role.id}
                           onClick={() => handleDelete(role.id)}

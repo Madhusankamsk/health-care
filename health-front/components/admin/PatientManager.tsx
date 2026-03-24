@@ -84,7 +84,9 @@ export function PatientManager({
       setMode("none");
       setError(null);
     },
-    mode === "create" && canCreate,
+    (mode === "create" && canCreate) ||
+      (mode === "edit" && canEdit) ||
+      (mode === "preview" && canPreview),
   );
 
   async function refresh() {
@@ -131,7 +133,7 @@ export function PatientManager({
         <div className="flex items-center gap-2">
           {canCreate ? (
             <Button
-              variant="primary"
+              variant="create"
               className="h-10 px-4 text-xs sm:text-sm"
               onClick={() => {
                 setMode("create");
@@ -164,8 +166,15 @@ export function PatientManager({
           role="dialog"
           aria-modal="true"
           aria-labelledby="create-patient-title"
+          onClick={() => {
+            setMode("none");
+            setError(null);
+          }}
         >
-          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto">
+          <div
+            className="max-h-[90vh] w-full max-w-4xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <Card>
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
@@ -193,6 +202,7 @@ export function PatientManager({
               </div>
               <PatientForm
                 layout="modal"
+                intent="create"
                 title="Create patient"
                 submitLabel="Create"
                 genders={genders}
@@ -225,58 +235,133 @@ export function PatientManager({
       ) : null}
 
       {mode === "edit" && selected ? (
-        <PatientForm
-          layout="card"
-          title="Edit patient"
-          submitLabel="Save changes"
-          genders={genders}
-          patientTypes={patientTypes}
-          billingRecipients={billingRecipients}
-          subscriptionPlans={subscriptionPlans}
-          initial={{
-            nicOrPassport: selected.nicOrPassport ?? "",
-            fullName: selected.fullName,
-            shortName: selected.shortName ?? "",
-            dob: selected.dob ? String(selected.dob) : "",
-            contactNo: selected.contactNo ?? "",
-            whatsappNo: selected.whatsappNo ?? "",
-            genderId: selected.genderId ?? "",
-            patientTypeId: selected.patientTypeId ?? "",
-            address: selected.address ?? "",
-            hasInsurance: Boolean(selected.hasInsurance),
-            hasGuardian: Boolean(selected.hasGuardian),
-            guardianName: selected.guardianName ?? "",
-            guardianEmail: selected.guardianEmail ?? "",
-            guardianWhatsappNo: selected.guardianWhatsappNo ?? "",
-            guardianContactNo: selected.guardianContactNo ?? "",
-            guardianRelationship: selected.guardianRelationship ?? "",
-            billingRecipientId: selected.billingRecipientId ?? "",
-          }}
-          onCancel={() => setMode("none")}
-          onSubmit={async (values) => {
-            setError(null);
-            const res = await fetch(`/api/patients/${selected.id}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(values),
-            });
-            if (!res.ok) {
-              const msg = await res.text().catch(() => "");
-              throw new Error(msg || "Update failed");
-            }
-            await refresh();
+        <div
+          className="fixed inset-0 z-70 flex items-center justify-center bg-black/40 px-4 py-8"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-patient-title"
+          onClick={() => {
             setMode("none");
+            setError(null);
           }}
-        />
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-4xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Card>
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <h2
+                    id="edit-patient-title"
+                    className="text-lg font-semibold tracking-tight text-[var(--text-primary)]"
+                  >
+                    Edit patient
+                  </h2>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    Update patient demographics, guardian details, and plan assignment.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
+                  onClick={() => {
+                    setMode("none");
+                    setError(null);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <PatientForm
+                layout="modal"
+                intent="edit"
+                title="Edit patient"
+                submitLabel="Save changes"
+                genders={genders}
+                patientTypes={patientTypes}
+                billingRecipients={billingRecipients}
+                subscriptionPlans={subscriptionPlans}
+                initial={{
+                  nicOrPassport: selected.nicOrPassport ?? "",
+                  fullName: selected.fullName,
+                  shortName: selected.shortName ?? "",
+                  dob: selected.dob ? String(selected.dob) : "",
+                  contactNo: selected.contactNo ?? "",
+                  whatsappNo: selected.whatsappNo ?? "",
+                  genderId: selected.genderId ?? "",
+                  patientTypeId: selected.patientTypeId ?? "",
+                  address: selected.address ?? "",
+                  hasInsurance: Boolean(selected.hasInsurance),
+                  hasGuardian: Boolean(selected.hasGuardian),
+                  guardianName: selected.guardianName ?? "",
+                  guardianEmail: selected.guardianEmail ?? "",
+                  guardianWhatsappNo: selected.guardianWhatsappNo ?? "",
+                  guardianContactNo: selected.guardianContactNo ?? "",
+                  guardianRelationship: selected.guardianRelationship ?? "",
+                  billingRecipientId: selected.billingRecipientId ?? "",
+                }}
+                onCancel={() => setMode("none")}
+                onSubmit={async (values) => {
+                  setError(null);
+                  const res = await fetch(`/api/patients/${selected.id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(values),
+                  });
+                  if (!res.ok) {
+                    const msg = await res.text().catch(() => "");
+                    throw new Error(msg || "Update failed");
+                  }
+                  await refresh();
+                  setMode("none");
+                }}
+              />
+            </Card>
+          </div>
+        </div>
       ) : null}
 
       {mode === "preview" && selected ? (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-          <div className="mb-4">
-            <div className="text-lg font-semibold">Preview patient</div>
-            <div className="text-sm text-zinc-600 dark:text-zinc-400">Read-only details.</div>
-          </div>
-          <dl className="grid gap-3 text-sm sm:grid-cols-2">
+        <div
+          className="fixed inset-0 z-70 flex items-center justify-center bg-black/40 px-4 py-8"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="preview-patient-title"
+          onClick={() => {
+            setMode("none");
+            setError(null);
+          }}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-4xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Card>
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <h2
+                    id="preview-patient-title"
+                    className="text-lg font-semibold tracking-tight text-[var(--text-primary)]"
+                  >
+                    Preview patient
+                  </h2>
+                  <p className="text-sm text-[var(--text-secondary)]">Read-only details.</p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
+                  onClick={() => {
+                    setMode("none");
+                    setError(null);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <dl className="grid gap-3 text-sm sm:grid-cols-2">
             <div>
               <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Name</dt>
               <dd className="font-medium">{selected.fullName}</dd>
@@ -345,11 +430,8 @@ export function PatientManager({
                 {selected.billingRecipientLookup?.lookupValue ?? "—"}
               </dd>
             </div>
-          </dl>
-          <div className="mt-4 flex justify-end">
-            <Button variant="secondary" onClick={() => setMode("none")}>
-              Close
-            </Button>
+              </dl>
+            </Card>
           </div>
         </div>
       ) : null}
@@ -385,7 +467,7 @@ export function PatientManager({
                       {canPreview ? (
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="preview"
                           className="h-9 px-3"
                           disabled={isBusy}
                           onClick={() => {
@@ -400,7 +482,7 @@ export function PatientManager({
                       {canEdit ? (
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="edit"
                           className="h-9 px-3"
                           disabled={isBusy}
                           onClick={() => {
@@ -415,7 +497,7 @@ export function PatientManager({
                       {canDelete ? (
                         <Button
                           type="button"
-                          variant="secondary"
+                          variant="delete"
                           className="h-9 px-3"
                           disabled={isBusy}
                           onClick={() => handleDelete(p.id)}
@@ -459,6 +541,7 @@ type PatientFormValues = {
 function PatientForm({
   title,
   submitLabel,
+  intent,
   genders,
   patientTypes,
   billingRecipients,
@@ -471,6 +554,7 @@ function PatientForm({
 }: {
   title: string;
   submitLabel: string;
+  intent: "create" | "edit";
   genders: LookupOption[];
   patientTypes: LookupOption[];
   billingRecipients: LookupOption[];
@@ -789,7 +873,11 @@ function PatientForm({
           <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit" isLoading={isSubmitting}>
+          <Button
+            type="submit"
+            variant={intent === "create" ? "create" : "edit"}
+            isLoading={isSubmitting}
+          >
             {submitLabel}
           </Button>
         </div>

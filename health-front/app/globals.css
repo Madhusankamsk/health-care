@@ -18,6 +18,14 @@
   --warning: #f59e0b;
   --danger: #ef4444;
   --purple: #8b5cf6;
+  --action-create: var(--success);
+  --action-create-hover: #059669;
+  --action-edit: var(--brand-secondary);
+  --action-edit-hover: #2563eb;
+  --action-delete: var(--danger);
+  --action-delete-hover: #dc2626;
+  --action-preview: var(--purple);
+  --action-preview-hover: #7c3aed;
   --shadow-soft: 0 8px 24px rgba(15, 43, 57, 0.08);
 }
 
@@ -38,6 +46,14 @@
   --warning: #fbbf24;
   --danger: #f87171;
   --purple: #a78bfa;
+  --action-create: var(--success);
+  --action-create-hover: #059669;
+  --action-edit: var(--brand-secondary);
+  --action-edit-hover: #3b82f6;
+  --action-delete: var(--danger);
+  --action-delete-hover: #ef4444;
+  --action-preview: var(--purple);
+  --action-preview-hover: #8b5cf6;
   --shadow-soft: 0 12px 28px rgba(0, 0, 0, 0.35);
 }
 

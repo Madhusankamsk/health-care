@@ -1,6 +1,13 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-type ButtonVariant = "primary" | "secondary" | "ghost";
+type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "ghost"
+  | "create"
+  | "edit"
+  | "delete"
+  | "preview";
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
@@ -10,11 +17,19 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantClassName: Record<ButtonVariant, string> = {
   primary:
-    "bg-[var(--brand-primary)] text-white shadow-sm hover:bg-[var(--brand-primary-strong)]",
+    "bg-[var(--brand-primary)] text-white shadow-sm hover:bg-[var(--brand-primary-strong)] focus-visible:ring-[var(--brand-primary)]",
   secondary:
-    "border border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)] hover:bg-[var(--surface-2)]",
+    "border border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)] hover:bg-[var(--surface-2)] focus-visible:ring-[var(--brand-primary)]",
   ghost:
-    "bg-transparent text-[var(--text-primary)] hover:bg-[var(--surface-2)]",
+    "bg-transparent text-[var(--text-primary)] hover:bg-[var(--surface-2)] focus-visible:ring-[var(--brand-primary)]",
+  create:
+    "bg-[var(--action-create)] text-white shadow-sm hover:bg-[var(--action-create-hover)] focus-visible:ring-[var(--action-create)]",
+  edit:
+    "bg-[var(--action-edit)] text-white shadow-sm hover:bg-[var(--action-edit-hover)] focus-visible:ring-[var(--action-edit)]",
+  delete:
+    "bg-[var(--action-delete)] text-white shadow-sm hover:bg-[var(--action-delete-hover)] focus-visible:ring-[var(--action-delete)]",
+  preview:
+    "bg-[var(--action-preview)] text-white shadow-sm hover:bg-[var(--action-preview-hover)] focus-visible:ring-[var(--action-preview)]",
 };
 
 export function Button({
@@ -33,8 +48,8 @@ export function Button({
       {...rest}
       disabled={isDisabled}
       className={[
-        "inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold tracking-wide",
-        "transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]",
+        "inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold tracking-wide",
+        "transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2",
         "disabled:cursor-not-allowed disabled:opacity-60",
         variantClassName[variant],
         className,
@@ -47,4 +62,3 @@ export function Button({
     </button>
   );
 }
-

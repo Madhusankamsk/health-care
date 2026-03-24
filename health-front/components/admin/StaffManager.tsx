@@ -57,7 +57,9 @@ export function StaffManager({
       setMode("none");
       setError(null);
     },
-    mode === "create" && canCreate,
+    (mode === "create" && canCreate) ||
+      (mode === "edit" && canEdit) ||
+      (mode === "preview" && canPreview),
   );
 
   async function refresh() {
@@ -118,7 +120,7 @@ export function StaffManager({
         <div className="flex items-center gap-2">
           {canCreate ? (
             <Button
-              variant="primary"
+              variant="create"
               className="h-10 px-4 text-xs sm:text-sm"
               onClick={() => {
                 setMode("create");
@@ -151,8 +153,15 @@ export function StaffManager({
           role="dialog"
           aria-modal="true"
           aria-labelledby="create-staff-title"
+          onClick={() => {
+            setMode("none");
+            setError(null);
+          }}
         >
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto">
+          <div
+            className="max-h-[90vh] w-full max-w-3xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <Card>
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
@@ -180,6 +189,7 @@ export function StaffManager({
               </div>
               <StaffForm
                 layout="modal"
+                intent="create"
                 title="Create staff"
                 roles={roles}
                 submitLabel="Create"
@@ -209,54 +219,123 @@ export function StaffManager({
       ) : null}
 
       {mode === "edit" && selected ? (
-        <StaffForm
-          layout="card"
-          title="Edit staff"
-          roles={roles}
-          submitLabel="Save changes"
-          initial={{
-            fullName: selected.fullName,
-            email: selected.email,
-            phoneNumber: selected.phoneNumber ?? "",
-            baseConsultationFee:
-              selected.baseConsultationFee === null || selected.baseConsultationFee === undefined
-                ? ""
-                : String(selected.baseConsultationFee),
-            roleId: selected.role?.id ?? selected.roleId ?? "",
-            isActive: selected.isActive,
-          }}
-          onCancel={() => setMode("none")}
-          onSubmit={async (data) => {
-            setError(null);
-            const res = await fetch(`/api/profiles/${selected.id}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(data),
-            });
-            if (!res.ok) {
-              const msg = await res.text().catch(() => "");
-              throw new Error(msg || "Update failed");
-            }
-            await refresh();
+        <div
+          className="fixed inset-0 z-70 flex items-center justify-center bg-black/40 px-4 py-8"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-staff-title"
+          onClick={() => {
             setMode("none");
+            setError(null);
           }}
-        />
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-3xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Card>
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <h2
+                    id="edit-staff-title"
+                    className="text-lg font-semibold tracking-tight text-[var(--text-primary)]"
+                  >
+                    Edit staff
+                  </h2>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    Update staff account details and role assignment.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
+                  onClick={() => {
+                    setMode("none");
+                    setError(null);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <StaffForm
+                layout="modal"
+                intent="edit"
+                title="Edit staff"
+                roles={roles}
+                submitLabel="Save changes"
+                initial={{
+                  fullName: selected.fullName,
+                  email: selected.email,
+                  phoneNumber: selected.phoneNumber ?? "",
+                  baseConsultationFee:
+                    selected.baseConsultationFee === null ||
+                    selected.baseConsultationFee === undefined
+                      ? ""
+                      : String(selected.baseConsultationFee),
+                  roleId: selected.role?.id ?? selected.roleId ?? "",
+                  isActive: selected.isActive,
+                }}
+                onCancel={() => setMode("none")}
+                onSubmit={async (data) => {
+                  setError(null);
+                  const res = await fetch(`/api/profiles/${selected.id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                  });
+                  if (!res.ok) {
+                    const msg = await res.text().catch(() => "");
+                    throw new Error(msg || "Update failed");
+                  }
+                  await refresh();
+                  setMode("none");
+                }}
+              />
+            </Card>
+          </div>
+        </div>
       ) : null}
 
       {mode === "preview" && selected ? (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <div className="text-lg font-semibold">Preview staff</div>
-              <div className="text-sm text-zinc-600 dark:text-zinc-400">
-                Read-only details.
+        <div
+          className="fixed inset-0 z-70 flex items-center justify-center bg-black/40 px-4 py-8"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="preview-staff-title"
+          onClick={() => {
+            setMode("none");
+            setError(null);
+          }}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-3xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Card>
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <h2
+                    id="preview-staff-title"
+                    className="text-lg font-semibold tracking-tight text-[var(--text-primary)]"
+                  >
+                    Preview staff
+                  </h2>
+                  <p className="text-sm text-[var(--text-secondary)]">Read-only details.</p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
+                  onClick={() => {
+                    setMode("none");
+                    setError(null);
+                  }}
+                >
+                  ×
+                </button>
               </div>
-            </div>
-            <Button variant="secondary" onClick={() => setMode("none")}>
-              Close
-            </Button>
-          </div>
-          <dl className="grid gap-3 text-sm sm:grid-cols-2">
+              <dl className="grid gap-3 text-sm sm:grid-cols-2">
             <div>
               <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Name</dt>
               <dd className="font-medium">{selected.fullName}</dd>
@@ -290,7 +369,9 @@ export function StaffManager({
                   : String(selected.baseConsultationFee)}
               </dd>
             </div>
-          </dl>
+              </dl>
+            </Card>
+          </div>
         </div>
       ) : null}
 
@@ -332,7 +413,7 @@ export function StaffManager({
                       {canPreview ? (
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="preview"
                           className="h-9 px-3"
                           disabled={isBusy}
                           onClick={() => {
@@ -347,7 +428,7 @@ export function StaffManager({
                       {canEdit ? (
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="edit"
                           className="h-9 px-3"
                           disabled={isBusy}
                           onClick={() => {
@@ -373,7 +454,7 @@ export function StaffManager({
                       {canDelete ? (
                         <Button
                           type="button"
-                          variant="secondary"
+                          variant="delete"
                           className="h-9 px-3"
                           disabled={isBusy}
                           onClick={() => handleDelete(p.id)}
@@ -407,6 +488,7 @@ function StaffForm({
   title,
   roles,
   submitLabel,
+  intent,
   onCancel,
   onSubmit,
   initial,
@@ -416,6 +498,7 @@ function StaffForm({
   title: string;
   roles: Role[];
   submitLabel: string;
+  intent: "create" | "edit";
   onCancel: () => void;
   onSubmit: (values: StaffFormValues) => Promise<void>;
   initial?: Partial<StaffFormValues>;
@@ -557,7 +640,11 @@ function StaffForm({
           <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit" isLoading={isSubmitting}>
+          <Button
+            type="submit"
+            variant={intent === "create" ? "create" : "edit"}
+            isLoading={isSubmitting}
+          >
             {submitLabel}
           </Button>
         </div>

@@ -85,7 +85,9 @@ export function MedicalTeamManager({
       setMode("none");
       setError(null);
     },
-    mode === "create" && canCreate,
+    (mode === "create" && canCreate) ||
+      (mode === "edit" && canEdit) ||
+      (mode === "preview" && canPreview),
   );
 
   async function refresh() {
@@ -132,7 +134,7 @@ export function MedicalTeamManager({
         <div className="flex items-center gap-2">
           {canCreate ? (
             <Button
-              variant="primary"
+              variant="create"
               className="h-10 px-4 text-xs sm:text-sm"
               onClick={() => {
                 setMode("create");
@@ -165,8 +167,15 @@ export function MedicalTeamManager({
           role="dialog"
           aria-modal="true"
           aria-labelledby="create-medical-team-title"
+          onClick={() => {
+            setMode("none");
+            setError(null);
+          }}
         >
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto">
+          <div
+            className="max-h-[90vh] w-full max-w-3xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <Card>
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
@@ -194,6 +203,7 @@ export function MedicalTeamManager({
               </div>
               <MedicalTeamForm
                 layout="modal"
+                intent="create"
                 title="Create medical team"
                 submitLabel="Create"
                 vehicles={vehicles}
@@ -223,50 +233,120 @@ export function MedicalTeamManager({
       ) : null}
 
       {mode === "edit" && selected ? (
-        <MedicalTeamForm
-          layout="card"
-          title="Edit medical team"
-          submitLabel="Save changes"
-          vehicles={vehicles}
-          members={members}
-          initial={{
-            teamName: selected.teamName ?? "",
-            vehicleId: selected.vehicleId,
-            memberIds: selected.members?.map((member) => member.user.id) ?? [],
-            leadMemberId: selected.members?.find((member) => member.isLead)?.user.id ?? null,
-          }}
-          onCancel={() => setMode("none")}
-          onSubmit={async (data) => {
-            setError(null);
-            const res = await fetch(`/api/medical-teams/${selected.id}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(data),
-            });
-            if (!res.ok) {
-              const msg = await res.text().catch(() => "");
-              throw new Error(msg || "Update failed");
-            }
-            await refresh();
+        <div
+          className="fixed inset-0 z-70 flex items-center justify-center bg-black/40 px-4 py-8"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-medical-team-title"
+          onClick={() => {
             setMode("none");
+            setError(null);
           }}
-        />
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-3xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Card>
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <h2
+                    id="edit-medical-team-title"
+                    className="text-lg font-semibold tracking-tight text-[var(--text-primary)]"
+                  >
+                    Edit medical team
+                  </h2>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    Update team, vehicle, member, and lead assignments.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
+                  onClick={() => {
+                    setMode("none");
+                    setError(null);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <MedicalTeamForm
+                layout="modal"
+                intent="edit"
+                title="Edit medical team"
+                submitLabel="Save changes"
+                vehicles={vehicles}
+                members={members}
+                initial={{
+                  teamName: selected.teamName ?? "",
+                  vehicleId: selected.vehicleId,
+                  memberIds: selected.members?.map((member) => member.user.id) ?? [],
+                  leadMemberId: selected.members?.find((member) => member.isLead)?.user.id ?? null,
+                }}
+                onCancel={() => setMode("none")}
+                onSubmit={async (data) => {
+                  setError(null);
+                  const res = await fetch(`/api/medical-teams/${selected.id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                  });
+                  if (!res.ok) {
+                    const msg = await res.text().catch(() => "");
+                    throw new Error(msg || "Update failed");
+                  }
+                  await refresh();
+                  setMode("none");
+                }}
+              />
+            </Card>
+          </div>
+        </div>
       ) : null}
 
       {mode === "preview" && selected ? (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <div className="text-lg font-semibold">Preview medical team</div>
-              <div className="text-sm text-zinc-600 dark:text-zinc-400">
-                Read-only team details.
+        <div
+          className="fixed inset-0 z-70 flex items-center justify-center bg-black/40 px-4 py-8"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="preview-medical-team-title"
+          onClick={() => {
+            setMode("none");
+            setError(null);
+          }}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-3xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Card>
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <h2
+                    id="preview-medical-team-title"
+                    className="text-lg font-semibold tracking-tight text-[var(--text-primary)]"
+                  >
+                    Preview medical team
+                  </h2>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    Read-only team details.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
+                  onClick={() => {
+                    setMode("none");
+                    setError(null);
+                  }}
+                >
+                  ×
+                </button>
               </div>
-            </div>
-            <Button variant="secondary" onClick={() => setMode("none")}>
-              Close
-            </Button>
-          </div>
-          <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+              <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Team name</dt>
               <dd className="font-medium">{selected.teamName ?? "—"}</dd>
@@ -283,23 +363,27 @@ export function MedicalTeamManager({
               <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Bookings</dt>
               <dd className="font-medium">{selected._count?.bookings ?? 0}</dd>
             </div>
-          </dl>
-          <div className="mt-4 rounded-xl border border-zinc-200 p-3 dark:border-zinc-800">
-            <div className="mb-2 text-xs font-semibold uppercase text-zinc-500 dark:text-zinc-400">
-              Assigned Members
-            </div>
-            {!selected.members?.length ? (
-              <div className="text-sm text-zinc-600 dark:text-zinc-400">No members assigned.</div>
-            ) : (
-              <ul className="space-y-1 text-sm">
-                {selected.members.map((member) => (
-                  <li key={member.id} className="text-zinc-700 dark:text-zinc-300">
-                    {member.user.fullName} ({member.user.email})
-                    {member.isLead ? " - Lead" : ""}
-                  </li>
-                ))}
-              </ul>
-            )}
+              </dl>
+              <div className="mt-4 rounded-xl border border-zinc-200 p-3 dark:border-zinc-800">
+                <div className="mb-2 text-xs font-semibold uppercase text-zinc-500 dark:text-zinc-400">
+                  Assigned Members
+                </div>
+                {!selected.members?.length ? (
+                  <div className="text-sm text-zinc-600 dark:text-zinc-400">
+                    No members assigned.
+                  </div>
+                ) : (
+                  <ul className="space-y-1 text-sm">
+                    {selected.members.map((member) => (
+                      <li key={member.id} className="text-zinc-700 dark:text-zinc-300">
+                        {member.user.fullName} ({member.user.email})
+                        {member.isLead ? " - Lead" : ""}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </Card>
           </div>
         </div>
       ) : null}
@@ -335,7 +419,7 @@ export function MedicalTeamManager({
                       {canPreview ? (
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="preview"
                           className="h-9 px-3"
                           disabled={isBusy}
                           onClick={() => {
@@ -350,7 +434,7 @@ export function MedicalTeamManager({
                       {canEdit ? (
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="edit"
                           className="h-9 px-3"
                           disabled={isBusy}
                           onClick={() => {
@@ -365,7 +449,7 @@ export function MedicalTeamManager({
                       {canDelete ? (
                         <Button
                           type="button"
-                          variant="secondary"
+                          variant="delete"
                           className="h-9 px-3"
                           disabled={isBusy}
                           onClick={() => handleDelete(team.id)}
@@ -395,6 +479,7 @@ type MedicalTeamFormValues = {
 function MedicalTeamForm({
   title,
   submitLabel,
+  intent,
   vehicles,
   members,
   onCancel,
@@ -404,6 +489,7 @@ function MedicalTeamForm({
 }: {
   title: string;
   submitLabel: string;
+  intent: "create" | "edit";
   vehicles: VehicleOption[];
   members: MemberOption[];
   onCancel: () => void;
@@ -550,7 +636,11 @@ function MedicalTeamForm({
           <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit" isLoading={isSubmitting}>
+          <Button
+            type="submit"
+            variant={intent === "create" ? "create" : "edit"}
+            isLoading={isSubmitting}
+          >
             {submitLabel}
           </Button>
         </div>

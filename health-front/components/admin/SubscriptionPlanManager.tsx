@@ -53,7 +53,7 @@ export function SubscriptionPlanManager({
       setMode("none");
       setError(null);
     },
-    mode === "create" && canCreate,
+    (mode === "create" && canCreate) || (mode === "edit" && canEdit) || mode === "preview",
   );
 
   async function refresh() {
@@ -100,7 +100,7 @@ export function SubscriptionPlanManager({
         <div className="flex items-center gap-2">
           {canCreate ? (
             <Button
-              variant="primary"
+              variant="create"
               className="h-10 px-4 text-xs sm:text-sm"
               onClick={() => {
                 setMode("create");
@@ -133,8 +133,15 @@ export function SubscriptionPlanManager({
           role="dialog"
           aria-modal="true"
           aria-labelledby="create-subscription-plan-title"
+          onClick={() => {
+            setMode("none");
+            setError(null);
+          }}
         >
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto">
+          <div
+            className="max-h-[90vh] w-full max-w-3xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <Card>
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
@@ -162,6 +169,7 @@ export function SubscriptionPlanManager({
               </div>
               <SubscriptionPlanForm
                 layout="modal"
+                intent="create"
                 title="Create subscription plan"
                 submitLabel="Create"
                 planTypes={planTypes}
@@ -189,44 +197,118 @@ export function SubscriptionPlanManager({
       ) : null}
 
       {mode === "edit" && selected ? (
-        <SubscriptionPlanForm
-          title="Edit subscription plan"
-          submitLabel="Save changes"
-          planTypes={planTypes}
-          initial={{
-            planName: selected.planName,
-            planTypeId: selected.planTypeId,
-            price: String(selected.price),
-            maxMembers: String(selected.maxMembers),
-            durationDays: String(selected.durationDays),
-            isActive: selected.isActive,
-          }}
-          onCancel={() => setMode("none")}
-          onSubmit={async (values) => {
-            const res = await fetch(`/api/subscription-plans/${selected.id}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(values),
-            });
-            if (!res.ok) {
-              const msg = await res.text().catch(() => "");
-              throw new Error(msg || "Update failed");
-            }
-            await refresh();
+        <div
+          className="fixed inset-0 z-70 flex items-center justify-center bg-black/40 px-4 py-8"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-subscription-plan-title"
+          onClick={() => {
             setMode("none");
+            setError(null);
           }}
-        />
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-3xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Card>
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <h2
+                    id="edit-subscription-plan-title"
+                    className="text-lg font-semibold tracking-tight text-[var(--text-primary)]"
+                  >
+                    Edit subscription plan
+                  </h2>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    Update plan details, pricing, and status.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
+                  onClick={() => {
+                    setMode("none");
+                    setError(null);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <SubscriptionPlanForm
+                layout="modal"
+                intent="edit"
+                title="Edit subscription plan"
+                submitLabel="Save changes"
+                planTypes={planTypes}
+                initial={{
+                  planName: selected.planName,
+                  planTypeId: selected.planTypeId,
+                  price: String(selected.price),
+                  maxMembers: String(selected.maxMembers),
+                  durationDays: String(selected.durationDays),
+                  isActive: selected.isActive,
+                }}
+                onCancel={() => setMode("none")}
+                onSubmit={async (values) => {
+                  const res = await fetch(`/api/subscription-plans/${selected.id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(values),
+                  });
+                  if (!res.ok) {
+                    const msg = await res.text().catch(() => "");
+                    throw new Error(msg || "Update failed");
+                  }
+                  await refresh();
+                  setMode("none");
+                }}
+              />
+            </Card>
+          </div>
+        </div>
       ) : null}
 
       {mode === "preview" && selected ? (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div className="text-lg font-semibold">Preview subscription plan</div>
-            <Button variant="secondary" onClick={() => setMode("none")}>
-              Close
-            </Button>
-          </div>
-          <dl className="grid gap-3 text-sm sm:grid-cols-2">
+        <div
+          className="fixed inset-0 z-70 flex items-center justify-center bg-black/40 px-4 py-8"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="preview-subscription-plan-title"
+          onClick={() => {
+            setMode("none");
+            setError(null);
+          }}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-3xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Card>
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <h2
+                    id="preview-subscription-plan-title"
+                    className="text-lg font-semibold tracking-tight text-[var(--text-primary)]"
+                  >
+                    Preview subscription plan
+                  </h2>
+                  <p className="text-sm text-[var(--text-secondary)]">Read-only details.</p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
+                  onClick={() => {
+                    setMode("none");
+                    setError(null);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <dl className="grid gap-3 text-sm sm:grid-cols-2">
             <div>
               <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Plan Name</dt>
               <dd className="font-medium">{selected.planName}</dd>
@@ -251,7 +333,9 @@ export function SubscriptionPlanManager({
               <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Status</dt>
               <dd className="font-medium">{selected.isActive ? "Active" : "Inactive"}</dd>
             </div>
-          </dl>
+              </dl>
+            </Card>
+          </div>
         </div>
       ) : null}
 
@@ -287,7 +371,7 @@ export function SubscriptionPlanManager({
                     <div className="flex items-center justify-end gap-2">
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="preview"
                         className="h-9 px-3"
                         disabled={isBusy}
                         onClick={() => {
@@ -300,7 +384,7 @@ export function SubscriptionPlanManager({
                       {canEdit ? (
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="edit"
                           className="h-9 px-3"
                           disabled={isBusy}
                           onClick={() => {
@@ -314,7 +398,7 @@ export function SubscriptionPlanManager({
                       {canDelete ? (
                         <Button
                           type="button"
-                          variant="secondary"
+                          variant="delete"
                           className="h-9 px-3"
                           disabled={isBusy}
                           onClick={() => handleDelete(plan.id)}
@@ -346,6 +430,7 @@ type SubscriptionPlanFormValues = {
 function SubscriptionPlanForm({
   title,
   submitLabel,
+  intent,
   planTypes,
   onCancel,
   onSubmit,
@@ -354,6 +439,7 @@ function SubscriptionPlanForm({
 }: {
   title: string;
   submitLabel: string;
+  intent: "create" | "edit";
   planTypes: PlanTypeOption[];
   onCancel: () => void;
   onSubmit: (values: SubscriptionPlanFormValues) => Promise<void>;
@@ -462,7 +548,11 @@ function SubscriptionPlanForm({
           <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit" isLoading={isSubmitting}>
+          <Button
+            type="submit"
+            variant={intent === "create" ? "create" : "edit"}
+            isLoading={isSubmitting}
+          >
             {submitLabel}
           </Button>
         </div>
