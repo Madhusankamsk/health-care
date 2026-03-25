@@ -372,41 +372,47 @@ export function StaffManager({
                   ×
                 </button>
               </div>
-              <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Name</dt>
-              <dd className="font-medium">{selected.fullName}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Email</dt>
-              <dd className="font-medium">{selected.email}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Role</dt>
-              <dd className="font-medium">{selected.role?.roleName ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Status</dt>
-              <dd className="font-medium">{selected.isActive ? "Active" : "Inactive"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">
-                Phone number
-              </dt>
-              <dd className="font-medium">{selected.phoneNumber ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">
-                Base fee
-              </dt>
-              <dd className="font-medium">
-                {selected.baseConsultationFee === null ||
-                selected.baseConsultationFee === undefined
-                  ? "—"
-                  : String(selected.baseConsultationFee)}
-              </dd>
-            </div>
-              </dl>
+              <div className="preview-shell sm:grid-cols-2">
+                <section className="preview-section">
+                  <h3 className="preview-section-title">Profile</h3>
+                  <dl className="preview-list">
+                    <div className="preview-row">
+                      <dt className="preview-label">Name</dt>
+                      <dd className="preview-value">{selected.fullName}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">Email</dt>
+                      <dd className="preview-value">{selected.email}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">Phone number</dt>
+                      <dd className="preview-value">{selected.phoneNumber ?? "—"}</dd>
+                    </div>
+                  </dl>
+                </section>
+                <section className="preview-section">
+                  <h3 className="preview-section-title">Role & Billing</h3>
+                  <dl className="preview-list">
+                    <div className="preview-row">
+                      <dt className="preview-label">Role</dt>
+                      <dd className="preview-value">{selected.role?.roleName ?? "—"}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">Status</dt>
+                      <dd className="preview-value">{selected.isActive ? "Active" : "Inactive"}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">Base fee</dt>
+                      <dd className="preview-value">
+                        {selected.baseConsultationFee === null ||
+                        selected.baseConsultationFee === undefined
+                          ? "—"
+                          : String(selected.baseConsultationFee)}
+                      </dd>
+                    </div>
+                  </dl>
+                </section>
+              </div>
             </Card>
           </div>
         </div>

@@ -133,3 +133,55 @@ body {
 .tbl-shell tbody tr:hover {
   background: color-mix(in srgb, var(--brand-primary) 8%, transparent);
 }
+
+.preview-shell {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.preview-section {
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+  border-radius: 12px;
+  padding: 0.85rem;
+}
+
+.preview-section-title {
+  margin: 0 0 0.55rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.preview-list {
+  display: grid;
+}
+
+.preview-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.preview-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.preview-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.preview-value {
+  text-align: right;
+  font-weight: 600;
+  color: var(--text-primary);
+}

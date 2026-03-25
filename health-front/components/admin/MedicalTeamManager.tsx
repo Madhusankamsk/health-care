@@ -386,42 +386,50 @@ export function MedicalTeamManager({
                   ×
                 </button>
               </div>
-              <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Team name</dt>
-              <dd className="font-medium">{selected.teamName ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Vehicle</dt>
-              <dd className="font-medium">{selected.vehicle.vehicleNo}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Members</dt>
-              <dd className="font-medium">{selected._count?.members ?? 0}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Bookings</dt>
-              <dd className="font-medium">{selected._count?.bookings ?? 0}</dd>
-            </div>
-              </dl>
-              <div className="mt-4 rounded-xl border border-zinc-200 p-3 dark:border-zinc-800">
-                <div className="mb-2 text-xs font-semibold uppercase text-zinc-500 dark:text-zinc-400">
-                  Assigned Members
-                </div>
-                {!selected.members?.length ? (
-                  <div className="text-sm text-zinc-600 dark:text-zinc-400">
-                    No members assigned.
-                  </div>
-                ) : (
-                  <ul className="space-y-1 text-sm">
-                    {selected.members.map((member) => (
-                      <li key={member.id} className="text-zinc-700 dark:text-zinc-300">
-                        {member.user.fullName} ({member.user.email})
-                        {member.isLead ? " - Lead" : ""}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+              <div className="preview-shell sm:grid-cols-2">
+                <section className="preview-section">
+                  <h3 className="preview-section-title">Team</h3>
+                  <dl className="preview-list">
+                    <div className="preview-row">
+                      <dt className="preview-label">Team name</dt>
+                      <dd className="preview-value">{selected.teamName ?? "—"}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">Vehicle</dt>
+                      <dd className="preview-value">{selected.vehicle.vehicleNo}</dd>
+                    </div>
+                  </dl>
+                </section>
+                <section className="preview-section">
+                  <h3 className="preview-section-title">Summary</h3>
+                  <dl className="preview-list">
+                    <div className="preview-row">
+                      <dt className="preview-label">Members</dt>
+                      <dd className="preview-value">{selected._count?.members ?? 0}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">Bookings</dt>
+                      <dd className="preview-value">{selected._count?.bookings ?? 0}</dd>
+                    </div>
+                  </dl>
+                </section>
+                <section className="preview-section sm:col-span-2">
+                  <h3 className="preview-section-title">Assigned Members</h3>
+                  {!selected.members?.length ? (
+                    <div className="text-sm text-zinc-600 dark:text-zinc-400">
+                      No members assigned.
+                    </div>
+                  ) : (
+                    <ul className="space-y-1 text-sm">
+                      {selected.members.map((member) => (
+                        <li key={member.id} className="text-zinc-700 dark:text-zinc-300">
+                          {member.user.fullName} ({member.user.email})
+                          {member.isLead ? " - Lead" : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
               </div>
             </Card>
           </div>

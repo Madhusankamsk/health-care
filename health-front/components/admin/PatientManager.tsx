@@ -399,76 +399,86 @@ export function PatientManager({
                   ×
                 </button>
               </div>
-              <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Name</dt>
-              <dd className="font-medium">{selected.fullName}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">
-                NIC/Passport
-              </dt>
-              <dd className="font-medium">{selected.nicOrPassport ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">DOB</dt>
-              <dd className="font-medium">
-                {selected.dob ? String(selected.dob) : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Contact</dt>
-              <dd className="font-medium">{selected.contactNo ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">
-                Patient WhatsApp
-              </dt>
-              <dd className="font-medium">{selected.whatsappNo ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Gender</dt>
-              <dd className="font-medium">
-                {selected.genderLookup?.lookupValue ?? selected.gender ?? "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Patient Type</dt>
-              <dd className="font-medium">{selected.patientTypeLookup?.lookupValue ?? "—"}</dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Address</dt>
-              <dd className="font-medium">{selected.address ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Has Insurance</dt>
-              <dd className="font-medium">{selected.hasInsurance ? "Yes" : "No"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Has Guardian</dt>
-              <dd className="font-medium">{selected.hasGuardian ? "Yes" : "No"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Guardian Name</dt>
-              <dd className="font-medium">{selected.guardianName ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Guardian Email</dt>
-              <dd className="font-medium">{selected.guardianEmail ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">
-                Guardian WhatsApp
-              </dt>
-              <dd className="font-medium">{selected.guardianWhatsappNo ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Billing Recipient</dt>
-              <dd className="font-medium">
-                {selected.billingRecipientLookup?.lookupValue ?? "—"}
-              </dd>
-            </div>
-              </dl>
+              <div className="preview-shell sm:grid-cols-2">
+                <section className="preview-section">
+                  <h3 className="preview-section-title">Identity</h3>
+                  <dl className="preview-list">
+                    <div className="preview-row">
+                      <dt className="preview-label">Name</dt>
+                      <dd className="preview-value">{selected.fullName}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">NIC/Passport</dt>
+                      <dd className="preview-value">{selected.nicOrPassport ?? "—"}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">DOB</dt>
+                      <dd className="preview-value">{selected.dob ? String(selected.dob) : "—"}</dd>
+                    </div>
+                  </dl>
+                </section>
+                <section className="preview-section">
+                  <h3 className="preview-section-title">Contact</h3>
+                  <dl className="preview-list">
+                    <div className="preview-row">
+                      <dt className="preview-label">Contact</dt>
+                      <dd className="preview-value">{selected.contactNo ?? "—"}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">Patient WhatsApp</dt>
+                      <dd className="preview-value">{selected.whatsappNo ?? "—"}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">Address</dt>
+                      <dd className="preview-value">{selected.address ?? "—"}</dd>
+                    </div>
+                  </dl>
+                </section>
+                <section className="preview-section">
+                  <h3 className="preview-section-title">Demographics</h3>
+                  <dl className="preview-list">
+                    <div className="preview-row">
+                      <dt className="preview-label">Gender</dt>
+                      <dd className="preview-value">
+                        {selected.genderLookup?.lookupValue ?? selected.gender ?? "—"}
+                      </dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">Patient Type</dt>
+                      <dd className="preview-value">{selected.patientTypeLookup?.lookupValue ?? "—"}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">Billing Recipient</dt>
+                      <dd className="preview-value">{selected.billingRecipientLookup?.lookupValue ?? "—"}</dd>
+                    </div>
+                  </dl>
+                </section>
+                <section className="preview-section">
+                  <h3 className="preview-section-title">Guardian & Coverage</h3>
+                  <dl className="preview-list">
+                    <div className="preview-row">
+                      <dt className="preview-label">Has Insurance</dt>
+                      <dd className="preview-value">{selected.hasInsurance ? "Yes" : "No"}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">Has Guardian</dt>
+                      <dd className="preview-value">{selected.hasGuardian ? "Yes" : "No"}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">Guardian Name</dt>
+                      <dd className="preview-value">{selected.guardianName ?? "—"}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">Guardian Email</dt>
+                      <dd className="preview-value">{selected.guardianEmail ?? "—"}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">Guardian WhatsApp</dt>
+                      <dd className="preview-value">{selected.guardianWhatsappNo ?? "—"}</dd>
+                    </div>
+                  </dl>
+                </section>
+              </div>
             </Card>
           </div>
         </div>

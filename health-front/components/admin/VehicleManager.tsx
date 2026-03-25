@@ -348,28 +348,34 @@ export function VehicleManager({
                   ×
                 </button>
               </div>
-              <dl className="grid gap-3 text-sm sm:grid-cols-3">
-                <div>
-                  <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">
-                    Vehicle No
-                  </dt>
-                  <dd className="font-medium">{selected.vehicleNo}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Model</dt>
-                  <dd className="font-medium">{selected.model ?? "—"}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Status</dt>
-                  <dd className="font-medium">{selected.status}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">
-                    Current Driver
-                  </dt>
-                  <dd className="font-medium">{selected.currentDriver?.fullName ?? "—"}</dd>
-                </div>
-              </dl>
+              <div className="preview-shell sm:grid-cols-2">
+                <section className="preview-section">
+                  <h3 className="preview-section-title">Vehicle</h3>
+                  <dl className="preview-list">
+                    <div className="preview-row">
+                      <dt className="preview-label">Vehicle No</dt>
+                      <dd className="preview-value">{selected.vehicleNo}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">Model</dt>
+                      <dd className="preview-value">{selected.model ?? "—"}</dd>
+                    </div>
+                  </dl>
+                </section>
+                <section className="preview-section">
+                  <h3 className="preview-section-title">Assignment & Status</h3>
+                  <dl className="preview-list">
+                    <div className="preview-row">
+                      <dt className="preview-label">Status</dt>
+                      <dd className="preview-value">{selected.status}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">Current Driver</dt>
+                      <dd className="preview-value">{selected.currentDriver?.fullName ?? "—"}</dd>
+                    </div>
+                  </dl>
+                </section>
+              </div>
             </Card>
           </div>
         </div>

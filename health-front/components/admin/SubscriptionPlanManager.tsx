@@ -348,32 +348,42 @@ export function SubscriptionPlanManager({
                   ×
                 </button>
               </div>
-              <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Plan Name</dt>
-              <dd className="font-medium">{selected.planName}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Plan Type</dt>
-              <dd className="font-medium">{selected.planTypeLookup?.lookupValue ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Price</dt>
-              <dd className="font-medium">{String(selected.price)}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Duration (days)</dt>
-              <dd className="font-medium">{selected.durationDays}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Max Members</dt>
-              <dd className="font-medium">{selected.maxMembers}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">Status</dt>
-              <dd className="font-medium">{selected.isActive ? "Active" : "Inactive"}</dd>
-            </div>
-              </dl>
+              <div className="preview-shell sm:grid-cols-2">
+                <section className="preview-section">
+                  <h3 className="preview-section-title">Plan</h3>
+                  <dl className="preview-list">
+                    <div className="preview-row">
+                      <dt className="preview-label">Plan Name</dt>
+                      <dd className="preview-value">{selected.planName}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">Plan Type</dt>
+                      <dd className="preview-value">{selected.planTypeLookup?.lookupValue ?? "—"}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">Status</dt>
+                      <dd className="preview-value">{selected.isActive ? "Active" : "Inactive"}</dd>
+                    </div>
+                  </dl>
+                </section>
+                <section className="preview-section">
+                  <h3 className="preview-section-title">Pricing & Limits</h3>
+                  <dl className="preview-list">
+                    <div className="preview-row">
+                      <dt className="preview-label">Price</dt>
+                      <dd className="preview-value">{String(selected.price)}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">Duration (days)</dt>
+                      <dd className="preview-value">{selected.durationDays}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">Max Members</dt>
+                      <dd className="preview-value">{selected.maxMembers}</dd>
+                    </div>
+                  </dl>
+                </section>
+              </div>
             </Card>
           </div>
         </div>
