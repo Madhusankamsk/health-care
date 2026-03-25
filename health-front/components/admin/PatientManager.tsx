@@ -19,7 +19,6 @@ export type Patient = {
   whatsappNo?: string | null;
   gender?: string | null;
   genderId?: string | null;
-  patientTypeId?: string | null;
   address?: string | null;
   hasInsurance?: boolean;
   hasGuardian?: boolean;
@@ -30,14 +29,12 @@ export type Patient = {
   guardianRelationship?: string | null;
   billingRecipientId?: string | null;
   genderLookup?: { id: string; lookupValue: string } | null;
-  patientTypeLookup?: { id: string; lookupValue: string } | null;
   billingRecipientLookup?: { id: string; lookupValue: string } | null;
 };
 
 type PatientManagerProps = {
   initialPatients: Patient[];
   genders: LookupOption[];
-  patientTypes: LookupOption[];
   billingRecipients: LookupOption[];
   subscriptionPlans: SubscriptionPlanOption[];
   canPreview: boolean;
@@ -56,7 +53,6 @@ type ActionConfirm = null | { type: "edit" | "delete"; id: string };
 export function PatientManager({
   initialPatients,
   genders,
-  patientTypes,
   billingRecipients,
   subscriptionPlans,
   canPreview,
@@ -221,7 +217,7 @@ export function PatientManager({
                     Create patient
                   </h2>
                   <p className="text-sm text-[var(--text-secondary)]">
-                    Register patient demographics, guardian details, and optional plan assignment.
+                    Register patient demographics, guardian details, and plan assignment when subscribed.
                   </p>
                 </div>
                 <button
@@ -242,7 +238,6 @@ export function PatientManager({
                 title="Create patient"
                 submitLabel="Create"
                 genders={genders}
-                patientTypes={patientTypes}
                 billingRecipients={billingRecipients}
                 subscriptionPlans={subscriptionPlans}
                 includeSubscriptionPlan
@@ -317,7 +312,6 @@ export function PatientManager({
                 title="Edit patient"
                 submitLabel="Save changes"
                 genders={genders}
-                patientTypes={patientTypes}
                 billingRecipients={billingRecipients}
                 subscriptionPlans={subscriptionPlans}
                 initial={{
@@ -328,7 +322,6 @@ export function PatientManager({
                   contactNo: selected.contactNo ?? "",
                   whatsappNo: selected.whatsappNo ?? "",
                   genderId: selected.genderId ?? "",
-                  patientTypeId: selected.patientTypeId ?? "",
                   address: selected.address ?? "",
                   hasInsurance: Boolean(selected.hasInsurance),
                   hasGuardian: Boolean(selected.hasGuardian),
@@ -442,10 +435,6 @@ export function PatientManager({
                       <dd className="preview-value">
                         {selected.genderLookup?.lookupValue ?? selected.gender ?? "—"}
                       </dd>
-                    </div>
-                    <div className="preview-row">
-                      <dt className="preview-label">Patient Type</dt>
-                      <dd className="preview-value">{selected.patientTypeLookup?.lookupValue ?? "—"}</dd>
                     </div>
                     <div className="preview-row">
                       <dt className="preview-label">Billing Recipient</dt>
@@ -562,6 +551,7 @@ export function PatientManager({
 }
 
 type PatientFormValues = {
+  isSubscribed?: boolean;
   nicOrPassport?: string;
   fullName: string;
   shortName?: string;
@@ -569,7 +559,6 @@ type PatientFormValues = {
   contactNo?: string;
   whatsappNo?: string;
   genderId?: string;
-  patientTypeId?: string;
   address?: string;
   hasInsurance?: boolean;
   hasGuardian?: boolean;
@@ -587,7 +576,6 @@ function PatientForm({
   submitLabel,
   intent,
   genders,
-  patientTypes,
   billingRecipients,
   subscriptionPlans,
   includeSubscriptionPlan,
@@ -600,7 +588,6 @@ function PatientForm({
   submitLabel: string;
   intent: "create" | "edit";
   genders: LookupOption[];
-  patientTypes: LookupOption[];
   billingRecipients: LookupOption[];
   subscriptionPlans: SubscriptionPlanOption[];
   includeSubscriptionPlan?: boolean;
@@ -617,7 +604,6 @@ function PatientForm({
     contactNo: initial?.contactNo ?? "",
     whatsappNo: initial?.whatsappNo ?? "",
     genderId: initial?.genderId ?? genders[0]?.id ?? "",
-    patientTypeId: initial?.patientTypeId ?? patientTypes[0]?.id ?? "",
     address: initial?.address ?? "",
     hasInsurance: Boolean(initial?.hasInsurance),
     hasGuardian: Boolean(initial?.hasGuardian),
@@ -628,6 +614,7 @@ function PatientForm({
     guardianRelationship: initial?.guardianRelationship ?? "",
     billingRecipientId: initial?.billingRecipientId ?? billingRecipients[0]?.id ?? "",
     subscriptionPlanId: initial?.subscriptionPlanId ?? "",
+    isSubscribed: initial?.isSubscribed ?? false,
   });
   const [isWhatsappSameAsContact, setIsWhatsappSameAsContact] = useState(
     () =>
@@ -674,6 +661,9 @@ function PatientForm({
           setError(null);
           setIsSubmitting(true);
           try {
+            if (values.isSubscribed && !values.subscriptionPlanId?.trim()) {
+              throw new Error("Assign subscription plan is required for subscribed customers");
+            }
             await onSubmit({
               nicOrPassport: values.nicOrPassport?.trim() || undefined,
               fullName: values.fullName.trim(),
@@ -682,7 +672,6 @@ function PatientForm({
               contactNo: values.contactNo?.trim() || undefined,
               whatsappNo: values.whatsappNo?.trim() || undefined,
               genderId: values.genderId?.trim() || undefined,
-              patientTypeId: values.patientTypeId?.trim() || undefined,
               address: values.address?.trim() || undefined,
               hasInsurance: Boolean(values.hasInsurance),
               hasGuardian: Boolean(values.hasGuardian),
@@ -692,7 +681,9 @@ function PatientForm({
               guardianContactNo: values.guardianContactNo?.trim() || undefined,
               guardianRelationship: values.guardianRelationship?.trim() || undefined,
               billingRecipientId: values.billingRecipientId?.trim() || undefined,
-              subscriptionPlanId: values.subscriptionPlanId?.trim() || undefined,
+              subscriptionPlanId: values.isSubscribed
+                ? values.subscriptionPlanId?.trim() || undefined
+                : undefined,
             });
           } catch (e) {
             const msg = e instanceof Error ? e.message : "Something went wrong";
@@ -703,6 +694,48 @@ function PatientForm({
           }
         }}
       >
+        {includeSubscriptionPlan ? (
+          <>
+            <label className="flex items-center gap-2 text-sm sm:col-span-2">
+              <input
+                type="checkbox"
+                checked={Boolean(values.isSubscribed)}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setValues((v) => ({
+                    ...v,
+                    isSubscribed: checked,
+                    subscriptionPlanId: checked ? v.subscriptionPlanId : "",
+                  }));
+                }}
+              />
+              Is subscribed?
+            </label>
+            {values.isSubscribed ? (
+              <label className="flex flex-col gap-2 text-sm sm:col-span-2">
+                <span className="font-medium text-[var(--text-primary)]">
+                  Assign Subscription Plan
+                </span>
+                <select
+                  className={selectClass}
+                  value={values.subscriptionPlanId ?? ""}
+                  required
+                  onChange={(e) =>
+                    setValues((v) => ({ ...v, subscriptionPlanId: e.target.value }))
+                  }
+                >
+                  <option value="">Select</option>
+                  {subscriptionPlans.map((plan) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.planName}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+          </>
+        ) : null}
+
         <Input
           label="Full name"
           name="fullName"
@@ -773,21 +806,6 @@ function PatientForm({
             {genders.map((g) => (
               <option key={g.id} value={g.id}>
                 {g.lookupValue}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-2 text-sm">
-          <span className="font-medium text-[var(--text-primary)]">Patient Type</span>
-          <select
-            className={selectClass}
-            value={values.patientTypeId ?? ""}
-            onChange={(e) => setValues((v) => ({ ...v, patientTypeId: e.target.value }))}
-          >
-            <option value="">Select</option>
-            {patientTypes.map((pt) => (
-              <option key={pt.id} value={pt.id}>
-                {pt.lookupValue}
               </option>
             ))}
           </select>
@@ -896,25 +914,6 @@ function PatientForm({
             ))}
           </select>
         </label>
-        {includeSubscriptionPlan ? (
-          <label className="flex flex-col gap-2 text-sm sm:col-span-2">
-            <span className="font-medium text-[var(--text-primary)]">
-              Assign Subscription Plan (optional)
-            </span>
-            <select
-              className={selectClass}
-              value={values.subscriptionPlanId ?? ""}
-              onChange={(e) => setValues((v) => ({ ...v, subscriptionPlanId: e.target.value }))}
-            >
-              <option value="">No plan</option>
-              {subscriptionPlans.map((plan) => (
-                <option key={plan.id} value={plan.id}>
-                  {plan.planName}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
         <div className="flex items-center justify-end gap-2 sm:col-span-2">
           <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
             Cancel

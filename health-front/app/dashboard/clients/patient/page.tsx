@@ -48,10 +48,9 @@ export default async function PatientPage({
   const params = (await searchParams) ?? {};
   const openCreateOnMount = params.open === "create";
 
-  const [patients, genders, patientTypes, billingRecipients, subscriptionPlans] = await Promise.all([
+  const [patients, genders, billingRecipients, subscriptionPlans] = await Promise.all([
     getPatients(),
     getLookups("GENDER"),
-    getLookups("PATIENT_TYPE"),
     getLookups("BILLING_RECIPIENT"),
     getSubscriptionPlans(),
   ]);
@@ -67,7 +66,6 @@ export default async function PatientPage({
           <PatientManager
             initialPatients={patients}
             genders={genders ?? []}
-            patientTypes={patientTypes ?? []}
             billingRecipients={billingRecipients ?? []}
             subscriptionPlans={(subscriptionPlans ?? []).filter((p) => p.isActive)}
             canPreview={canPreview}

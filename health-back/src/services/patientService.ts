@@ -9,7 +9,6 @@ export type PatientCreateInput = {
   whatsappNo?: string | null;
   gender?: string | null;
   genderId?: string | null;
-  patientTypeId?: string | null;
   address?: string | null;
   hasInsurance?: boolean;
   hasGuardian?: boolean;
@@ -27,7 +26,6 @@ export async function listPatients() {
     orderBy: { fullName: "asc" },
     include: {
       genderLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
-      patientTypeLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
       billingRecipientLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
     },
   });
@@ -38,7 +36,6 @@ export async function getPatientById(id: string) {
     where: { id },
     include: {
       genderLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
-      patientTypeLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
       billingRecipientLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
     },
   });
@@ -63,7 +60,6 @@ export async function createPatient(data: PatientCreateInput) {
         whatsappNo: data.whatsappNo ?? undefined,
         gender: data.gender ?? undefined,
         genderId: data.genderId ?? undefined,
-        patientTypeId: data.patientTypeId ?? undefined,
         address: data.address ?? undefined,
         hasInsurance: data.hasInsurance ?? false,
         hasGuardian: data.hasGuardian ?? false,
@@ -109,7 +105,6 @@ export async function createPatient(data: PatientCreateInput) {
       where: { id: patient.id },
       include: {
         genderLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
-        patientTypeLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
         billingRecipientLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
       },
     });
@@ -138,7 +133,6 @@ export async function updatePatient(
       whatsappNo: data.whatsappNo ?? undefined,
       gender: data.gender ?? undefined,
       genderId: data.genderId ?? undefined,
-      patientTypeId: data.patientTypeId ?? undefined,
       address: data.address ?? undefined,
       hasInsurance: data.hasInsurance,
       hasGuardian: data.hasGuardian,
@@ -151,7 +145,6 @@ export async function updatePatient(
     },
     include: {
       genderLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
-      patientTypeLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
       billingRecipientLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
     },
   });

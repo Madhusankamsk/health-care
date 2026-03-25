@@ -30,7 +30,6 @@ export async function createPatientHandler(req: Request, res: Response) {
     whatsappNo,
     gender,
     genderId,
-    patientTypeId,
     address,
     hasInsurance,
     hasGuardian,
@@ -50,7 +49,6 @@ export async function createPatientHandler(req: Request, res: Response) {
     whatsappNo: string | null;
     gender: string | null;
     genderId: string | null;
-    patientTypeId: string | null;
     address: string | null;
     hasInsurance: boolean;
     hasGuardian: boolean;
@@ -76,7 +74,6 @@ export async function createPatientHandler(req: Request, res: Response) {
     whatsappNo: whatsappNo ?? undefined,
     gender: gender ?? undefined,
     genderId: genderId ?? undefined,
-    patientTypeId: patientTypeId ?? undefined,
     address: address ?? undefined,
     hasInsurance: Boolean(hasInsurance),
     hasGuardian: Boolean(hasGuardian),
@@ -103,7 +100,6 @@ export async function updatePatientHandler(req: Request, res: Response) {
     whatsappNo,
     gender,
     genderId,
-    patientTypeId,
     address,
     hasInsurance,
     hasGuardian,
@@ -122,7 +118,6 @@ export async function updatePatientHandler(req: Request, res: Response) {
     whatsappNo: string | null;
     gender: string | null;
     genderId: string | null;
-    patientTypeId: string | null;
     address: string | null;
     hasInsurance: boolean;
     hasGuardian: boolean;
@@ -144,7 +139,6 @@ export async function updatePatientHandler(req: Request, res: Response) {
       whatsappNo: whatsappNo ?? undefined,
       gender: gender ?? undefined,
       genderId: genderId ?? undefined,
-      patientTypeId: patientTypeId ?? undefined,
       address: address ?? undefined,
       hasInsurance: typeof hasInsurance === "boolean" ? hasInsurance : undefined,
       hasGuardian: typeof hasGuardian === "boolean" ? hasGuardian : undefined,

@@ -99,8 +99,6 @@ model Patient {
   gender                         String?
   genderId                       String?
   genderLookup                   Lookup?               @relation("PatientGender", fields: [genderId], references: [id])
-  patientTypeId                  String?
-  patientTypeLookup              Lookup?               @relation("PatientType", fields: [patientTypeId], references: [id])
   address                        String?
   hasInsurance                   Boolean               @default(false)
   hasGuardian                    Boolean               @default(false)
@@ -358,7 +356,6 @@ model Lookup {
   opdStatuses                 OpdQueue[]            @relation("OpdStatus")
   subscriptionPlanTypes       SubscriptionPlan[]    @relation("SubscriptionPlanType")
   subscriptionAccountStatuses SubscriptionAccount[] @relation("SubscriptionAccountStatus")
-  patientTypes                Patient[]             @relation("PatientType")
   patientBillingRecipients    Patient[]             @relation("PatientBillingRecipient")
   diagnosticReportTypes       DiagnosticReport[]    @relation("DiagnosticReportType")
   labSampleStatuses           LabSample[]           @relation("LabSampleStatus")
