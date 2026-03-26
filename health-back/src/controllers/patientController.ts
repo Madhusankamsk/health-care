@@ -158,13 +158,7 @@ export async function updatePatientHandler(req: Request, res: Response) {
     return res.json(patient);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to update patient";
-    if (
-      message ===
-      "Cannot change subscription status for patients in a shared subscription account"
-    ) {
-      return res.status(409).json({ message });
-    }
-    return res.status(409).json({ message: "Unable to update patient" });
+    return res.status(409).json({ message });
   }
 }
 

@@ -36,6 +36,7 @@ export type Patient = {
   subscriptionPlanName?: string | null;
   subscriptionStatusId?: string | null;
   subscriptionStatusName?: string | null;
+  isSubscriptionAccountShared?: boolean;
 };
 
 type PatientManagerProps = {
@@ -251,6 +252,7 @@ export function PatientManager({
                 subscriptionPlans={subscriptionPlans}
                 subscriptionStatuses={subscriptionStatuses}
                 includeSubscriptionPlan
+                subscriptionStatusDisabled={false}
                 onCancel={() => {
                   setMode("none");
                   setError(null);
@@ -326,6 +328,7 @@ export function PatientManager({
                 subscriptionPlans={subscriptionPlans}
                 subscriptionStatuses={subscriptionStatuses}
                 includeSubscriptionPlan
+                subscriptionStatusDisabled={Boolean(selected.isSubscriptionAccountShared)}
                 initial={{
                   nicOrPassport: selected.nicOrPassport ?? "",
                   fullName: selected.fullName,
@@ -628,6 +631,7 @@ function PatientForm({
   subscriptionPlans,
   subscriptionStatuses,
   includeSubscriptionPlan,
+  subscriptionStatusDisabled = false,
   onCancel,
   onSubmit,
   initial,
@@ -641,6 +645,7 @@ function PatientForm({
   subscriptionPlans: SubscriptionPlanOption[];
   subscriptionStatuses: LookupOption[];
   includeSubscriptionPlan?: boolean;
+  subscriptionStatusDisabled?: boolean;
   onCancel: () => void;
   onSubmit: (values: PatientFormValues) => Promise<void>;
   initial?: Partial<PatientFormValues>;
@@ -650,6 +655,11 @@ function PatientForm({
   const forcedPatientBillingRecipientId =
     billingRecipients.find((br) => br.lookupKey === "PATIENT")?.id ??
     billingRecipients[0]?.id ??
+    "";
+
+  const defaultSubscriptionStatusId =
+    subscriptionStatuses.find((s) => s.lookupKey === "ACTIVE")?.id ??
+    subscriptionStatuses[0]?.id ??
     "";
 
   const lastManualBillingRecipientIdRef = useRef<string>("");
@@ -674,7 +684,7 @@ function PatientForm({
       ? initial?.billingRecipientId ?? billingRecipients[0]?.id ?? ""
       : forcedPatientBillingRecipientId,
     subscriptionPlanId: initial?.subscriptionPlanId ?? "",
-    subscriptionStatusId: initial?.subscriptionStatusId ?? "",
+    subscriptionStatusId: initial?.subscriptionStatusId ?? defaultSubscriptionStatusId,
     isSubscribed: initial?.isSubscribed ?? false,
   });
 
@@ -756,9 +766,10 @@ function PatientForm({
               subscriptionPlanId: values.isSubscribed
                 ? values.subscriptionPlanId?.trim() || undefined
                 : undefined,
-              subscriptionStatusId: values.isSubscribed
-                ? values.subscriptionStatusId?.trim() || undefined
-                : undefined,
+              subscriptionStatusId:
+                values.isSubscribed && !subscriptionStatusDisabled
+                  ? values.subscriptionStatusId?.trim() || undefined
+                  : undefined,
             });
           } catch (e) {
             const msg = e instanceof Error ? e.message : "Something went wrong";
@@ -781,7 +792,9 @@ function PatientForm({
                     ...v,
                     isSubscribed: checked,
                     subscriptionPlanId: checked ? v.subscriptionPlanId : "",
-                    subscriptionStatusId: checked ? v.subscriptionStatusId : "",
+                    subscriptionStatusId: checked
+                      ? v.subscriptionStatusId || defaultSubscriptionStatusId
+                      : "",
                   }));
                 }}
               />
@@ -817,6 +830,7 @@ function PatientForm({
                 <select
                   className={selectClass}
                   value={values.subscriptionStatusId ?? ""}
+                  disabled={subscriptionStatusDisabled}
                   onChange={(e) =>
                     setValues((v) => ({ ...v, subscriptionStatusId: e.target.value }))
                   }
@@ -828,6 +842,11 @@ function PatientForm({
                     </option>
                   ))}
                 </select>
+                {subscriptionStatusDisabled ? (
+                  <div className="text-xs text-[var(--text-secondary)]">
+                    Status is locked for shared subscription accounts.
+                  </div>
+                ) : null}
               </label>
             ) : null}
           </>

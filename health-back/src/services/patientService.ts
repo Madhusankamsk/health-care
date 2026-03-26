@@ -54,6 +54,7 @@ export async function listPatients() {
             include: {
               plan: true,
               statusLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
+              members: { select: { id: true } },
             },
           },
         },
@@ -78,6 +79,8 @@ export async function listPatients() {
       activeMembership?.subscriptionAccount?.statusLookup?.id ?? null;
     const subscriptionStatusName =
       activeMembership?.subscriptionAccount?.statusLookup?.lookupValue ?? null;
+    const subscriptionAccountMembersCount =
+      activeMembership?.subscriptionAccount?.members?.length ?? 0;
 
     const { subscriptionMemberships: _ignored, ...rest } = p as any;
     return {
@@ -87,6 +90,7 @@ export async function listPatients() {
       subscriptionPlanName,
       subscriptionStatusId,
       subscriptionStatusName,
+      isSubscriptionAccountShared: subscriptionAccountMembersCount > 1,
     };
   });
 }
@@ -105,6 +109,7 @@ export async function getPatientById(id: string) {
             include: {
               plan: true,
               statusLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
+              members: { select: { id: true } },
             },
           },
         },
@@ -127,6 +132,8 @@ export async function getPatientById(id: string) {
     activeMembership?.subscriptionAccount?.statusLookup?.id ?? null;
   const subscriptionStatusName =
     activeMembership?.subscriptionAccount?.statusLookup?.lookupValue ?? null;
+  const subscriptionAccountMembersCount =
+    activeMembership?.subscriptionAccount?.members?.length ?? 0;
 
   const { subscriptionMemberships: _ignored, ...rest } = patient as any;
   return {
@@ -136,6 +143,7 @@ export async function getPatientById(id: string) {
     subscriptionPlanName,
     subscriptionStatusId,
     subscriptionStatusName,
+    isSubscriptionAccountShared: subscriptionAccountMembersCount > 1,
   };
 }
 
@@ -176,20 +184,20 @@ export async function createPatient(data: PatientCreateInput) {
         select: { id: true, durationDays: true },
       });
       if (plan) {
-        const requestedStatusId = await resolveSubscriptionStatusId(
+        const resolvedStatusId = await resolveSubscriptionStatusId(
           tx,
           data.subscriptionStatusId,
         );
-        const activeStatus = requestedStatusId
-          ? { id: requestedStatusId }
-          : await tx.lookup.findFirst({
+        const fallbackActiveStatus = !resolvedStatusId
+          ? await tx.lookup.findFirst({
               where: {
                 isActive: true,
                 lookupKey: "ACTIVE",
                 category: { categoryName: "SUBSCRIPTION_ACCOUNT_STATUS" },
               },
               select: { id: true },
-            });
+            })
+          : null;
         const startDate = new Date();
         const endDate = new Date(startDate.getTime() + plan.durationDays * 24 * 60 * 60 * 1000);
 
@@ -199,7 +207,7 @@ export async function createPatient(data: PatientCreateInput) {
             planId: plan.id,
             startDate,
             endDate,
-            statusId: activeStatus?.id ?? undefined,
+            statusId: resolvedStatusId ?? fallbackActiveStatus?.id ?? undefined,
           },
         });
 
@@ -262,19 +270,29 @@ export async function updatePatient(
     });
 
     if (data.subscriptionStatusId !== undefined) {
-      const statusId = await resolveSubscriptionStatusId(tx, data.subscriptionStatusId);
-      const latestMembership = await tx.subscriptionMember.findFirst({
-        where: { patientId: id },
+      const resolvedStatusId = await resolveSubscriptionStatusId(
+        tx,
+        data.subscriptionStatusId,
+      );
+
+      const now = new Date();
+      const activeMembership = await tx.subscriptionMember.findFirst({
+        where: {
+          patientId: id,
+          subscriptionAccount: {
+            plan: { isActive: true },
+            OR: [{ endDate: null }, { endDate: { gte: now } }],
+          },
+        },
         orderBy: { joinedAt: "desc" },
         select: { subscriptionAccountId: true },
       });
-      if (latestMembership?.subscriptionAccountId) {
+
+      if (activeMembership?.subscriptionAccountId) {
         const membersCount = await tx.subscriptionMember.count({
-          where: { subscriptionAccountId: latestMembership.subscriptionAccountId },
+          where: { subscriptionAccountId: activeMembership.subscriptionAccountId },
         });
 
-        // Avoid changing status for shared subscription accounts (e.g., family/corporate memberships),
-        // because that would affect all members linked to the same subscription account.
         if (membersCount > 1) {
           throw new Error(
             "Cannot change subscription status for patients in a shared subscription account",
@@ -282,8 +300,8 @@ export async function updatePatient(
         }
 
         await tx.subscriptionAccount.update({
-          where: { id: latestMembership.subscriptionAccountId },
-          data: { statusId: statusId ?? null },
+          where: { id: activeMembership.subscriptionAccountId },
+          data: { statusId: resolvedStatusId ?? null },
         });
       }
     }
