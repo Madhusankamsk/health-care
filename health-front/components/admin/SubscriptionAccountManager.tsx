@@ -551,6 +551,14 @@ export function SubscriptionAccountManager({
                       Billing Recipient:{" "}
                       {matchedPatient.billingRecipientLookup?.lookupValue ?? "—"}
                     </div>
+                    <div className="text-[var(--text-secondary)]">
+                      Subscribed: {matchedPatient.isSubscribed ? "Yes" : "No"}
+                    </div>
+                    {matchedPatient.isSubscribed ? (
+                      <div className="text-[var(--text-secondary)]">
+                        Subscription Plan: {matchedPatient.subscriptionPlanName ?? "—"}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </div>
