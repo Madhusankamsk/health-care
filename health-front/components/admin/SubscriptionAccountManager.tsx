@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -9,14 +9,10 @@ import { Input } from "@/components/ui/Input";
 import { toast } from "@/lib/toast";
 import { useEscapeKey } from "@/lib/useEscapeKey";
 
+import type { Patient } from "@/components/admin/PatientManager";
+
 type LookupOption = { id: string; lookupKey: string; lookupValue: string };
 type PlanOption = { id: string; planName: string; isActive?: boolean };
-type PatientOption = {
-  id: string;
-  nicOrPassport?: string | null;
-  fullName: string;
-  contactNo?: string | null;
-};
 
 export type SubscriptionAccount = {
   id: string;
@@ -41,7 +37,9 @@ export type SubscriptionAccount = {
 type SubscriptionAccountManagerProps = {
   initialAccounts: SubscriptionAccount[];
   plans: PlanOption[];
-  patients: PatientOption[];
+  patients: Patient[];
+  genders: LookupOption[];
+  billingRecipients: LookupOption[];
   statuses: LookupOption[];
   canCreate: boolean;
   canEdit: boolean;
@@ -53,11 +51,20 @@ type ActionConfirm = null | { type: "edit" | "delete"; id: string };
 
 type AddMemberPatientPayload = {
   fullName: string;
-  contactNo?: string;
-  whatsappNo?: string;
-  dob?: string;
-  genderId?: string;
-  address?: string;
+  shortName?: string | null;
+  dob?: string | null;
+  contactNo?: string | null;
+  whatsappNo?: string | null;
+  genderId?: string | null;
+  address?: string | null;
+  hasInsurance?: boolean;
+  hasGuardian?: boolean;
+  guardianName?: string | null;
+  guardianEmail?: string | null;
+  guardianWhatsappNo?: string | null;
+  guardianContactNo?: string | null;
+  guardianRelationship?: string | null;
+  billingRecipientId?: string | null;
 };
 
 function toDateInputValue(value?: string | Date | null) {
@@ -71,6 +78,8 @@ export function SubscriptionAccountManager({
   initialAccounts,
   plans,
   patients,
+  genders,
+  billingRecipients,
   statuses,
   canCreate,
   canEdit,
@@ -83,14 +92,23 @@ export function SubscriptionAccountManager({
   const [error, setError] = useState<string | null>(null);
   const [actionConfirm, setActionConfirm] = useState<ActionConfirm>(null);
   const [memberNicOrPassport, setMemberNicOrPassport] = useState("");
-  const [matchedPatient, setMatchedPatient] = useState<PatientOption | null>(null);
+  const [matchedPatient, setMatchedPatient] = useState<Patient | null>(null);
   const [memberPatientValues, setMemberPatientValues] = useState<AddMemberPatientPayload>({
     fullName: "",
+    shortName: "",
     contactNo: "",
     whatsappNo: "",
     dob: "",
     genderId: "",
     address: "",
+    hasInsurance: false,
+    hasGuardian: false,
+    guardianName: "",
+    guardianEmail: "",
+    guardianWhatsappNo: "",
+    guardianContactNo: "",
+    guardianRelationship: "",
+    billingRecipientId: "",
   });
   const [memberError, setMemberError] = useState<string | null>(null);
   const [isMemberSubmitting, setIsMemberSubmitting] = useState(false);
@@ -101,6 +119,13 @@ export function SubscriptionAccountManager({
   }, [accounts, selectedId]);
 
   const canManageMembers = canCreate || canEdit;
+  const forcedPatientBillingRecipientId =
+    billingRecipients.find((br) => br.lookupKey === "PATIENT")?.id ??
+    billingRecipients[0]?.id ??
+    "";
+  const lastManualBillingRecipientIdRef = useRef<string>("");
+  const selectClass =
+    "h-11 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/25";
 
   useEscapeKey(
     () => {
@@ -154,11 +179,20 @@ export function SubscriptionAccountManager({
     setMemberNicOrPassport("");
     setMemberPatientValues({
       fullName: "",
+      shortName: "",
+      genderId: genders[0]?.id ?? "",
       contactNo: "",
       whatsappNo: "",
       dob: "",
-      genderId: "",
       address: "",
+      hasInsurance: false,
+      hasGuardian: false,
+      guardianName: "",
+      guardianEmail: "",
+      guardianWhatsappNo: "",
+      guardianContactNo: "",
+      guardianRelationship: "",
+      billingRecipientId: forcedPatientBillingRecipientId,
     });
   }
 
@@ -442,8 +476,9 @@ export function SubscriptionAccountManager({
                 name="memberNicOrPassport"
                 value={memberNicOrPassport}
                 onChange={(e) => {
-                  setMemberNicOrPassport(e.target.value);
-                  setMatchedPatient(null);
+                  const nextNic = e.target.value;
+                  setMemberNicOrPassport(nextNic);
+                  setMatchedPatient(findPatientByNic(nextNic));
                   setMemberError(null);
                 }}
                 required
@@ -472,16 +507,63 @@ export function SubscriptionAccountManager({
                 <div className="mb-2 text-xs uppercase tracking-wide text-[var(--text-secondary)]">
                   Existing patient found
                 </div>
-                <div className="grid gap-1">
-                  <div className="font-medium text-[var(--text-primary)]">{matchedPatient.fullName}</div>
-                  <div className="text-[var(--text-secondary)]">
-                    NIC/Passport: {matchedPatient.nicOrPassport ?? "—"}
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <div>
+                    <div className="font-medium text-[var(--text-primary)]">
+                      {matchedPatient.fullName}
+                    </div>
+                    <div className="text-[var(--text-secondary)]">
+                      NIC/Passport: {matchedPatient.nicOrPassport ?? "—"}
+                    </div>
                   </div>
-                  <div className="text-[var(--text-secondary)]">Contact: {matchedPatient.contactNo ?? "—"}</div>
+                  <div className="sm:justify-self-end">
+                    <div className="text-[var(--text-secondary)]">
+                      Gender: {matchedPatient.genderLookup?.lookupValue ?? matchedPatient.gender ?? "—"}
+                    </div>
+                    <div className="text-[var(--text-secondary)]">
+                      DOB: {matchedPatient.dob ? String(matchedPatient.dob) : "—"}
+                    </div>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <div className="text-[var(--text-secondary)]">
+                      Contact: {matchedPatient.contactNo ?? "—"} | WhatsApp:{" "}
+                      {matchedPatient.whatsappNo ?? "—"}
+                    </div>
+                    <div className="text-[var(--text-secondary)]">
+                      Address: {matchedPatient.address ?? "—"}
+                    </div>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <div className="text-[var(--text-secondary)]">
+                      Insurance: {matchedPatient.hasInsurance ? "Yes" : "No"} | Guardian:{" "}
+                      {matchedPatient.hasGuardian ? "Yes" : "No"}
+                    </div>
+                    {matchedPatient.hasGuardian ? (
+                      <div className="text-[var(--text-secondary)]">
+                        Guardian: {matchedPatient.guardianName ?? "—"} ({matchedPatient.guardianRelationship ?? "—"})
+                        {" "} | Contact: {matchedPatient.guardianContactNo ?? "—"} | WhatsApp:{" "}
+                        {matchedPatient.guardianWhatsappNo ?? "—"}
+                      </div>
+                    ) : null}
+                    <div className="text-[var(--text-secondary)]">
+                      Billing Recipient:{" "}
+                      {matchedPatient.billingRecipientLookup?.lookupValue ?? "—"}
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : memberNicOrPassport.trim() ? (
               <div className="grid gap-4 sm:grid-cols-2">
+                <Input
+                  label="Short name"
+                  name="shortName"
+                  value={memberPatientValues.shortName ?? ""}
+                  onChange={(e) =>
+                    setMemberPatientValues((v) => ({ ...v, shortName: e.target.value }))
+                  }
+                />
                 <Input
                   label="Full name"
                   name="fullName"
@@ -491,6 +573,32 @@ export function SubscriptionAccountManager({
                   }
                   required
                 />
+                <Input
+                  label="DOB (YYYY-MM-DD)"
+                  name="dob"
+                  value={memberPatientValues.dob ?? ""}
+                  onChange={(e) =>
+                    setMemberPatientValues((v) => ({ ...v, dob: e.target.value }))
+                  }
+                />
+                <label className="flex flex-col gap-2 text-sm">
+                  <span className="font-medium text-[var(--text-primary)]">Gender</span>
+                  <select
+                    className={selectClass}
+                    value={memberPatientValues.genderId ?? ""}
+                    onChange={(e) =>
+                      setMemberPatientValues((v) => ({ ...v, genderId: e.target.value }))
+                    }
+                  >
+                    <option value="">Select</option>
+                    {genders.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.lookupValue}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
                 <Input
                   label="Contact"
                   name="contactNo"
@@ -507,12 +615,7 @@ export function SubscriptionAccountManager({
                     setMemberPatientValues((v) => ({ ...v, whatsappNo: e.target.value }))
                   }
                 />
-                <Input
-                  label="DOB (YYYY-MM-DD)"
-                  name="dob"
-                  value={memberPatientValues.dob ?? ""}
-                  onChange={(e) => setMemberPatientValues((v) => ({ ...v, dob: e.target.value }))}
-                />
+
                 <div className="sm:col-span-2">
                   <Input
                     label="Address"
@@ -523,6 +626,134 @@ export function SubscriptionAccountManager({
                     }
                   />
                 </div>
+
+                <label className="flex items-center gap-2 text-sm sm:col-span-2">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(memberPatientValues.hasInsurance)}
+                    onChange={(e) =>
+                      setMemberPatientValues((v) => ({
+                        ...v,
+                        hasInsurance: e.target.checked,
+                      }))
+                    }
+                  />
+                  Has insurance
+                </label>
+
+                <label className="flex items-center gap-2 text-sm sm:col-span-2">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(memberPatientValues.hasGuardian)}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setMemberPatientValues((v) => {
+                        if (!checked) {
+                          // When guardian is disabled, billing recipient is effectively forced.
+                          lastManualBillingRecipientIdRef.current = v.billingRecipientId ?? "";
+                          return {
+                            ...v,
+                            hasGuardian: checked,
+                            billingRecipientId: forcedPatientBillingRecipientId,
+                          };
+                        }
+                        return {
+                          ...v,
+                          hasGuardian: checked,
+                          billingRecipientId:
+                            lastManualBillingRecipientIdRef.current ||
+                            forcedPatientBillingRecipientId ||
+                            billingRecipients[0]?.id ||
+                            "",
+                        };
+                      });
+                    }}
+                  />
+                  Has guardian
+                </label>
+
+                {memberPatientValues.hasGuardian ? (
+                  <>
+                    <Input
+                      label="Guardian Name"
+                      name="guardianName"
+                      value={memberPatientValues.guardianName ?? ""}
+                      onChange={(e) =>
+                        setMemberPatientValues((v) => ({
+                          ...v,
+                          guardianName: e.target.value,
+                        }))
+                      }
+                    />
+                    <Input
+                      label="Guardian Email"
+                      name="guardianEmail"
+                      type="email"
+                      value={memberPatientValues.guardianEmail ?? ""}
+                      onChange={(e) =>
+                        setMemberPatientValues((v) => ({
+                          ...v,
+                          guardianEmail: e.target.value,
+                        }))
+                      }
+                    />
+                    <Input
+                      label="Guardian Contact No"
+                      name="guardianContactNo"
+                      value={memberPatientValues.guardianContactNo ?? ""}
+                      onChange={(e) =>
+                        setMemberPatientValues((v) => ({
+                          ...v,
+                          guardianContactNo: e.target.value,
+                        }))
+                      }
+                    />
+                    <Input
+                      label="Guardian WhatsApp Number"
+                      name="guardianWhatsappNo"
+                      value={memberPatientValues.guardianWhatsappNo ?? ""}
+                      onChange={(e) =>
+                        setMemberPatientValues((v) => ({
+                          ...v,
+                          guardianWhatsappNo: e.target.value,
+                        }))
+                      }
+                    />
+                    <Input
+                      label="Guardian Relationship"
+                      name="guardianRelationship"
+                      value={memberPatientValues.guardianRelationship ?? ""}
+                      onChange={(e) =>
+                        setMemberPatientValues((v) => ({
+                          ...v,
+                          guardianRelationship: e.target.value,
+                        }))
+                      }
+                    />
+                    <label className="flex flex-col gap-2 text-sm sm:col-span-2">
+                      <span className="font-medium text-[var(--text-primary)]">
+                        Billing Recipient
+                      </span>
+                      <select
+                        className={selectClass}
+                        value={memberPatientValues.billingRecipientId ?? ""}
+                        onChange={(e) =>
+                          setMemberPatientValues((v) => ({
+                            ...v,
+                            billingRecipientId: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">Select</option>
+                        {billingRecipients.map((br) => (
+                          <option key={br.id} value={br.id}>
+                            {br.lookupValue}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </>
+                ) : null}
               </div>
             ) : null}
 
@@ -556,16 +787,38 @@ export function SubscriptionAccountManager({
                   setMemberError(null);
                   setIsMemberSubmitting(true);
                   try {
-                    const payload = matchedPatient
+                    const patientToAssign = matchedPatient ?? findPatientByNic(nic);
+                    const payload = patientToAssign
                       ? { nicOrPassport: nic }
                       : {
                           nicOrPassport: nic,
                           patient: {
                             fullName: memberPatientValues.fullName.trim(),
-                            contactNo: memberPatientValues.contactNo?.trim() || undefined,
-                            whatsappNo: memberPatientValues.whatsappNo?.trim() || undefined,
+                            shortName:
+                              memberPatientValues.shortName?.trim() || undefined,
+                            contactNo:
+                              memberPatientValues.contactNo?.trim() || undefined,
+                            whatsappNo:
+                              memberPatientValues.whatsappNo?.trim() || undefined,
                             dob: memberPatientValues.dob?.trim() || undefined,
-                            address: memberPatientValues.address?.trim() || undefined,
+                            genderId:
+                              memberPatientValues.genderId?.trim() || undefined,
+                            address:
+                              memberPatientValues.address?.trim() || undefined,
+                            hasInsurance: Boolean(memberPatientValues.hasInsurance),
+                            hasGuardian: Boolean(memberPatientValues.hasGuardian),
+                            guardianName:
+                              memberPatientValues.guardianName?.trim() || undefined,
+                            guardianEmail:
+                              memberPatientValues.guardianEmail?.trim() || undefined,
+                            guardianWhatsappNo:
+                              memberPatientValues.guardianWhatsappNo?.trim() || undefined,
+                            guardianContactNo:
+                              memberPatientValues.guardianContactNo?.trim() || undefined,
+                            guardianRelationship:
+                              memberPatientValues.guardianRelationship?.trim() || undefined,
+                            billingRecipientId:
+                              memberPatientValues.billingRecipientId?.trim() || undefined,
                           },
                         };
                     const res = await fetch(`/api/subscription-accounts/${selected.id}/members`, {
@@ -579,7 +832,11 @@ export function SubscriptionAccountManager({
                     }
                     await refresh();
                     setMode("none");
-                    toast.success(matchedPatient ? "Member assigned" : "Patient created and assigned");
+                    toast.success(
+                      patientToAssign
+                        ? "Member assigned"
+                        : "Patient created and assigned",
+                    );
                   } catch (e) {
                     const msg = e instanceof Error ? e.message : "Something went wrong";
                     setMemberError(msg);
@@ -755,7 +1012,7 @@ function SubscriptionAccountForm({
   title: string;
   submitLabel: string;
   plans: PlanOption[];
-  patients: PatientOption[];
+  patients: Patient[];
   statuses: LookupOption[];
   initial?: Partial<FormValues>;
   onCancel: () => void;

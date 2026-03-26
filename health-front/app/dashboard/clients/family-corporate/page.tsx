@@ -4,6 +4,7 @@ import {
   SubscriptionAccountManager,
   type SubscriptionAccount,
 } from "@/components/admin/SubscriptionAccountManager";
+import { type Patient } from "@/components/admin/PatientManager";
 import { Card } from "@/components/ui/Card";
 import { backendJson, type BackendMeResponse } from "@/lib/backend";
 import { getIsAuthenticated } from "@/lib/auth";
@@ -18,12 +19,7 @@ const PERMS = {
 
 type LookupOption = { id: string; lookupKey: string; lookupValue: string };
 type SubscriptionPlanOption = { id: string; planName: string; isActive: boolean };
-type PatientOption = {
-  id: string;
-  nicOrPassport?: string | null;
-  fullName: string;
-  contactNo?: string | null;
-};
+type PatientOption = Patient;
 
 async function getSubscriptionAccounts() {
   return backendJson<SubscriptionAccount[]>("/api/subscription-accounts");
@@ -62,6 +58,11 @@ export default async function FamilyCorporatePage() {
     getLookups("SUBSCRIPTION_ACCOUNT_STATUS"),
   ]);
 
+  const [genders, billingRecipients] = await Promise.all([
+    getLookups("GENDER"),
+    getLookups("BILLING_RECIPIENT"),
+  ]);
+
   return (
     <div className="flex flex-col gap-6">
       <Card title="Family/Corporate" description="Manage subscription accounts and memberships.">
@@ -74,6 +75,8 @@ export default async function FamilyCorporatePage() {
             initialAccounts={accounts}
             plans={(plans ?? []).filter((p) => p.isActive)}
             patients={patients ?? []}
+            genders={genders ?? []}
+            billingRecipients={billingRecipients ?? []}
             statuses={statuses ?? []}
             canCreate={canCreate}
             canEdit={canEdit}
