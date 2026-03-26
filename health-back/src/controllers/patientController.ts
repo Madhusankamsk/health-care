@@ -40,6 +40,7 @@ export async function createPatientHandler(req: Request, res: Response) {
     guardianRelationship,
     billingRecipientId,
     subscriptionPlanId,
+    subscriptionStatusId,
   } = req.body as Partial<{
     nicOrPassport: string | null;
     fullName: string;
@@ -59,6 +60,7 @@ export async function createPatientHandler(req: Request, res: Response) {
     guardianRelationship: string | null;
     billingRecipientId: string | null;
     subscriptionPlanId: string | null;
+    subscriptionStatusId: string | null;
   }>;
 
   if (!fullName) {
@@ -84,6 +86,7 @@ export async function createPatientHandler(req: Request, res: Response) {
     guardianRelationship: guardianRelationship ?? undefined,
     billingRecipientId: billingRecipientId ?? undefined,
     subscriptionPlanId: subscriptionPlanId ?? undefined,
+    subscriptionStatusId: subscriptionStatusId ?? undefined,
   });
 
   return res.status(201).json(patient);
@@ -109,6 +112,7 @@ export async function updatePatientHandler(req: Request, res: Response) {
     guardianContactNo,
     guardianRelationship,
     billingRecipientId,
+    subscriptionStatusId,
   } = req.body as Partial<{
     nicOrPassport: string | null;
     fullName: string;
@@ -127,6 +131,7 @@ export async function updatePatientHandler(req: Request, res: Response) {
     guardianContactNo: string | null;
     guardianRelationship: string | null;
     billingRecipientId: string | null;
+    subscriptionStatusId: string | null;
   }>;
 
   try {
@@ -148,9 +153,17 @@ export async function updatePatientHandler(req: Request, res: Response) {
       guardianContactNo: guardianContactNo ?? undefined,
       guardianRelationship: guardianRelationship ?? undefined,
       billingRecipientId: billingRecipientId ?? undefined,
+      subscriptionStatusId: subscriptionStatusId ?? undefined,
     });
     return res.json(patient);
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to update patient";
+    if (
+      message ===
+      "Cannot change subscription status for patients in a shared subscription account"
+    ) {
+      return res.status(409).json({ message });
+    }
     return res.status(409).json({ message: "Unable to update patient" });
   }
 }

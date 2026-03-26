@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
@@ -167,6 +169,35 @@ async function main() {
       update: { lookupValue: item.lookupValue, isActive: true },
       create: {
         categoryId: billingRecipientCategory.id,
+        lookupKey: item.lookupKey,
+        lookupValue: item.lookupValue,
+        isActive: true,
+      },
+    });
+  }
+
+  const subscriptionAccountStatusCategory = await prisma.lookupCategory.upsert({
+    where: { categoryName: "SUBSCRIPTION_ACCOUNT_STATUS" },
+    update: {},
+    create: { categoryName: "SUBSCRIPTION_ACCOUNT_STATUS" },
+  });
+  for (const item of [
+    { lookupKey: "ACTIVE", lookupValue: "Active" },
+    { lookupKey: "PENDING", lookupValue: "Pending" },
+    { lookupKey: "SUSPENDED", lookupValue: "Suspended" },
+    { lookupKey: "EXPIRED", lookupValue: "Expired" },
+    { lookupKey: "CANCELLED", lookupValue: "Cancelled" },
+  ] as const) {
+    await prisma.lookup.upsert({
+      where: {
+        categoryId_lookupKey: {
+          categoryId: subscriptionAccountStatusCategory.id,
+          lookupKey: item.lookupKey,
+        },
+      },
+      update: { lookupValue: item.lookupValue, isActive: true },
+      create: {
+        categoryId: subscriptionAccountStatusCategory.id,
         lookupKey: item.lookupKey,
         lookupValue: item.lookupValue,
         isActive: true,

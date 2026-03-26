@@ -119,6 +119,12 @@ export default async function PatientFullPreviewPage({
                   <dd className="preview-value">{patient.subscriptionPlanName ?? "—"}</dd>
                 </div>
               ) : null}
+              {patient.isSubscribed ? (
+                <div className="preview-row">
+                  <dt className="preview-label">Subscription Status</dt>
+                  <dd className="preview-value">{patient.subscriptionStatusName ?? "—"}</dd>
+                </div>
+              ) : null}
             </dl>
           </section>
 

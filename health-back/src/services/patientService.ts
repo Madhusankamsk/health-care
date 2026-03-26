@@ -1,4 +1,5 @@
 import prisma from "../prisma/client";
+import type { Prisma } from "@prisma/client";
 
 export type PatientCreateInput = {
   nicOrPassport?: string | null;
@@ -19,7 +20,25 @@ export type PatientCreateInput = {
   guardianRelationship?: string | null;
   billingRecipientId?: string | null;
   subscriptionPlanId?: string | null;
+  subscriptionStatusId?: string | null;
 };
+
+async function resolveSubscriptionStatusId(
+  tx: Prisma.TransactionClient,
+  subscriptionStatusId?: string | null,
+) {
+  if (!subscriptionStatusId) return undefined;
+  const status = await tx.lookup.findFirst({
+    where: {
+      id: subscriptionStatusId,
+      isActive: true,
+      category: { categoryName: "SUBSCRIPTION_ACCOUNT_STATUS" },
+    },
+    select: { id: true },
+  });
+  if (!status) throw new Error("Invalid subscription status");
+  return status.id;
+}
 
 export async function listPatients() {
   const now = new Date();
@@ -34,6 +53,7 @@ export async function listPatients() {
           subscriptionAccount: {
             include: {
               plan: true,
+              statusLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
             },
           },
         },
@@ -46,12 +66,18 @@ export async function listPatients() {
       const acc = sm.subscriptionAccount;
       if (!acc) return false;
       const endOk = !acc.endDate || acc.endDate.getTime() >= now.getTime();
+      // A patient is considered "subscribed" if a membership exists whose plan is active and membership hasn't ended.
+      // Subscription status is handled separately via `subscriptionStatusName`.
       return endOk && Boolean(acc.plan?.isActive);
     });
 
     const subscriptionPlanId = activeMembership?.subscriptionAccount?.plan?.id ?? null;
     const subscriptionPlanName =
       activeMembership?.subscriptionAccount?.plan?.planName ?? null;
+    const subscriptionStatusId =
+      activeMembership?.subscriptionAccount?.statusLookup?.id ?? null;
+    const subscriptionStatusName =
+      activeMembership?.subscriptionAccount?.statusLookup?.lookupValue ?? null;
 
     const { subscriptionMemberships: _ignored, ...rest } = p as any;
     return {
@@ -59,6 +85,8 @@ export async function listPatients() {
       isSubscribed: Boolean(subscriptionPlanId),
       subscriptionPlanId,
       subscriptionPlanName,
+      subscriptionStatusId,
+      subscriptionStatusName,
     };
   });
 }
@@ -76,6 +104,7 @@ export async function getPatientById(id: string) {
           subscriptionAccount: {
             include: {
               plan: true,
+              statusLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
             },
           },
         },
@@ -94,6 +123,10 @@ export async function getPatientById(id: string) {
 
   const subscriptionPlanId = activeMembership?.subscriptionAccount?.plan?.id ?? null;
   const subscriptionPlanName = activeMembership?.subscriptionAccount?.plan?.planName ?? null;
+  const subscriptionStatusId =
+    activeMembership?.subscriptionAccount?.statusLookup?.id ?? null;
+  const subscriptionStatusName =
+    activeMembership?.subscriptionAccount?.statusLookup?.lookupValue ?? null;
 
   const { subscriptionMemberships: _ignored, ...rest } = patient as any;
   return {
@@ -101,6 +134,8 @@ export async function getPatientById(id: string) {
     isSubscribed: Boolean(subscriptionPlanId),
     subscriptionPlanId,
     subscriptionPlanName,
+    subscriptionStatusId,
+    subscriptionStatusName,
   };
 }
 
@@ -141,6 +176,20 @@ export async function createPatient(data: PatientCreateInput) {
         select: { id: true, durationDays: true },
       });
       if (plan) {
+        const requestedStatusId = await resolveSubscriptionStatusId(
+          tx,
+          data.subscriptionStatusId,
+        );
+        const activeStatus = requestedStatusId
+          ? { id: requestedStatusId }
+          : await tx.lookup.findFirst({
+              where: {
+                isActive: true,
+                lookupKey: "ACTIVE",
+                category: { categoryName: "SUBSCRIPTION_ACCOUNT_STATUS" },
+              },
+              select: { id: true },
+            });
         const startDate = new Date();
         const endDate = new Date(startDate.getTime() + plan.durationDays * 24 * 60 * 60 * 1000);
 
@@ -150,7 +199,7 @@ export async function createPatient(data: PatientCreateInput) {
             planId: plan.id,
             startDate,
             endDate,
-            statusId: null,
+            statusId: activeStatus?.id ?? undefined,
           },
         });
 
@@ -184,31 +233,62 @@ export async function updatePatient(
         ? new Date(data.dob)
         : data.dob;
 
-  return prisma.patient.update({
-    where: { id },
-    data: {
-      fullName: data.fullName,
-      nicOrPassport: data.nicOrPassport ?? undefined,
-      shortName: data.shortName ?? undefined,
-      dob: dobValue ?? undefined,
-      contactNo: data.contactNo ?? undefined,
-      whatsappNo: data.whatsappNo ?? undefined,
-      gender: data.gender ?? undefined,
-      genderId: data.genderId ?? undefined,
-      address: data.address ?? undefined,
-      hasInsurance: data.hasInsurance,
-      hasGuardian: data.hasGuardian,
-      guardianName: data.guardianName ?? undefined,
-      guardianEmail: data.guardianEmail ?? undefined,
-      guardianWhatsappNo: data.guardianWhatsappNo ?? undefined,
-      guardianContactNo: data.guardianContactNo ?? undefined,
-      guardianRelationship: data.guardianRelationship ?? undefined,
-      billingRecipientId: data.billingRecipientId ?? undefined,
-    },
-    include: {
-      genderLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
-      billingRecipientLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
-    },
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.patient.update({
+      where: { id },
+      data: {
+        fullName: data.fullName,
+        nicOrPassport: data.nicOrPassport ?? undefined,
+        shortName: data.shortName ?? undefined,
+        dob: dobValue ?? undefined,
+        contactNo: data.contactNo ?? undefined,
+        whatsappNo: data.whatsappNo ?? undefined,
+        gender: data.gender ?? undefined,
+        genderId: data.genderId ?? undefined,
+        address: data.address ?? undefined,
+        hasInsurance: data.hasInsurance,
+        hasGuardian: data.hasGuardian,
+        guardianName: data.guardianName ?? undefined,
+        guardianEmail: data.guardianEmail ?? undefined,
+        guardianWhatsappNo: data.guardianWhatsappNo ?? undefined,
+        guardianContactNo: data.guardianContactNo ?? undefined,
+        guardianRelationship: data.guardianRelationship ?? undefined,
+        billingRecipientId: data.billingRecipientId ?? undefined,
+      },
+      include: {
+        genderLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
+        billingRecipientLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
+      },
+    });
+
+    if (data.subscriptionStatusId !== undefined) {
+      const statusId = await resolveSubscriptionStatusId(tx, data.subscriptionStatusId);
+      const latestMembership = await tx.subscriptionMember.findFirst({
+        where: { patientId: id },
+        orderBy: { joinedAt: "desc" },
+        select: { subscriptionAccountId: true },
+      });
+      if (latestMembership?.subscriptionAccountId) {
+        const membersCount = await tx.subscriptionMember.count({
+          where: { subscriptionAccountId: latestMembership.subscriptionAccountId },
+        });
+
+        // Avoid changing status for shared subscription accounts (e.g., family/corporate memberships),
+        // because that would affect all members linked to the same subscription account.
+        if (membersCount > 1) {
+          throw new Error(
+            "Cannot change subscription status for patients in a shared subscription account",
+          );
+        }
+
+        await tx.subscriptionAccount.update({
+          where: { id: latestMembership.subscriptionAccountId },
+          data: { statusId: statusId ?? null },
+        });
+      }
+    }
+
+    return updated;
   });
 }
 

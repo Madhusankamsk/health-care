@@ -34,6 +34,8 @@ export type Patient = {
   isSubscribed?: boolean;
   subscriptionPlanId?: string | null;
   subscriptionPlanName?: string | null;
+  subscriptionStatusId?: string | null;
+  subscriptionStatusName?: string | null;
 };
 
 type PatientManagerProps = {
@@ -41,6 +43,7 @@ type PatientManagerProps = {
   genders: LookupOption[];
   billingRecipients: LookupOption[];
   subscriptionPlans: SubscriptionPlanOption[];
+  subscriptionStatuses: LookupOption[];
   canPreview: boolean;
   canCreate: boolean;
   canEdit: boolean;
@@ -59,6 +62,7 @@ export function PatientManager({
   genders,
   billingRecipients,
   subscriptionPlans,
+  subscriptionStatuses,
   canPreview,
   canCreate,
   canEdit,
@@ -245,6 +249,7 @@ export function PatientManager({
                 genders={genders}
                 billingRecipients={billingRecipients}
                 subscriptionPlans={subscriptionPlans}
+                subscriptionStatuses={subscriptionStatuses}
                 includeSubscriptionPlan
                 onCancel={() => {
                   setMode("none");
@@ -319,6 +324,7 @@ export function PatientManager({
                 genders={genders}
                 billingRecipients={billingRecipients}
                 subscriptionPlans={subscriptionPlans}
+                subscriptionStatuses={subscriptionStatuses}
                 includeSubscriptionPlan
                 initial={{
                   nicOrPassport: selected.nicOrPassport ?? "",
@@ -339,6 +345,7 @@ export function PatientManager({
                   billingRecipientId: selected.billingRecipientId ?? "",
                   isSubscribed: Boolean(selected.isSubscribed),
                   subscriptionPlanId: selected.subscriptionPlanId ?? "",
+                  subscriptionStatusId: selected.subscriptionStatusId ?? "",
                 }}
                 onCancel={() => setMode("none")}
                 onSubmit={async (values) => {
@@ -470,6 +477,12 @@ export function PatientManager({
                         <dd className="preview-value">{selected.subscriptionPlanName ?? "—"}</dd>
                       </div>
                     ) : null}
+                    {selected.isSubscribed ? (
+                      <div className="preview-row">
+                        <dt className="preview-label">Subscription Status</dt>
+                        <dd className="preview-value">{selected.subscriptionStatusName ?? "—"}</dd>
+                      </div>
+                    ) : null}
                   </dl>
                 </section>
                 <section className="preview-section">
@@ -511,6 +524,7 @@ export function PatientManager({
               <th className="px-4 py-3">NIC/Passport</th>
               <th className="px-4 py-3">Contact</th>
               <th className="px-4 py-3">Gender</th>
+              <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
@@ -528,6 +542,9 @@ export function PatientManager({
                   </td>
                   <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                     {p.genderLookup?.lookupValue ?? p.gender ?? "—"}
+                  </td>
+                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                    {p.isSubscribed ? p.subscriptionStatusName ?? "—" : "Not subscribed"}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
@@ -599,6 +616,7 @@ type PatientFormValues = {
   guardianRelationship?: string;
   billingRecipientId?: string;
   subscriptionPlanId?: string;
+  subscriptionStatusId?: string;
 };
 
 function PatientForm({
@@ -608,6 +626,7 @@ function PatientForm({
   genders,
   billingRecipients,
   subscriptionPlans,
+  subscriptionStatuses,
   includeSubscriptionPlan,
   onCancel,
   onSubmit,
@@ -620,6 +639,7 @@ function PatientForm({
   genders: LookupOption[];
   billingRecipients: LookupOption[];
   subscriptionPlans: SubscriptionPlanOption[];
+  subscriptionStatuses: LookupOption[];
   includeSubscriptionPlan?: boolean;
   onCancel: () => void;
   onSubmit: (values: PatientFormValues) => Promise<void>;
@@ -654,6 +674,7 @@ function PatientForm({
       ? initial?.billingRecipientId ?? billingRecipients[0]?.id ?? ""
       : forcedPatientBillingRecipientId,
     subscriptionPlanId: initial?.subscriptionPlanId ?? "",
+    subscriptionStatusId: initial?.subscriptionStatusId ?? "",
     isSubscribed: initial?.isSubscribed ?? false,
   });
 
@@ -735,6 +756,9 @@ function PatientForm({
               subscriptionPlanId: values.isSubscribed
                 ? values.subscriptionPlanId?.trim() || undefined
                 : undefined,
+              subscriptionStatusId: values.isSubscribed
+                ? values.subscriptionStatusId?.trim() || undefined
+                : undefined,
             });
           } catch (e) {
             const msg = e instanceof Error ? e.message : "Something went wrong";
@@ -757,13 +781,14 @@ function PatientForm({
                     ...v,
                     isSubscribed: checked,
                     subscriptionPlanId: checked ? v.subscriptionPlanId : "",
+                    subscriptionStatusId: checked ? v.subscriptionStatusId : "",
                   }));
                 }}
               />
               Is subscribed?
             </label>
             {values.isSubscribed ? (
-              <label className="flex flex-col gap-2 text-sm sm:col-span-2">
+              <label className="flex flex-col gap-2 text-sm">
                 <span className="font-medium text-[var(--text-primary)]">
                   Assign Subscription Plan
                 </span>
@@ -779,6 +804,27 @@ function PatientForm({
                   {subscriptionPlans.map((plan) => (
                     <option key={plan.id} value={plan.id}>
                       {plan.planName}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            {values.isSubscribed ? (
+              <label className="flex flex-col gap-2 text-sm">
+                <span className="font-medium text-[var(--text-primary)]">
+                  Subscription Status
+                </span>
+                <select
+                  className={selectClass}
+                  value={values.subscriptionStatusId ?? ""}
+                  onChange={(e) =>
+                    setValues((v) => ({ ...v, subscriptionStatusId: e.target.value }))
+                  }
+                >
+                  <option value="">Select</option>
+                  {subscriptionStatuses.map((status) => (
+                    <option key={status.id} value={status.id}>
+                      {status.lookupValue}
                     </option>
                   ))}
                 </select>

@@ -579,6 +579,11 @@ export function SubscriptionAccountManager({
                         Subscription Plan: {matchedPatient.subscriptionPlanName ?? "—"}
                       </div>
                     ) : null}
+                    {matchedPatient.isSubscribed ? (
+                      <div className="text-[var(--text-secondary)]">
+                        Subscription Status: {matchedPatient.subscriptionStatusName ?? "—"}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </div>

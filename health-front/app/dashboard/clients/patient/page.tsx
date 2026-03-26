@@ -54,6 +54,7 @@ export default async function PatientPage({
     getLookups("BILLING_RECIPIENT"),
     getSubscriptionPlans(),
   ]);
+  const subscriptionStatuses = await getLookups("SUBSCRIPTION_ACCOUNT_STATUS");
 
   return (
     <div className="flex flex-col gap-6">
@@ -68,6 +69,7 @@ export default async function PatientPage({
             genders={genders ?? []}
             billingRecipients={billingRecipients ?? []}
             subscriptionPlans={(subscriptionPlans ?? []).filter((p) => p.isActive)}
+            subscriptionStatuses={subscriptionStatuses ?? []}
             canPreview={canPreview}
             canCreate={canCreate}
             canEdit={canEdit}

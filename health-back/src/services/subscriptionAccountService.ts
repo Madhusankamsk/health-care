@@ -1,4 +1,5 @@
 import prisma from "../prisma/client";
+import type { Prisma } from "@prisma/client";
 
 export type SubscriptionAccountCreateInput = {
   accountName?: string | null;
@@ -47,6 +48,25 @@ export class AddSubscriptionMemberError extends Error {
 function toDateOrUndefined(value?: string | Date | null) {
   if (value === undefined || value === null || value === "") return undefined;
   return typeof value === "string" ? new Date(value) : value;
+}
+
+async function resolveSubscriptionAccountStatusId(
+  tx: Prisma.TransactionClient,
+  statusId?: string | null,
+): Promise<string | undefined> {
+  if (!statusId) return undefined;
+  const status = await tx.lookup.findFirst({
+    where: {
+      id: statusId,
+      isActive: true,
+      category: { categoryName: "SUBSCRIPTION_ACCOUNT_STATUS" },
+    },
+    select: { id: true },
+  });
+  if (!status) {
+    throw new Error("Invalid subscription account status");
+  }
+  return status.id;
 }
 
 const includePayload = {
@@ -98,6 +118,7 @@ export async function createSubscriptionAccount(data: SubscriptionAccountCreateI
   const endDate = toDateOrUndefined(data.endDate);
 
   return prisma.$transaction(async (tx) => {
+    const resolvedStatusId = await resolveSubscriptionAccountStatusId(tx, data.statusId);
     const account = await tx.subscriptionAccount.create({
       data: {
         accountName: data.accountName ?? undefined,
@@ -109,7 +130,7 @@ export async function createSubscriptionAccount(data: SubscriptionAccountCreateI
         planId: data.planId,
         startDate,
         endDate,
-        statusId: data.statusId ?? undefined,
+        statusId: resolvedStatusId,
       },
     });
 
@@ -128,6 +149,7 @@ export async function updateSubscriptionAccount(
   const endDate = toDateOrUndefined(data.endDate);
 
   return prisma.$transaction(async (tx) => {
+    const resolvedStatusId = await resolveSubscriptionAccountStatusId(tx, data.statusId);
     const updated = await tx.subscriptionAccount.update({
       where: { id },
       data: {
@@ -140,7 +162,7 @@ export async function updateSubscriptionAccount(
         planId: data.planId,
         startDate,
         endDate,
-        statusId: data.statusId ?? undefined,
+        statusId: resolvedStatusId,
       },
     });
 

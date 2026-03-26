@@ -55,20 +55,28 @@ export async function createSubscriptionAccountHandler(req: Request, res: Respon
     });
   }
 
-  const created = await createSubscriptionAccount({
-    accountName: accountName?.trim() || undefined,
-    planId: cleanedPlanId,
-    startDate: startDate ?? undefined,
-    endDate: endDate ?? undefined,
-    statusId: statusId?.trim() || undefined,
-    registrationNo: registrationNo?.trim() || undefined,
-    billingAddress: billingAddress?.trim() || undefined,
-    contactEmail: contactEmail?.trim() || undefined,
-    contactPhone: contactPhone?.trim() || undefined,
-    whatsappNo: whatsappNo?.trim() || undefined,
-  });
+  try {
+    const created = await createSubscriptionAccount({
+      accountName: accountName?.trim() || undefined,
+      planId: cleanedPlanId,
+      startDate: startDate ?? undefined,
+      endDate: endDate ?? undefined,
+      statusId: statusId?.trim() || undefined,
+      registrationNo: registrationNo?.trim() || undefined,
+      billingAddress: billingAddress?.trim() || undefined,
+      contactEmail: contactEmail?.trim() || undefined,
+      contactPhone: contactPhone?.trim() || undefined,
+      whatsappNo: whatsappNo?.trim() || undefined,
+    });
 
-  return res.status(201).json(created);
+    return res.status(201).json(created);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to create subscription account";
+    if (message === "Invalid subscription account status") {
+      return res.status(400).json({ message });
+    }
+    return res.status(500).json({ message: "Unable to create subscription account" });
+  }
 }
 
 export async function updateSubscriptionAccountHandler(req: Request, res: Response) {
@@ -97,20 +105,28 @@ export async function updateSubscriptionAccountHandler(req: Request, res: Respon
     whatsappNo: string | null;
   }>;
 
-  const updated = await updateSubscriptionAccount(id, {
-    accountName: typeof accountName === "string" ? accountName.trim() : undefined,
-    planId: typeof planId === "string" ? planId.trim() : undefined,
-    startDate: startDate ?? undefined,
-    endDate: endDate ?? undefined,
-    statusId: typeof statusId === "string" ? statusId.trim() : undefined,
-    registrationNo: typeof registrationNo === "string" ? registrationNo.trim() : undefined,
-    billingAddress: typeof billingAddress === "string" ? billingAddress.trim() : undefined,
-    contactEmail: typeof contactEmail === "string" ? contactEmail.trim() : undefined,
-    contactPhone: typeof contactPhone === "string" ? contactPhone.trim() : undefined,
-    whatsappNo: typeof whatsappNo === "string" ? whatsappNo.trim() : undefined,
-  });
+  try {
+    const updated = await updateSubscriptionAccount(id, {
+      accountName: typeof accountName === "string" ? accountName.trim() : undefined,
+      planId: typeof planId === "string" ? planId.trim() : undefined,
+      startDate: startDate ?? undefined,
+      endDate: endDate ?? undefined,
+      statusId: typeof statusId === "string" ? statusId.trim() : undefined,
+      registrationNo: typeof registrationNo === "string" ? registrationNo.trim() : undefined,
+      billingAddress: typeof billingAddress === "string" ? billingAddress.trim() : undefined,
+      contactEmail: typeof contactEmail === "string" ? contactEmail.trim() : undefined,
+      contactPhone: typeof contactPhone === "string" ? contactPhone.trim() : undefined,
+      whatsappNo: typeof whatsappNo === "string" ? whatsappNo.trim() : undefined,
+    });
 
-  return res.json(updated);
+    return res.json(updated);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to update subscription account";
+    if (message === "Invalid subscription account status") {
+      return res.status(400).json({ message });
+    }
+    return res.status(500).json({ message: "Unable to update subscription account" });
+  }
 }
 
 export async function deleteSubscriptionAccountHandler(req: Request, res: Response) {
