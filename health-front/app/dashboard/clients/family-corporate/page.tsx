@@ -18,7 +18,12 @@ const PERMS = {
 
 type LookupOption = { id: string; lookupKey: string; lookupValue: string };
 type SubscriptionPlanOption = { id: string; planName: string; isActive: boolean };
-type PatientOption = { id: string; fullName: string; contactNo?: string | null };
+type PatientOption = {
+  id: string;
+  nicOrPassport?: string | null;
+  fullName: string;
+  contactNo?: string | null;
+};
 
 async function getSubscriptionAccounts() {
   return backendJson<SubscriptionAccount[]>("/api/subscription-accounts");

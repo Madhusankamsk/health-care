@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 
 import {
+  AddSubscriptionMemberError,
+  addSubscriptionMember,
   createSubscriptionAccount,
   deleteSubscriptionAccount,
   getSubscriptionAccountById,
@@ -120,6 +122,53 @@ export async function deleteSubscriptionAccountHandler(req: Request, res: Respon
     return res.status(409).json({
       message: "Unable to delete subscription account. Remove linked records first.",
     });
+  }
+}
+
+export async function addSubscriptionMemberHandler(req: Request, res: Response) {
+  const { id } = req.params;
+  const { nicOrPassport, patient } = req.body as Partial<{
+    nicOrPassport: string;
+    patient: {
+      fullName: string;
+      shortName?: string | null;
+      dob?: string | null;
+      contactNo?: string | null;
+      whatsappNo?: string | null;
+      genderId?: string | null;
+      address?: string | null;
+      hasInsurance?: boolean;
+      hasGuardian?: boolean;
+      guardianName?: string | null;
+      guardianEmail?: string | null;
+      guardianWhatsappNo?: string | null;
+      guardianContactNo?: string | null;
+      guardianRelationship?: string | null;
+      billingRecipientId?: string | null;
+    };
+  }>;
+
+  const cleanedNic = nicOrPassport?.trim() ?? "";
+  if (!cleanedNic) {
+    return res.status(400).json({ message: "nicOrPassport is required" });
+  }
+
+  try {
+    const created = await addSubscriptionMember(id, {
+      nicOrPassport: cleanedNic,
+      patient,
+    });
+    return res.status(201).json(created);
+  } catch (error) {
+    if (error instanceof AddSubscriptionMemberError) {
+      if (error.code === "ACCOUNT_NOT_FOUND") return res.status(404).json({ message: error.message });
+      if (error.code === "MAX_MEMBERS_REACHED") return res.status(409).json({ message: error.message });
+      if (error.code === "ALREADY_MEMBER") return res.status(409).json({ message: error.message });
+      if (error.code === "PATIENT_DETAILS_REQUIRED") {
+        return res.status(400).json({ message: error.message });
+      }
+    }
+    return res.status(500).json({ message: "Unable to add subscription member" });
   }
 }
 

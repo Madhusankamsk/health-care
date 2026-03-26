@@ -11,7 +11,12 @@ import { useEscapeKey } from "@/lib/useEscapeKey";
 
 type LookupOption = { id: string; lookupKey: string; lookupValue: string };
 type PlanOption = { id: string; planName: string; isActive?: boolean };
-type PatientOption = { id: string; fullName: string; contactNo?: string | null };
+type PatientOption = {
+  id: string;
+  nicOrPassport?: string | null;
+  fullName: string;
+  contactNo?: string | null;
+};
 
 export type SubscriptionAccount = {
   id: string;
@@ -25,7 +30,7 @@ export type SubscriptionAccount = {
   startDate?: string | Date | null;
   endDate?: string | Date | null;
   statusId?: string | null;
-  plan?: { id: string; planName: string } | null;
+  plan?: { id: string; planName: string; maxMembers?: number } | null;
   statusLookup?: { id: string; lookupValue: string } | null;
   members?: Array<{
     id: string;
@@ -43,8 +48,17 @@ type SubscriptionAccountManagerProps = {
   canDelete: boolean;
 };
 
-type Mode = "none" | "create" | "edit" | "preview";
+type Mode = "none" | "create" | "edit" | "preview" | "addMember";
 type ActionConfirm = null | { type: "edit" | "delete"; id: string };
+
+type AddMemberPatientPayload = {
+  fullName: string;
+  contactNo?: string;
+  whatsappNo?: string;
+  dob?: string;
+  genderId?: string;
+  address?: string;
+};
 
 function toDateInputValue(value?: string | Date | null) {
   if (!value) return "";
@@ -68,18 +82,36 @@ export function SubscriptionAccountManager({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actionConfirm, setActionConfirm] = useState<ActionConfirm>(null);
+  const [memberNicOrPassport, setMemberNicOrPassport] = useState("");
+  const [matchedPatient, setMatchedPatient] = useState<PatientOption | null>(null);
+  const [memberPatientValues, setMemberPatientValues] = useState<AddMemberPatientPayload>({
+    fullName: "",
+    contactNo: "",
+    whatsappNo: "",
+    dob: "",
+    genderId: "",
+    address: "",
+  });
+  const [memberError, setMemberError] = useState<string | null>(null);
+  const [isMemberSubmitting, setIsMemberSubmitting] = useState(false);
 
   const selected = useMemo(() => {
     if (!selectedId) return null;
     return accounts.find((a) => a.id === selectedId) ?? null;
   }, [accounts, selectedId]);
 
+  const canManageMembers = canCreate || canEdit;
+
   useEscapeKey(
     () => {
       setMode("none");
       setError(null);
+      setMemberError(null);
     },
-    (mode === "create" && canCreate) || (mode === "edit" && canEdit) || mode === "preview",
+    (mode === "create" && canCreate) ||
+      (mode === "edit" && canEdit) ||
+      mode === "preview" ||
+      (mode === "addMember" && canManageMembers),
   );
 
   async function refresh() {
@@ -111,6 +143,31 @@ export function SubscriptionAccountManager({
     } finally {
       setBusyId(null);
     }
+  }
+
+  function openAddMemberModal(accountId: string) {
+    setSelectedId(accountId);
+    setMode("addMember");
+    setError(null);
+    setMemberError(null);
+    setMatchedPatient(null);
+    setMemberNicOrPassport("");
+    setMemberPatientValues({
+      fullName: "",
+      contactNo: "",
+      whatsappNo: "",
+      dob: "",
+      genderId: "",
+      address: "",
+    });
+  }
+
+  function findPatientByNic(nicOrPassport: string) {
+    const normalized = nicOrPassport.trim().toLowerCase();
+    if (!normalized) return null;
+    return (
+      patients.find((p) => String(p.nicOrPassport ?? "").trim().toLowerCase() === normalized) ?? null
+    );
   }
 
   return (
@@ -336,6 +393,209 @@ export function SubscriptionAccountManager({
         </ModalShell>
       ) : null}
 
+      {mode === "addMember" && selected && canManageMembers ? (
+        <ModalShell
+          titleId="add-subscription-member-title"
+          title="Add member"
+          subtitle="Search by NIC/Passport first. Assign existing patient or create a new record."
+          onClose={() => {
+            setMode("none");
+            setMemberError(null);
+          }}
+        >
+          <div className="grid gap-4">
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4 text-sm">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div>
+                  <div className="text-[var(--text-secondary)]">Account</div>
+                  <div className="font-medium text-[var(--text-primary)]">{selected.accountName ?? "—"}</div>
+                </div>
+                <div>
+                  <div className="text-[var(--text-secondary)]">Plan</div>
+                  <div className="font-medium text-[var(--text-primary)]">{selected.plan?.planName ?? "—"}</div>
+                </div>
+                <div>
+                  <div className="text-[var(--text-secondary)]">Status</div>
+                  <div className="font-medium text-[var(--text-primary)]">
+                    {selected.statusLookup?.lookupValue ?? "—"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[var(--text-secondary)]">Members</div>
+                  <div className="font-medium text-[var(--text-primary)]">
+                    {selected.members?.length ?? 0}
+                    {selected.plan?.maxMembers ? ` / ${selected.plan.maxMembers}` : ""}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {memberError ? (
+              <div className="rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 px-4 py-3 text-sm text-[var(--danger)]">
+                {memberError}
+              </div>
+            ) : null}
+
+            <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+              <Input
+                label="NIC / Passport"
+                name="memberNicOrPassport"
+                value={memberNicOrPassport}
+                onChange={(e) => {
+                  setMemberNicOrPassport(e.target.value);
+                  setMatchedPatient(null);
+                  setMemberError(null);
+                }}
+                required
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  const nic = memberNicOrPassport.trim();
+                  if (!nic) {
+                    setMemberError("NIC/Passport is required");
+                    setMatchedPatient(null);
+                    return;
+                  }
+                  const found = findPatientByNic(nic);
+                  setMatchedPatient(found);
+                  setMemberError(null);
+                }}
+              >
+                Check patient
+              </Button>
+            </div>
+
+            {matchedPatient ? (
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm">
+                <div className="mb-2 text-xs uppercase tracking-wide text-[var(--text-secondary)]">
+                  Existing patient found
+                </div>
+                <div className="grid gap-1">
+                  <div className="font-medium text-[var(--text-primary)]">{matchedPatient.fullName}</div>
+                  <div className="text-[var(--text-secondary)]">
+                    NIC/Passport: {matchedPatient.nicOrPassport ?? "—"}
+                  </div>
+                  <div className="text-[var(--text-secondary)]">Contact: {matchedPatient.contactNo ?? "—"}</div>
+                </div>
+              </div>
+            ) : memberNicOrPassport.trim() ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Input
+                  label="Full name"
+                  name="fullName"
+                  value={memberPatientValues.fullName}
+                  onChange={(e) =>
+                    setMemberPatientValues((v) => ({ ...v, fullName: e.target.value }))
+                  }
+                  required
+                />
+                <Input
+                  label="Contact"
+                  name="contactNo"
+                  value={memberPatientValues.contactNo ?? ""}
+                  onChange={(e) =>
+                    setMemberPatientValues((v) => ({ ...v, contactNo: e.target.value }))
+                  }
+                />
+                <Input
+                  label="WhatsApp"
+                  name="whatsappNo"
+                  value={memberPatientValues.whatsappNo ?? ""}
+                  onChange={(e) =>
+                    setMemberPatientValues((v) => ({ ...v, whatsappNo: e.target.value }))
+                  }
+                />
+                <Input
+                  label="DOB (YYYY-MM-DD)"
+                  name="dob"
+                  value={memberPatientValues.dob ?? ""}
+                  onChange={(e) => setMemberPatientValues((v) => ({ ...v, dob: e.target.value }))}
+                />
+                <div className="sm:col-span-2">
+                  <Input
+                    label="Address"
+                    name="address"
+                    value={memberPatientValues.address ?? ""}
+                    onChange={(e) =>
+                      setMemberPatientValues((v) => ({ ...v, address: e.target.value }))
+                    }
+                  />
+                </div>
+              </div>
+            ) : null}
+
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setMode("none");
+                  setMemberError(null);
+                }}
+                disabled={isMemberSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="create"
+                isLoading={isMemberSubmitting}
+                onClick={async () => {
+                  const nic = memberNicOrPassport.trim();
+                  if (!nic) {
+                    setMemberError("NIC/Passport is required");
+                    return;
+                  }
+                  if (!matchedPatient && !memberPatientValues.fullName.trim()) {
+                    setMemberError("Full name is required for new patient");
+                    return;
+                  }
+
+                  setMemberError(null);
+                  setIsMemberSubmitting(true);
+                  try {
+                    const payload = matchedPatient
+                      ? { nicOrPassport: nic }
+                      : {
+                          nicOrPassport: nic,
+                          patient: {
+                            fullName: memberPatientValues.fullName.trim(),
+                            contactNo: memberPatientValues.contactNo?.trim() || undefined,
+                            whatsappNo: memberPatientValues.whatsappNo?.trim() || undefined,
+                            dob: memberPatientValues.dob?.trim() || undefined,
+                            address: memberPatientValues.address?.trim() || undefined,
+                          },
+                        };
+                    const res = await fetch(`/api/subscription-accounts/${selected.id}/members`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(payload),
+                    });
+                    if (!res.ok) {
+                      const msg = await res.text().catch(() => "");
+                      throw new Error(msg || "Failed to add member");
+                    }
+                    await refresh();
+                    setMode("none");
+                    toast.success(matchedPatient ? "Member assigned" : "Patient created and assigned");
+                  } catch (e) {
+                    const msg = e instanceof Error ? e.message : "Something went wrong";
+                    setMemberError(msg);
+                    toast.error(msg);
+                  } finally {
+                    setIsMemberSubmitting(false);
+                  }
+                }}
+              >
+                {matchedPatient ? "Assign member" : "Create & assign member"}
+              </Button>
+            </div>
+          </div>
+        </ModalShell>
+      ) : null}
+
       <div className="tbl-shell overflow-x-auto">
         <table className="min-w-full text-left text-sm">
           <thead className="text-xs uppercase text-zinc-500 dark:text-zinc-400">
@@ -364,6 +624,17 @@ export function SubscriptionAccountManager({
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
+                      {canManageMembers ? (
+                        <Button
+                          type="button"
+                          variant="create"
+                          className="h-9 px-3"
+                          disabled={isBusy}
+                          onClick={() => openAddMemberModal(row.id)}
+                        >
+                          Add member
+                        </Button>
+                      ) : null}
                       <Button
                         type="button"
                         variant="preview"

@@ -8,6 +8,7 @@ Role: SuperAdmin
 Active: true
 
 
+
 `health-front` is the web UI for the project. It is a Next.js App Router app that:
 
 - **Authenticates** by calling `health-back` and storing a backend-issued **JWT** in an **httpOnly cookie**
