@@ -3,6 +3,8 @@ import type { Request, Response } from "express";
 import {
   AddSubscriptionMemberError,
   addSubscriptionMember,
+  detachSubscriptionMember,
+  DetachSubscriptionMemberError,
   createSubscriptionAccount,
   deleteSubscriptionAccount,
   getSubscriptionAccountById,
@@ -185,6 +187,26 @@ export async function addSubscriptionMemberHandler(req: Request, res: Response) 
       }
     }
     return res.status(500).json({ message: "Unable to add subscription member" });
+  }
+}
+
+export async function detachSubscriptionMemberHandler(req: Request, res: Response) {
+  const { id } = req.params;
+  const { patientId } = req.body as Partial<{ patientId: string }>;
+
+  if (!patientId) {
+    return res.status(400).json({ message: "patientId is required" });
+  }
+
+  try {
+    await detachSubscriptionMember(id, patientId);
+    return res.status(204).send();
+  } catch (error) {
+    if (error instanceof DetachSubscriptionMemberError) {
+      if (error.code === "ACCOUNT_NOT_FOUND") return res.status(404).json({ message: error.message });
+      if (error.code === "MEMBER_NOT_FOUND") return res.status(404).json({ message: error.message });
+    }
+    return res.status(500).json({ message: "Unable to detach subscription member" });
   }
 }
 

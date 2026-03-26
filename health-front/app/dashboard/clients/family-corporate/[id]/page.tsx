@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import type { SubscriptionAccount } from "@/components/admin/SubscriptionAccountManager";
+import { MemberDetachButton } from "@/components/admin/MemberDetachButton";
 import { Card } from "@/components/ui/Card";
 import { backendJson, type BackendMeResponse } from "@/lib/backend";
 import { getIsAuthenticated } from "@/lib/auth";
@@ -9,6 +10,7 @@ import { hasAnyPermission } from "@/lib/rbac";
 
 const PERMS = {
   view: ["profiles:list", "profiles:read", "patients:read"],
+  detach: ["profiles:update", "patients:update"],
 } as const;
 
 export default async function FamilyCorporateFullPreviewPage({
@@ -24,6 +26,8 @@ export default async function FamilyCorporateFullPreviewPage({
 
   const canView = hasAnyPermission(me.permissions, [...PERMS.view]);
   if (!canView) redirect("/dashboard");
+
+  const canDetach = hasAnyPermission(me.permissions, [...PERMS.detach]);
 
   const { id } = await params;
   const account = await backendJson<SubscriptionAccount>(`/api/subscription-accounts/${id}`);
@@ -141,16 +145,27 @@ export default async function FamilyCorporateFullPreviewPage({
                       {m.joinedAt ? new Date(m.joinedAt).toISOString().slice(0, 10) : "—"}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {m.patient?.id ? (
-                        <Link
-                          href={`/dashboard/clients/patient/${m.patient.id}`}
-                          className="inline-flex h-8 items-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-2)]"
-                        >
-                          Full View
-                        </Link>
-                      ) : (
-                        <span className="text-xs text-[var(--text-secondary)]">—</span>
-                      )}
+                      <div className="flex items-center justify-end gap-2">
+                        {m.patient?.id ? (
+                          <>
+                            <Link
+                              href={`/dashboard/clients/patient/${m.patient.id}`}
+                              className="inline-flex h-8 items-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-2)]"
+                            >
+                              Full View
+                            </Link>
+                            {canDetach ? (
+                              <MemberDetachButton
+                                subscriptionAccountId={account.id}
+                                patientId={m.patient.id}
+                                patientName={m.patient.fullName}
+                              />
+                            ) : null}
+                          </>
+                        ) : (
+                          <span className="text-xs text-[var(--text-secondary)]">—</span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

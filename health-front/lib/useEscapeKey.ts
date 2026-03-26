@@ -8,7 +8,10 @@ import { useEffect, useRef } from "react";
  */
 export function useEscapeKey(onEscape: () => void, enabled: boolean) {
   const onEscapeRef = useRef(onEscape);
-  onEscapeRef.current = onEscape;
+  // Update ref in an effect to avoid mutating refs during render.
+  useEffect(() => {
+    onEscapeRef.current = onEscape;
+  }, [onEscape]);
 
   useEffect(() => {
     if (!enabled) return;

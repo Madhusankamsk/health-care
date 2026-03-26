@@ -64,6 +64,7 @@ import {
 } from "../controllers/subscriptionPlanController";
 import {
   addSubscriptionMemberHandler,
+  detachSubscriptionMemberHandler,
   createSubscriptionAccountHandler,
   deleteSubscriptionAccountHandler,
   getSubscriptionAccountHandler,
@@ -311,6 +312,12 @@ router.post(
   "/subscription-accounts/:id/members",
   requireAnyPermission(["profiles:update", "patients:update", "patients:create"]),
   addSubscriptionMemberHandler,
+);
+
+router.delete(
+  "/subscription-accounts/:id/members",
+  requireAnyPermission(["profiles:update", "patients:update"]),
+  detachSubscriptionMemberHandler,
 );
 
 export default router;

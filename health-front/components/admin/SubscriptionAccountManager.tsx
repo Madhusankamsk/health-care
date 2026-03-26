@@ -297,7 +297,6 @@ export function SubscriptionAccountManager({
             title="Create subscription account"
             submitLabel="Create"
             plans={plans}
-            patients={patients}
             statuses={statuses}
             onCancel={() => setMode("none")}
             onSubmit={async (values) => {
@@ -333,7 +332,6 @@ export function SubscriptionAccountManager({
             title="Edit subscription account"
             submitLabel="Save changes"
             plans={plans}
-            patients={patients}
             statuses={statuses}
             initial={{
               accountName: selected.accountName ?? "",
@@ -900,6 +898,8 @@ export function SubscriptionAccountManager({
           <tbody>
             {accounts.map((row) => {
               const isBusy = busyId === row.id;
+              const membersCount = row.members?.length ?? 0;
+              const maxMembers = row.plan?.maxMembers;
               return (
                 <tr key={row.id} className="border-t border-zinc-200 dark:border-zinc-800">
                   <td className="px-4 py-3 font-medium">{row.accountName ?? "—"}</td>
@@ -907,7 +907,7 @@ export function SubscriptionAccountManager({
                     {row.plan?.planName ?? "—"}
                   </td>
                   <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
-                    {row.members?.length ?? 0}
+                    {typeof maxMembers === "number" ? `${membersCount}/${maxMembers}` : membersCount}
                   </td>
                   <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                     {row.statusLookup?.lookupValue ?? "—"}
@@ -1035,7 +1035,6 @@ function SubscriptionAccountForm({
   title,
   submitLabel,
   plans,
-  patients,
   statuses,
   initial,
   onCancel,
@@ -1045,7 +1044,6 @@ function SubscriptionAccountForm({
   title: string;
   submitLabel: string;
   plans: PlanOption[];
-  patients: Patient[];
   statuses: LookupOption[];
   initial?: Partial<FormValues>;
   onCancel: () => void;

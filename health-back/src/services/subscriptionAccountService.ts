@@ -45,6 +45,16 @@ export class AddSubscriptionMemberError extends Error {
   }
 }
 
+export class DetachSubscriptionMemberError extends Error {
+  constructor(
+    public code: "ACCOUNT_NOT_FOUND" | "MEMBER_NOT_FOUND",
+    message: string,
+  ) {
+    super(message);
+    this.name = "DetachSubscriptionMemberError";
+  }
+}
+
 function toDateOrUndefined(value?: string | Date | null) {
   if (value === undefined || value === null || value === "") return undefined;
   return typeof value === "string" ? new Date(value) : value;
@@ -100,10 +110,14 @@ const includePayload = {
 } as const;
 
 export async function listSubscriptionAccounts() {
-  return prisma.subscriptionAccount.findMany({
+  const accounts = await prisma.subscriptionAccount.findMany({
     orderBy: [{ startDate: "desc" }, { accountName: "asc" }],
     include: includePayload,
   });
+
+  // Family/Corporate table should be based on allocated member capacity (plan),
+  // not current assigned member count.
+  return accounts.filter((a) => (a.plan?.maxMembers ?? 0) > 1);
 }
 
 export async function getSubscriptionAccountById(id: string) {
@@ -298,6 +312,42 @@ export async function addSubscriptionMember(
       patient,
       createdPatient,
     };
+  });
+}
+
+export async function detachSubscriptionMember(subscriptionAccountId: string, patientId: string) {
+  return prisma.$transaction(async (tx) => {
+    const account = await tx.subscriptionAccount.findUnique({
+      where: { id: subscriptionAccountId },
+      select: { id: true },
+    });
+
+    if (!account) {
+      throw new DetachSubscriptionMemberError("ACCOUNT_NOT_FOUND", "Subscription account not found");
+    }
+
+    const membership = await tx.subscriptionMember.findUnique({
+      where: {
+        subscriptionAccountId_patientId: {
+          subscriptionAccountId,
+          patientId,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!membership) {
+      throw new DetachSubscriptionMemberError("MEMBER_NOT_FOUND", "Member not found in this subscription account");
+    }
+
+    await tx.subscriptionMember.delete({
+      where: {
+        subscriptionAccountId_patientId: {
+          subscriptionAccountId,
+          patientId,
+        },
+      },
+    });
   });
 }
 
