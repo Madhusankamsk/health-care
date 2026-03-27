@@ -1,10 +1,15 @@
 import { redirect } from "next/navigation";
 
-import { BookingManager, type Booking } from "@/components/admin/BookingManager";
+import {
+  BookingManager,
+  type Booking,
+  type DoctorProfileOption,
+  type DoctorStatusOption,
+} from "@/components/admin/BookingManager";
 import { Card } from "@/components/ui/Card";
 import { getIsAuthenticated } from "@/lib/auth";
 import { backendJson, type BackendMeResponse } from "@/lib/backend";
-import { hasAnyPermission } from "@/lib/rbac";
+import { hasAnyPermission, hasBookingScopeAll } from "@/lib/rbac";
 
 const PERMS = {
   view: ["bookings:list", "bookings:read"],
@@ -15,7 +20,6 @@ const PERMS = {
 } as const;
 
 type Patient = { id: string; fullName: string };
-type MedicalTeam = { id: string; teamName?: string | null };
 
 async function getBookings() {
   return backendJson<Booking[]>("/api/bookings");
@@ -25,8 +29,14 @@ async function getPatients() {
   return backendJson<Patient[]>("/api/patients");
 }
 
-async function getMedicalTeams() {
-  return backendJson<MedicalTeam[]>("/api/medical-teams");
+async function getProfiles() {
+  return backendJson<DoctorProfileOption[]>("/api/profiles");
+}
+
+async function getDoctorStatuses() {
+  return backendJson<DoctorStatusOption[]>(
+    `/api/lookups?category=${encodeURIComponent("DOCTOR_BOOKING_STATUS")}`,
+  );
 }
 
 export default async function ManageBookingsPage() {
@@ -43,11 +53,13 @@ export default async function ManageBookingsPage() {
   const canCreate = hasAnyPermission(me.permissions, [...PERMS.create]);
   const canEdit = hasAnyPermission(me.permissions, [...PERMS.edit]);
   const canDelete = hasAnyPermission(me.permissions, [...PERMS.delete]);
+  const scopeAll = hasBookingScopeAll(me.permissions);
 
-  const [bookings, patients, teams] = await Promise.all([
+  const [bookings, patients, doctors, doctorStatuses] = await Promise.all([
     getBookings(),
     getPatients(),
-    getMedicalTeams(),
+    getProfiles(),
+    getDoctorStatuses(),
   ]);
 
   return (
@@ -61,23 +73,18 @@ export default async function ManageBookingsPage() {
           <div className="text-sm text-red-700 dark:text-red-300">
             Failed to load patients (required for booking assignment).
           </div>
-        ) : !teams ? (
-          <div className="text-sm text-red-700 dark:text-red-300">
-            Failed to load medical teams (required for booking assignment).
-          </div>
         ) : patients.length === 0 ? (
           <div className="text-sm text-zinc-700 dark:text-zinc-300">
             No patients found. Create patients first.
-          </div>
-        ) : teams.length === 0 ? (
-          <div className="text-sm text-zinc-700 dark:text-zinc-300">
-            No medical teams found. Create medical teams first.
           </div>
         ) : (
           <BookingManager
             initialBookings={bookings}
             patients={patients}
-            teams={teams}
+            doctors={doctors ?? []}
+            doctorStatuses={doctorStatuses ?? []}
+            currentUserId={me.user.id}
+            scopeAll={scopeAll}
             canPreview={canPreview}
             canCreate={canCreate}
             canEdit={canEdit}

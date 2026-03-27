@@ -1,6 +1,6 @@
 // =========================================================
-// MOBILE HEALTHCARE - ENTERPRISE MASTER SCHEMA (v3.8)
-// FEATURES: GROUP ENTITY DETAILS (FAMILY/CORP), DIAGNOSTICS, INVENTORY
+// MOBILE HEALTHCARE - ENTERPRISE MASTER SCHEMA (v3.9)
+// FEATURES: DYNAMIC DISPATCH, DOCTOR ACCEPTANCE, GROUP SUBS, R2
 // =========================================================
 
 // 1. SYSTEM & COMPANY CONFIGURATION
@@ -10,7 +10,7 @@ Table company_settings {
   company_email text
   company_phone text
   company_address text
-  logo_url text               
+  logo_url text               // Cloudflare R2 Link
   primary_color varchar       
   secondary_color varchar     
   currency_code varchar       [default: "LKR"]
@@ -66,7 +66,7 @@ Table users {
   created_at timestamptz [default: `now()`]
 }
 
-// 5. SUBSCRIPTION MODULE (v3.8 Updated with Group Entity Details)
+// 5. SUBSCRIPTION MODULE (Group Entity Details)
 Table subscription_plans {
   id uuid [pk]
   plan_name varchar [not null]
@@ -77,14 +77,11 @@ Table subscription_plans {
   is_active boolean [default: true]
 }
 
-// Representing the Group Entity (Family Unit or Company)
 Table subscription_accounts {
   id uuid [pk]
-  account_name text [not null, note: "Family Name or Company Name"]
-  registration_no text [note: "Business Reg No or Family File ID"]
+  account_name text [not null]
+  registration_no text
   plan_id uuid [ref: > subscription_plans.id]
-
-  // Group Specific Details
   billing_address text
   contact_email text
   contact_phone text
@@ -92,9 +89,6 @@ Table subscription_accounts {
   start_date date
   end_date date
   status_id uuid [ref: > lookups.id]
-
-  // Note: Patients/members are added via a separate membership flow.
-  // Subscription account CRUD does NOT assign member patients.
 }
 
 Table subscription_members {
@@ -102,12 +96,9 @@ Table subscription_members {
   subscription_account_id uuid [ref: > subscription_accounts.id]
   patient_id uuid [ref: > patients.id]
   joined_at timestamptz [default: `now()`]
-
-  // Note: member patients are added via a separate membership flow,
-  // not from the subscription account (Family/Corporate) CRUD screen.
 }
 
-// 6. FLEET & TEAMS
+// 6. FLEET & MEDICAL TEAMS (Templates)
 Table vehicles {
   id uuid [pk]
   vehicle_no text [unique, not null]
@@ -139,7 +130,6 @@ Table patients {
   dob timestamptz
   contact_no text
   whatsapp_no text
-  gender text
   gender_id uuid [ref: > lookups.id]
   address text
   has_insurance boolean [default: false]
@@ -152,25 +142,41 @@ Table patients {
   billing_recipient_id uuid [ref: > lookups.id]
 }
 
-// 8. OPD & QUEUE
+// 8. BOOKINGS (Selective Doctor & Acceptance)
+Table bookings {
+  id uuid [pk]
+  patient_id uuid [ref: > patients.id]
+  requested_doctor_id uuid [ref: > users.id, null]
+  doctor_status_id uuid [ref: > lookups.id] // Pending, Accepted, Rejected
+  scheduled_date timestamptz
+  status_id uuid [ref: > lookups.id]
+  booking_remark text 
+}
+
+// 9. DYNAMIC DISPATCH (Real-time Team Assignment)
+Table dispatch_records {
+  id uuid [pk]
+  booking_id uuid [ref: > bookings.id]
+  vehicle_id uuid [ref: > vehicles.id]
+  dispatched_at timestamptz [default: `now()`]
+  status_id uuid [ref: > lookups.id] // In-Transit, Arrived, etc.
+}
+
+Table dispatch_assignments {
+  id uuid [pk]
+  dispatch_id uuid [ref: > dispatch_records.id]
+  user_id uuid [ref: > users.id] // Select specific staff for this dispatch
+  is_team_leader boolean [default: false]
+  assigned_at timestamptz [default: `now()`]
+}
+
+// 10. OPD & CLINICAL VISITS
 Table opd_queue {
   id uuid [pk]
   patient_id uuid [ref: > patients.id]
   token_no serial
-  status text [default: "Waiting"]
   status_id uuid [ref: > lookups.id]
   visit_date timestamptz [default: `now()`]
-}
-
-// 9. BOOKINGS & CLINICAL VISITS
-Table bookings {
-  id uuid [pk]
-  patient_id uuid [ref: > patients.id]
-  team_id uuid [ref: > medical_teams.id]
-  scheduled_date timestamptz
-  status text [default: "Pending"]
-  status_id uuid [ref: > lookups.id]
-  location_gps text
 }
 
 Table visit_records {
@@ -183,7 +189,7 @@ Table visit_records {
   completed_at timestamptz
 }
 
-// 10. DIAGNOSTICS & LABS
+// 11. DIAGNOSTICS & LABS
 Table diagnostic_reports {
   id uuid [pk]
   patient_id uuid [ref: > patients.id]
@@ -203,20 +209,15 @@ Table lab_samples {
   collected_at timestamptz [default: `now()`]
   collected_by uuid [ref: > users.id]
   status_id uuid [ref: > lookups.id] 
-  lab_name text
   result_report_url text 
-  result_received_at timestamptz
 }
 
-// 11. INVENTORY & NURSE STOCK
+// 12. INVENTORY
 Table medicines {
   id uuid [pk]
   name text [not null]
-  generic_name text
   selling_price decimal [not null]
-  uom text
   uom_id uuid [ref: > lookups.id]
-  min_stock_level int
 }
 
 Table inventory_batches {
@@ -226,25 +227,11 @@ Table inventory_batches {
   expiry_date timestamptz [not null]
   quantity int [not null]
   buying_price decimal [not null]
-  location_type text
   location_type_id uuid [ref: > lookups.id] 
   location_id uuid 
 }
 
-Table stock_transfers {
-  id uuid [pk]
-  medicine_id uuid [ref: > medicines.id]
-  batch_id uuid [ref: > inventory_batches.id]
-  from_location_id uuid
-  to_location_id uuid 
-  quantity int
-  status text [default: "Pending"]
-  status_id uuid [ref: > lookups.id]
-  transferred_by uuid [ref: > users.id]
-  created_at timestamptz [default: `now()`]
-}
-
-// 12. BILLING & DISPENSING
+// 13. BILLING & DISPENSING
 Table invoices {
   id uuid [pk]
   booking_id uuid [ref: > bookings.id, null]
@@ -253,7 +240,6 @@ Table invoices {
   consultation_total decimal
   medicine_total decimal
   travel_cost decimal
-  payment_status text [default: "Unpaid"]
   payment_status_id uuid [ref: > lookups.id]
   created_at timestamptz [default: `now()`]
 }

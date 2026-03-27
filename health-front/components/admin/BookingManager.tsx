@@ -12,21 +12,26 @@ import { useEscapeKey } from "@/lib/useEscapeKey";
 export type Booking = {
   id: string;
   patientId: string;
-  teamId: string;
-  scheduledDate: string;
-  status: string;
-  locationGps?: string | null;
+  scheduledDate: string | null;
+  bookingRemark?: string | null;
+  requestedDoctorId?: string | null;
+  doctorStatusId?: string | null;
   patient?: { id: string; fullName: string } | null;
-  team?: { id: string; teamName?: string | null } | null;
+  requestedDoctor?: { id: string; fullName: string; email: string } | null;
+  doctorStatusLookup?: { id: string; lookupKey: string; lookupValue: string } | null;
 };
 
 type PatientOption = { id: string; fullName: string };
-type TeamOption = { id: string; teamName?: string | null };
+export type DoctorProfileOption = { id: string; fullName: string; email: string };
+export type DoctorStatusOption = { id: string; lookupKey: string; lookupValue: string };
 
 type BookingManagerProps = {
   initialBookings: Booking[];
   patients: PatientOption[];
-  teams: TeamOption[];
+  doctors: DoctorProfileOption[];
+  doctorStatuses: DoctorStatusOption[];
+  currentUserId: string;
+  scopeAll: boolean;
   canPreview: boolean;
   canCreate: boolean;
   canEdit: boolean;
@@ -40,7 +45,10 @@ type ActionConfirm = null | { type: "edit" | "delete"; id: string };
 export function BookingManager({
   initialBookings,
   patients,
-  teams,
+  doctors,
+  doctorStatuses,
+  currentUserId,
+  scopeAll,
   canPreview,
   canCreate,
   canEdit,
@@ -57,6 +65,8 @@ export function BookingManager({
     if (!selectedId) return null;
     return bookings.find((b) => b.id === selectedId) ?? null;
   }, [bookings, selectedId]);
+
+  const useFullEdit = scopeAll;
 
   useEscapeKey(
     () => {
@@ -90,6 +100,35 @@ export function BookingManager({
         setSelectedId(null);
         setMode("none");
       }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Something went wrong";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function setDoctorDecision(bookingId: string, lookupKey: "ACCEPTED" | "REJECTED") {
+    const row = doctorStatuses.find((d) => d.lookupKey === lookupKey);
+    if (!row) {
+      toast.error("Status lookup not configured");
+      return;
+    }
+    setBusyId(bookingId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ doctorStatusId: row.id }),
+      });
+      if (!res.ok) {
+        const msg = await res.text().catch(() => "");
+        throw new Error(msg || "Update failed");
+      }
+      await refresh();
+      toast.success(lookupKey === "ACCEPTED" ? "Booking accepted" : "Booking rejected");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Something went wrong";
       setError(msg);
@@ -135,7 +174,7 @@ export function BookingManager({
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-sm text-zinc-600 dark:text-zinc-400">
-          Manage bookings (create, edit, delete, preview).
+          Manage bookings: requested doctor, doctor acceptance status, and booking remark.
         </div>
         <div className="flex items-center gap-2">
           {canCreate ? (
@@ -195,7 +234,7 @@ export function BookingManager({
                     Create booking
                   </h2>
                   <p className="text-sm text-[var(--text-secondary)]">
-                    Choose patient, medical team, schedule, status, and optional GPS.
+                    Patient is required. Requested doctor is optional; if selected it starts as Pending.
                   </p>
                 </div>
                 <button
@@ -216,7 +255,7 @@ export function BookingManager({
                 title="Create booking"
                 submitLabel="Create"
                 patients={patients}
-                teams={teams}
+                doctors={doctors}
                 onCancel={() => {
                   setMode("none");
                   setError(null);
@@ -264,10 +303,12 @@ export function BookingManager({
                     id="edit-booking-title"
                     className="text-lg font-semibold tracking-tight text-[var(--text-primary)]"
                   >
-                    Edit booking
+                    {useFullEdit ? "Edit booking" : "Update response"}
                   </h2>
                   <p className="text-sm text-[var(--text-secondary)]">
-                    Update patient, team, schedule, status, and location details.
+                    {useFullEdit
+                      ? "Update patient, schedule, doctor, and acceptance."
+                      : "Accept or reject the request, or adjust the booking remark."}
                   </p>
                 </div>
                 <button
@@ -282,36 +323,65 @@ export function BookingManager({
                   ×
                 </button>
               </div>
-              <BookingForm
-                layout="modal"
-                intent="edit"
-                title="Edit booking"
-                submitLabel="Save changes"
-                patients={patients}
-                teams={teams}
-                initial={{
-                  patientId: selected.patientId,
-                  teamId: selected.teamId,
-                  scheduledDate: toDateTimeLocalInput(selected.scheduledDate),
-                  status: selected.status,
-                  locationGps: selected.locationGps ?? "",
-                }}
-                onCancel={() => setMode("none")}
-                onSubmit={async (values) => {
-                  setError(null);
-                  const res = await fetch(`/api/bookings/${selected.id}`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(values),
-                  });
-                  if (!res.ok) {
-                    const msg = await res.text().catch(() => "");
-                    throw new Error(msg || "Update failed");
-                  }
-                  await refresh();
-                  setMode("none");
-                }}
-              />
+              {useFullEdit ? (
+                <BookingForm
+                  layout="modal"
+                  intent="edit"
+                  title="Edit booking"
+                  submitLabel="Save changes"
+                  patients={patients}
+                  doctors={doctors}
+                  doctorStatuses={doctorStatuses}
+                  initial={{
+                    patientId: selected.patientId,
+                    scheduledDate: toDateTimeLocalInput(selected.scheduledDate),
+                    bookingRemark: selected.bookingRemark ?? "",
+                    requestedDoctorId: selected.requestedDoctorId ?? "",
+                    doctorStatusId: selected.doctorStatusId ?? "",
+                  }}
+                  onCancel={() => setMode("none")}
+                  onSubmit={async (values) => {
+                    setError(null);
+                    const res = await fetch(`/api/bookings/${selected.id}`, {
+                      method: "PUT",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(values),
+                    });
+                    if (!res.ok) {
+                      const msg = await res.text().catch(() => "");
+                      throw new Error(msg || "Update failed");
+                    }
+                    await refresh();
+                    setMode("none");
+                    toast.success("Booking updated");
+                  }}
+                />
+              ) : (
+                <DoctorScopedEditForm
+                  layout="modal"
+                  doctorStatuses={doctorStatuses}
+                  initial={{
+                    bookingRemark: selected.bookingRemark ?? "",
+                    doctorStatusId: selected.doctorStatusId ?? "",
+                  }}
+                  onCancel={() => setMode("none")}
+                  onSubmit={async (values) => {
+                    setError(null);
+                    const res = await fetch(`/api/bookings/${selected.id}`, {
+                      method: "PUT",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(values),
+                    });
+                    if (!res.ok) {
+                      const msg = await res.text().catch(() => "");
+                      throw new Error(msg || "Update failed");
+                    }
+                    await refresh();
+                    setMode("none");
+                    toast.success("Booking updated");
+                  }}
+                />
+              )}
             </Card>
           </div>
         </div>
@@ -364,25 +434,27 @@ export function BookingManager({
                       <dd className="preview-value">{selected.patient?.fullName ?? "—"}</dd>
                     </div>
                     <div className="preview-row">
-                      <dt className="preview-label">Medical Team</dt>
-                      <dd className="preview-value">{selected.team?.teamName ?? "—"}</dd>
+                      <dt className="preview-label">Requested doctor</dt>
+                      <dd className="preview-value">{selected.requestedDoctor?.fullName ?? "—"}</dd>
+                    </div>
+                    <div className="preview-row">
+                      <dt className="preview-label">Doctor status</dt>
+                      <dd className="preview-value">
+                        {selected.doctorStatusLookup?.lookupValue ?? "—"}
+                      </dd>
                     </div>
                   </dl>
                 </section>
                 <section className="preview-section">
-                  <h3 className="preview-section-title">Schedule & Status</h3>
+                  <h3 className="preview-section-title">Schedule & Remark</h3>
                   <dl className="preview-list">
                     <div className="preview-row">
                       <dt className="preview-label">Date & Time</dt>
                       <dd className="preview-value">{formatDateTime(selected.scheduledDate)}</dd>
                     </div>
                     <div className="preview-row">
-                      <dt className="preview-label">Status</dt>
-                      <dd className="preview-value">{selected.status}</dd>
-                    </div>
-                    <div className="preview-row">
-                      <dt className="preview-label">Location GPS</dt>
-                      <dd className="preview-value">{selected.locationGps ?? "—"}</dd>
+                      <dt className="preview-label">Booking remark</dt>
+                      <dd className="preview-value">{selected.bookingRemark ?? "—"}</dd>
                     </div>
                   </dl>
                 </section>
@@ -397,27 +469,57 @@ export function BookingManager({
           <thead className="text-xs uppercase text-zinc-500 dark:text-zinc-400">
             <tr>
               <th className="px-4 py-3">Patient</th>
-              <th className="px-4 py-3">Medical Team</th>
               <th className="px-4 py-3">Date & Time</th>
-              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Doctor</th>
+              <th className="px-4 py-3">Dr. status</th>
+              <th className="px-4 py-3">Booking remark</th>
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             {bookings.map((booking) => {
               const isBusy = busyId === booking.id;
+              const showPendingActions =
+                canEdit &&
+                booking.requestedDoctorId === currentUserId &&
+                booking.doctorStatusLookup?.lookupKey === "PENDING";
               return (
                 <tr key={booking.id} className="border-t border-zinc-200 dark:border-zinc-800">
                   <td className="px-4 py-3 font-medium">{booking.patient?.fullName ?? "—"}</td>
                   <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
-                    {booking.team?.teamName ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                     {formatDateTime(booking.scheduledDate)}
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{booking.status}</td>
+                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                    {booking.requestedDoctor?.fullName ?? "—"}
+                  </td>
+                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                    {booking.doctorStatusLookup?.lookupValue ?? "—"}
+                  </td>
+                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{booking.bookingRemark ?? "—"}</td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      {showPendingActions ? (
+                        <>
+                          <Button
+                            type="button"
+                            variant="create"
+                            className="h-9 px-3"
+                            disabled={isBusy}
+                            onClick={() => void setDoctorDecision(booking.id, "ACCEPTED")}
+                          >
+                            Accept
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            className="h-9 px-3"
+                            disabled={isBusy}
+                            onClick={() => void setDoctorDecision(booking.id, "REJECTED")}
+                          >
+                            Reject
+                          </Button>
+                        </>
+                      ) : null}
                       {canPreview ? (
                         <Button
                           type="button"
@@ -473,10 +575,10 @@ export function BookingManager({
 
 type BookingFormValues = {
   patientId: string;
-  teamId: string;
   scheduledDate: string;
-  status: string;
-  locationGps?: string;
+  bookingRemark?: string;
+  requestedDoctorId?: string;
+  doctorStatusId?: string;
 };
 
 function BookingForm({
@@ -484,7 +586,8 @@ function BookingForm({
   submitLabel,
   intent,
   patients,
-  teams,
+  doctors,
+  doctorStatuses,
   onCancel,
   onSubmit,
   initial,
@@ -494,24 +597,44 @@ function BookingForm({
   submitLabel: string;
   intent: "create" | "edit";
   patients: PatientOption[];
-  teams: TeamOption[];
+  doctors: DoctorProfileOption[];
+  doctorStatuses?: DoctorStatusOption[];
   onCancel: () => void;
-  onSubmit: (values: BookingFormValues) => Promise<void>;
+  onSubmit: (values: Record<string, unknown>) => Promise<void>;
   initial?: Partial<BookingFormValues>;
   layout?: "card" | "modal";
 }) {
   const [values, setValues] = useState<BookingFormValues>({
     patientId: initial?.patientId ?? patients[0]?.id ?? "",
-    teamId: initial?.teamId ?? teams[0]?.id ?? "",
     scheduledDate: initial?.scheduledDate ?? "",
-    status: initial?.status ?? "Pending",
-    locationGps: initial?.locationGps ?? "",
+    bookingRemark: initial?.bookingRemark ?? "",
+    requestedDoctorId: initial?.requestedDoctorId ?? "",
+    doctorStatusId: initial?.doctorStatusId ?? "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const selectClass =
     "h-11 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/25";
+
+  function buildPayload(): Record<string, unknown> {
+    const base = {
+      patientId: values.patientId,
+      scheduledDate: values.scheduledDate.trim() ? values.scheduledDate : null,
+      bookingRemark: values.bookingRemark?.trim() ? values.bookingRemark.trim() : null,
+      requestedDoctorId: (values.requestedDoctorId ?? "").trim()
+        ? (values.requestedDoctorId ?? "").trim()
+        : null,
+    };
+    if (intent === "edit" && doctorStatuses?.length) {
+      const ds = (values.doctorStatusId ?? "").trim();
+      return {
+        ...base,
+        doctorStatusId: ds ? ds : null,
+      };
+    }
+    return base;
+  }
 
   const formBody = (
     <>
@@ -537,13 +660,7 @@ function BookingForm({
           setError(null);
           setIsSubmitting(true);
           try {
-            await onSubmit({
-              patientId: values.patientId,
-              teamId: values.teamId,
-              scheduledDate: values.scheduledDate,
-              status: values.status,
-              locationGps: values.locationGps?.trim() || undefined,
-            });
+            await onSubmit(buildPayload());
           } catch (e) {
             const msg = e instanceof Error ? e.message : "Something went wrong";
             setError(msg);
@@ -570,52 +687,56 @@ function BookingForm({
         </label>
 
         <label className="flex flex-col gap-2 text-sm">
-          <span className="font-medium text-[var(--text-primary)]">Medical Team</span>
+          <span className="font-medium text-[var(--text-primary)]">Requested doctor (optional)</span>
           <select
             className={selectClass}
-            value={values.teamId}
-            onChange={(e) => setValues((v) => ({ ...v, teamId: e.target.value }))}
-            required
+            value={values.requestedDoctorId}
+            onChange={(e) => setValues((v) => ({ ...v, requestedDoctorId: e.target.value }))}
           >
-            {teams.map((team) => (
-              <option key={team.id} value={team.id}>
-                {team.teamName ?? "Unnamed team"}
+            <option value="">None</option>
+            {doctors.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.fullName} ({d.email})
               </option>
             ))}
           </select>
         </label>
 
         <Input
-          label="Scheduled Date & Time"
+          label="Scheduled date & time (optional)"
           name="scheduledDate"
           type="datetime-local"
           value={values.scheduledDate}
           onChange={(e) => setValues((v) => ({ ...v, scheduledDate: e.target.value }))}
-          required
         />
 
-        <label className="flex flex-col gap-2 text-sm">
-          <span className="font-medium text-[var(--text-primary)]">Status</span>
-          <select
-            className={selectClass}
-            value={values.status}
-            onChange={(e) => setValues((v) => ({ ...v, status: e.target.value }))}
-          >
-            {["Pending", "Confirmed", "Completed", "Cancelled"].map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
+        {intent === "edit" && doctorStatuses?.length ? (
+          <label className="flex flex-col gap-2 text-sm sm:col-span-2">
+            <span className="font-medium text-[var(--text-primary)]">Doctor acceptance</span>
+            <select
+              className={selectClass}
+              value={values.doctorStatusId}
+              onChange={(e) => setValues((v) => ({ ...v, doctorStatusId: e.target.value }))}
+            >
+              <option value="">—</option>
+              {doctorStatuses.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.lookupValue}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+
+        <label className="flex flex-col gap-2 text-sm sm:col-span-2">
+          <span className="font-medium text-[var(--text-primary)]">Booking remark</span>
+          <textarea
+            className={`${selectClass} min-h-[88px] py-2`}
+            value={values.bookingRemark}
+            onChange={(e) => setValues((v) => ({ ...v, bookingRemark: e.target.value }))}
+            rows={3}
+          />
         </label>
-
-        <Input
-          label="Location GPS"
-          name="locationGps"
-          value={values.locationGps ?? ""}
-          onChange={(e) => setValues((v) => ({ ...v, locationGps: e.target.value }))}
-          className="sm:col-span-2"
-        />
 
         <div className="flex items-center justify-end gap-2 sm:col-span-2">
           <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
@@ -640,13 +761,108 @@ function BookingForm({
   return <div className="surface-card p-6">{formBody}</div>;
 }
 
-function formatDateTime(value: string) {
+function DoctorScopedEditForm({
+  initial,
+  doctorStatuses,
+  onCancel,
+  onSubmit,
+  layout = "card",
+}: {
+  initial: { bookingRemark: string; doctorStatusId: string };
+  doctorStatuses: DoctorStatusOption[];
+  onCancel: () => void;
+  onSubmit: (values: Record<string, unknown>) => Promise<void>;
+  layout?: "card" | "modal";
+}) {
+  const [values, setValues] = useState(initial);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const selectClass =
+    "h-11 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/25";
+
+  const formBody = (
+    <>
+      {error ? (
+        <div className="mb-4 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 px-4 py-3 text-sm text-[var(--danger)]">
+          {error}
+        </div>
+      ) : null}
+      <form
+        className="grid gap-4 sm:grid-cols-2"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setError(null);
+          setIsSubmitting(true);
+          try {
+            await onSubmit({
+              doctorStatusId: (values.doctorStatusId ?? "").trim()
+                ? (values.doctorStatusId ?? "").trim()
+                : null,
+              bookingRemark: values.bookingRemark?.trim() ? values.bookingRemark.trim() : null,
+            });
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : "Something went wrong";
+            setError(msg);
+            toast.error(msg);
+          } finally {
+            setIsSubmitting(false);
+          }
+        }}
+      >
+        <label className="flex flex-col gap-2 text-sm sm:col-span-2">
+          <span className="font-medium text-[var(--text-primary)]">Doctor acceptance</span>
+          <select
+            className={selectClass}
+            value={values.doctorStatusId}
+            onChange={(e) => setValues((v) => ({ ...v, doctorStatusId: e.target.value }))}
+          >
+            <option value="">—</option>
+            {doctorStatuses.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.lookupValue}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="flex flex-col gap-2 text-sm sm:col-span-2">
+          <span className="font-medium text-[var(--text-primary)]">Booking remark</span>
+          <textarea
+            className={`${selectClass} min-h-[88px] py-2`}
+            value={values.bookingRemark}
+            onChange={(e) => setValues((v) => ({ ...v, bookingRemark: e.target.value }))}
+            rows={3}
+          />
+        </label>
+
+        <div className="flex items-center justify-end gap-2 sm:col-span-2">
+          <Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="edit" isLoading={isSubmitting}>
+            Save
+          </Button>
+        </div>
+      </form>
+    </>
+  );
+
+  if (layout === "modal") {
+    return formBody;
+  }
+  return <div className="surface-card p-6">{formBody}</div>;
+}
+
+function formatDateTime(value: string | null) {
+  if (value === null || value === "") return "—";
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
+  if (Number.isNaN(d.getTime())) return "—";
   return d.toLocaleString();
 }
 
-function toDateTimeLocalInput(value: string) {
+function toDateTimeLocalInput(value: string | null) {
+  if (value === null || value === "") return "";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "";
   const tzOffsetMs = d.getTimezoneOffset() * 60_000;

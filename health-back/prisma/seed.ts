@@ -72,6 +72,8 @@ async function main() {
     "bookings:create",
     "bookings:update",
     "bookings:delete",
+    "bookings:scope_own",
+    "bookings:scope_all",
 
     "files:upload",
     "files:delete",
@@ -237,7 +239,7 @@ async function main() {
   const passwordHash = await bcrypt.hash(superAdminPassword, 10);
 
   // Create super admin user if not exists (with full details)
-  await prisma.user.upsert({
+  const superAdminUser = await prisma.user.upsert({
     where: { email: superAdminEmail },
     update: {
       fullName: "Super Admin",
@@ -266,7 +268,15 @@ async function main() {
     const bookingPermissions = await prisma.permission.findMany({
       where: {
         permissionKey: {
-          in: ["bookings:list", "bookings:read", "bookings:create", "bookings:update", "bookings:delete"],
+          in: [
+            "bookings:list",
+            "bookings:read",
+            "bookings:create",
+            "bookings:update",
+            "bookings:delete",
+            "bookings:scope_own",
+            "bookings:scope_all",
+          ],
         },
       },
       select: { id: true },
@@ -274,6 +284,53 @@ async function main() {
     await prisma.rolePermission.createMany({
       data: bookingPermissions.map((p) => ({ roleId: adminRole.id, permissionId: p.id })),
       skipDuplicates: true,
+    });
+  }
+
+  const doctorBookingStatusCategory = await prisma.lookupCategory.upsert({
+    where: { categoryName: "DOCTOR_BOOKING_STATUS" },
+    update: {},
+    create: { categoryName: "DOCTOR_BOOKING_STATUS" },
+  });
+  for (const item of [
+    { lookupKey: "PENDING", lookupValue: "Pending" },
+    { lookupKey: "ACCEPTED", lookupValue: "Accepted" },
+    { lookupKey: "REJECTED", lookupValue: "Rejected" },
+  ] as const) {
+    await prisma.lookup.upsert({
+      where: {
+        categoryId_lookupKey: { categoryId: doctorBookingStatusCategory.id, lookupKey: item.lookupKey },
+      },
+      update: { lookupValue: item.lookupValue, isActive: true },
+      create: {
+        categoryId: doctorBookingStatusCategory.id,
+        lookupKey: item.lookupKey,
+        lookupValue: item.lookupValue,
+        isActive: true,
+      },
+    });
+  }
+
+  const dispatchStatusCategory = await prisma.lookupCategory.upsert({
+    where: { categoryName: "DISPATCH_STATUS" },
+    update: {},
+    create: { categoryName: "DISPATCH_STATUS" },
+  });
+  for (const item of [
+    { lookupKey: "IN_TRANSIT", lookupValue: "In transit" },
+    { lookupKey: "ARRIVED", lookupValue: "Arrived" },
+  ] as const) {
+    await prisma.lookup.upsert({
+      where: {
+        categoryId_lookupKey: { categoryId: dispatchStatusCategory.id, lookupKey: item.lookupKey },
+      },
+      update: { lookupValue: item.lookupValue, isActive: true },
+      create: {
+        categoryId: dispatchStatusCategory.id,
+        lookupKey: item.lookupKey,
+        lookupValue: item.lookupValue,
+        isActive: true,
+      },
     });
   }
 
@@ -322,22 +379,31 @@ async function main() {
     },
   });
 
-  // 2 demo bookings
+  const doctorStatusPending = await prisma.lookup.findFirst({
+    where: { categoryId: doctorBookingStatusCategory.id, lookupKey: "PENDING" },
+    select: { id: true },
+  });
+  const doctorStatusAccepted = await prisma.lookup.findFirst({
+    where: { categoryId: doctorBookingStatusCategory.id, lookupKey: "ACCEPTED" },
+    select: { id: true },
+  });
+
+  // 2 demo bookings (requested doctor = super admin for dashboard preview)
   await prisma.booking.upsert({
     where: { id: "booking-demo-001" },
     update: {
       patientId: patient.id,
-      teamId: team.id,
-      status: "Confirmed",
-      locationGps: "6.9271,79.8612",
+      bookingRemark: "Demo accepted visit",
+      requestedDoctorId: superAdminUser.id,
+      doctorStatusId: doctorStatusAccepted?.id ?? null,
       scheduledDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
     },
     create: {
       id: "booking-demo-001",
       patientId: patient.id,
-      teamId: team.id,
-      status: "Confirmed",
-      locationGps: "6.9271,79.8612",
+      bookingRemark: "Demo accepted visit",
+      requestedDoctorId: superAdminUser.id,
+      doctorStatusId: doctorStatusAccepted?.id ?? null,
       scheduledDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
     },
   });
@@ -346,17 +412,17 @@ async function main() {
     where: { id: "booking-demo-002" },
     update: {
       patientId: patient.id,
-      teamId: team.id,
-      status: "Pending",
-      locationGps: "6.9147,79.9730",
+      bookingRemark: "Awaiting doctor response",
+      requestedDoctorId: superAdminUser.id,
+      doctorStatusId: doctorStatusPending?.id ?? null,
       scheduledDate: new Date(Date.now() + 48 * 60 * 60 * 1000),
     },
     create: {
       id: "booking-demo-002",
       patientId: patient.id,
-      teamId: team.id,
-      status: "Pending",
-      locationGps: "6.9147,79.9730",
+      bookingRemark: "Awaiting doctor response",
+      requestedDoctorId: superAdminUser.id,
+      doctorStatusId: doctorStatusPending?.id ?? null,
       scheduledDate: new Date(Date.now() + 48 * 60 * 60 * 1000),
     },
   });

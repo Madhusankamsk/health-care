@@ -9,6 +9,11 @@ export function hasAnyPermission(
   return required.some((perm) => set.has(perm));
 }
 
+/** When true, user sees every booking; otherwise own-scope rules apply on the server. */
+export function hasBookingScopeAll(userPermissions: PermissionKey[] | undefined): boolean {
+  return hasAnyPermission(userPermissions, ["bookings:scope_all"]);
+}
+
 export function isAdminRole(role: string | null | undefined): boolean {
   if (!role) return false;
   const normalized = role.trim().toLowerCase();

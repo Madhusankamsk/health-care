@@ -9,7 +9,7 @@ declare global {
   }
 }
 
-async function loadPermissionKeys(req: Request): Promise<string[]> {
+export async function loadPermissionKeys(req: Request): Promise<string[]> {
   if (req.permissionKeys) return req.permissionKeys;
   const userId = req.authUser?.sub;
   if (!userId) return [];

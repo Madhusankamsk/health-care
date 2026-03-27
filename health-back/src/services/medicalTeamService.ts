@@ -30,7 +30,7 @@ export async function listMedicalTeams() {
           },
         },
       },
-      _count: { select: { members: true, bookings: true } },
+      _count: { select: { members: true } },
     },
   });
 }
@@ -53,7 +53,7 @@ export async function getMedicalTeamById(id: string) {
           },
         },
       },
-      _count: { select: { members: true, bookings: true } },
+      _count: { select: { members: true } },
     },
   });
 }
@@ -98,7 +98,7 @@ export async function createMedicalTeam(data: MedicalTeamPayload) {
             },
           },
         },
-        _count: { select: { members: true, bookings: true } },
+        _count: { select: { members: true } },
       },
     });
   });
@@ -169,7 +169,7 @@ export async function updateMedicalTeam(
             },
           },
         },
-        _count: { select: { members: true, bookings: true } },
+        _count: { select: { members: true } },
       },
     });
   });

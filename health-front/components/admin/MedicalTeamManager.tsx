@@ -32,7 +32,6 @@ export type MedicalTeam = {
   }[];
   _count?: {
     members?: number;
-    bookings?: number;
   };
 };
 
@@ -407,10 +406,6 @@ export function MedicalTeamManager({
                       <dt className="preview-label">Members</dt>
                       <dd className="preview-value">{selected._count?.members ?? 0}</dd>
                     </div>
-                    <div className="preview-row">
-                      <dt className="preview-label">Bookings</dt>
-                      <dd className="preview-value">{selected._count?.bookings ?? 0}</dd>
-                    </div>
                   </dl>
                 </section>
                 <section className="preview-section sm:col-span-2">
@@ -443,7 +438,6 @@ export function MedicalTeamManager({
               <th className="px-4 py-3">Team Name</th>
               <th className="px-4 py-3">Vehicle</th>
               <th className="px-4 py-3">Members</th>
-              <th className="px-4 py-3">Bookings</th>
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
@@ -458,9 +452,6 @@ export function MedicalTeamManager({
                   </td>
                   <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                     {team._count?.members ?? 0}
-                  </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
-                    {team._count?.bookings ?? 0}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
