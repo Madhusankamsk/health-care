@@ -152,3 +152,44 @@ export async function updateBooking(
 export async function deleteBooking(id: string) {
   return prisma.booking.delete({ where: { id } });
 }
+
+// Deletes a booking and all linked records required by FK constraints.
+// This prevents Prisma/Postgres from rejecting the delete due to restricted relations.
+export async function deleteBookingCascade(id: string) {
+  return prisma.$transaction(async (tx) => {
+    // Dispatch pipeline
+    const dispatchRecords = await tx.dispatchRecord.findMany({
+      where: { bookingId: id },
+      select: { id: true },
+    });
+
+    const dispatchIds = dispatchRecords.map((d) => d.id);
+    if (dispatchIds.length) {
+      // Not strictly required because DispatchAssignment -> DispatchRecord is `onDelete: Cascade`,
+      // but deleting explicitly keeps DB behavior consistent across environments.
+      await tx.dispatchAssignment.deleteMany({
+        where: { dispatchId: { in: dispatchIds } },
+      });
+    }
+    await tx.dispatchRecord.deleteMany({ where: { bookingId: id } });
+
+    // Visit pipeline (and its direct children)
+    const visit = await tx.visitRecord.findUnique({
+      where: { bookingId: id },
+      select: { id: true },
+    });
+
+    if (visit) {
+      await tx.dispensedMedicine.deleteMany({ where: { visitId: visit.id } });
+      await tx.diagnosticReport.deleteMany({ where: { visitId: visit.id } });
+      await tx.labSample.deleteMany({ where: { visitId: visit.id } });
+      await tx.visitRecord.deleteMany({ where: { bookingId: id } });
+    }
+
+    // Billing
+    await tx.invoice.deleteMany({ where: { bookingId: id } });
+
+    // Finally the booking row itself.
+    return tx.booking.delete({ where: { id } });
+  });
+}

@@ -4,6 +4,7 @@ import { loadPermissionKeys } from "../middleware/permissions";
 import {
   createBooking,
   deleteBooking,
+  deleteBookingCascade,
   getBookingById,
   listBookings,
   resolveBookingListScope,
@@ -172,7 +173,7 @@ export async function deleteBookingHandler(req: Request, res: Response) {
   }
 
   try {
-    await deleteBooking(id);
+    await deleteBookingCascade(id);
     return res.status(204).send();
   } catch {
     return res.status(409).json({ message: "Unable to delete booking. Remove linked records first." });
