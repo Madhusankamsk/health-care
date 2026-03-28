@@ -6,6 +6,7 @@ alwaysApply: false
 
 # health-front rules
 
+- **Modals, dialogs, and thin `page.tsx` patterns:** follow `health-front-modals-structure.mdc` (ModalShell, ConfirmModal, colocation).
 - App Router: prefer server components by default; use `"use client"` only when needed.
 - Don’t fetch `/api/me` from server components via relative `fetch()` unless you know cookies are included. Prefer `lib/backend.ts` helpers.
 - Component imports should use the structured paths:

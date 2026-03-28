@@ -1,0 +1,35 @@
+---
+description: Modal, dialog, and page structure for health-front (App Router)
+globs: health-front/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# health-front — modals and page structure
+
+Follow this structure for new features and refactors.
+
+## Pages (`app/**/page.tsx`)
+
+- Keep **server components** lean: auth/redirect, data fetching, pass props into client sections.
+- **Do not** embed large `"use client"` blocks or inline modal markup in `page.tsx`. Use a colocated section component (e.g. `RecordSubscriptionPaymentSection.tsx`) or a feature component under `components/`.
+
+## Modals and dialogs
+
+- **Form / content overlays** (title, subtitle, body, escape + backdrop): use **`ModalShell`** from `@/components/ui/ModalShell` with `open`, `onClose`, `titleId`, `title`, `subtitle`, optional `maxWidthClass` (e.g. `max-w-3xl`, `max-w-4xl`, `max-w-lg`), optional `headerTrailing` for extra header controls (e.g. “Full preview”).
+- **Confirm / delete / short prompts**: use **`ConfirmModal`** from `@/components/ui/ConfirmModal`.
+- **Do not** copy-paste raw `fixed inset-0 … role="dialog"` stacks; extend the shared components if something is missing.
+- **Z-index**: `ModalShell` uses `z-[70]`; `ConfirmModal` uses `z-[80]` so confirms stay above form modals.
+
+## Where to put modal components
+
+- **Route-specific** UI: colocate next to the section (e.g. `app/dashboard/payments/record/RecordSubscriptionPaymentModal.tsx` imported by the section).
+- **Reusable** CRUD dialogs: `components/forms/*Modal.tsx` or `components/admin/*` alongside the manager.
+
+## State and remounting
+
+- Parent owns **which row / entity is open**; modal receives `open`, entity payload, and callbacks (`onClose`, `onSuccess` / `onRecorded`).
+- Use a **`key`** on the modal when the same component instance must reset form state when switching rows (e.g. `key={selectedId ?? "closed"}`).
+
+## Forms
+
+- Optional **`onSuccess`** callbacks on create forms are fine to close parent modals after `router.refresh()` when appropriate.
