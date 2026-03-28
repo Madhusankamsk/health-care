@@ -44,6 +44,41 @@ async function validatePaymentMethod(
   }
 }
 
+async function validatePaymentPurpose(
+  tx: Prisma.TransactionClient,
+  paymentPurposeId: string,
+): Promise<void> {
+  const row = await tx.lookup.findFirst({
+    where: {
+      id: paymentPurposeId,
+      isActive: true,
+      category: { categoryName: "PAYMENT_PURPOSE" },
+    },
+    select: { id: true },
+  });
+  if (!row) {
+    throw new Error("Invalid paymentPurposeId");
+  }
+}
+
+/** Maps subscription plan type (SUB_TYPE) to PAYMENT_PURPOSE lookup key. */
+function planTypeLookupKeyToPaymentPurposeKey(
+  planTypeLookupKey: string | null | undefined,
+): "INDIVIDUAL_MEMBERSHIP" | "FAMILY_PACKAGE_PAYMENT" | "CORPORATE_SUBSCRIPTION" | "OTHER" {
+  if (planTypeLookupKey === "INDIVIDUAL") return "INDIVIDUAL_MEMBERSHIP";
+  if (planTypeLookupKey === "FAMILY") return "FAMILY_PACKAGE_PAYMENT";
+  if (planTypeLookupKey === "CORPORATE") return "CORPORATE_SUBSCRIPTION";
+  return "OTHER";
+}
+
+async function resolveSubscriptionPaymentPurposeId(
+  tx: Prisma.TransactionClient,
+  planTypeLookupKey: string | null | undefined,
+): Promise<string> {
+  const purposeKey = planTypeLookupKeyToPaymentPurposeKey(planTypeLookupKey);
+  return requireLookupId(tx, "PAYMENT_PURPOSE", purposeKey);
+}
+
 /**
  * Creates subscription invoice, ledger entries (DEBIT charge + CREDIT payments), and updates
  * subscription account outstanding balance by the unpaid remainder (balance due).
@@ -65,6 +100,7 @@ export async function createSubscriptionInvoiceWithLedger(
       id: true,
       planName: true,
       price: true,
+      planTypeLookup: { select: { lookupKey: true } },
     },
   });
   if (!plan) {
@@ -142,6 +178,11 @@ export async function createSubscriptionInvoiceWithLedger(
     },
   });
 
+  const paymentPurposeId = await resolveSubscriptionPaymentPurposeId(
+    tx,
+    plan.planTypeLookup?.lookupKey,
+  );
+
   for (const p of params.payments) {
     const amt = new Prisma.Decimal(p.amountPaid);
     await tx.payment.create({
@@ -149,6 +190,7 @@ export async function createSubscriptionInvoiceWithLedger(
         invoiceId: invoice.id,
         amountPaid: amt,
         paymentMethodId: p.paymentMethodId.trim(),
+        paymentPurposeId,
         transactionRef: p.transactionRef?.trim() ? p.transactionRef.trim() : null,
         collectedById: params.collectedByUserId.trim(),
       },
@@ -183,6 +225,8 @@ export type OutstandingSubscriptionInvoiceRow = {
   accountName: string | null;
   planName: string;
   patientName: string | null;
+  /** Default PAYMENT_PURPOSE id for new payments (from plan type). */
+  suggestedPaymentPurposeId: string;
 };
 
 export async function listOutstandingSubscriptionInvoices(): Promise<
@@ -205,24 +249,38 @@ export async function listOutstandingSubscriptionInvoices(): Promise<
       subscriptionAccount: {
         select: {
           accountName: true,
-          plan: { select: { planName: true } },
+          plan: {
+            select: {
+              planName: true,
+              planTypeLookup: { select: { lookupKey: true } },
+            },
+          },
         },
       },
       patient: { select: { fullName: true } },
     },
   });
 
-  return rows.map((r) => ({
-    id: r.id,
-    createdAt: r.createdAt.toISOString(),
-    balanceDue: r.balanceDue.toString(),
-    totalAmount: r.totalAmount.toString(),
-    paidAmount: r.paidAmount.toString(),
-    subscriptionAccountId: r.subscriptionAccountId!,
-    accountName: r.subscriptionAccount?.accountName ?? null,
-    planName: r.subscriptionAccount?.plan?.planName ?? "—",
-    patientName: r.patient?.fullName ?? null,
-  }));
+  const out: OutstandingSubscriptionInvoiceRow[] = [];
+  for (const r of rows) {
+    const suggestedPaymentPurposeId = await resolveSubscriptionPaymentPurposeId(
+      prisma,
+      r.subscriptionAccount?.plan?.planTypeLookup?.lookupKey,
+    );
+    out.push({
+      id: r.id,
+      createdAt: r.createdAt.toISOString(),
+      balanceDue: r.balanceDue.toString(),
+      totalAmount: r.totalAmount.toString(),
+      paidAmount: r.paidAmount.toString(),
+      subscriptionAccountId: r.subscriptionAccountId!,
+      accountName: r.subscriptionAccount?.accountName ?? null,
+      planName: r.subscriptionAccount?.plan?.planName ?? "—",
+      patientName: r.patient?.fullName ?? null,
+      suggestedPaymentPurposeId,
+    });
+  }
+  return out;
 }
 
 export async function recordSubscriptionInvoicePayment(params: {
@@ -231,6 +289,8 @@ export async function recordSubscriptionInvoicePayment(params: {
   paymentMethodId: string;
   transactionRef?: string | null;
   collectedByUserId: string;
+  /** Optional; defaults from subscription plan type (SUB_TYPE → PAYMENT_PURPOSE). */
+  paymentPurposeId?: string | null;
 }): Promise<{ invoiceId: string; balanceDue: string }> {
   return prisma.$transaction(async (tx) => {
     const invoice = await tx.invoice.findUnique({
@@ -240,6 +300,13 @@ export async function recordSubscriptionInvoicePayment(params: {
         subscriptionAccountId: true,
         paidAmount: true,
         balanceDue: true,
+        subscriptionAccount: {
+          select: {
+            plan: {
+              select: { planTypeLookup: { select: { lookupKey: true } } },
+            },
+          },
+        },
       },
     });
 
@@ -266,6 +333,18 @@ export async function recordSubscriptionInvoicePayment(params: {
       throw new Error("collectedByUserId is required when recording payments");
     }
 
+    const purposeTrim = params.paymentPurposeId?.trim();
+    let paymentPurposeId: string;
+    if (purposeTrim) {
+      await validatePaymentPurpose(tx, purposeTrim);
+      paymentPurposeId = purposeTrim;
+    } else {
+      paymentPurposeId = await resolveSubscriptionPaymentPurposeId(
+        tx,
+        invoice.subscriptionAccount?.plan?.planTypeLookup?.lookupKey,
+      );
+    }
+
     const creditTypeId = await requireLookupId(tx, "ACCOUNT_TRANSACTION_TYPE", "CREDIT");
 
     await tx.payment.create({
@@ -273,6 +352,7 @@ export async function recordSubscriptionInvoicePayment(params: {
         invoiceId: invoice.id,
         amountPaid: amt,
         paymentMethodId: params.paymentMethodId.trim(),
+        paymentPurposeId,
         transactionRef: params.transactionRef?.trim() ? params.transactionRef.trim() : null,
         collectedById: collector,
       },

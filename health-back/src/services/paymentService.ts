@@ -6,6 +6,8 @@ export type PaymentListRow = {
   amountPaid: string;
   transactionRef: string | null;
   paymentMethod: string;
+  /** PAYMENT_PURPOSE lookup label, if set. */
+  paymentPurpose: string | null;
   invoiceId: string;
   patientId: string | null;
   patientName: string;
@@ -24,6 +26,7 @@ export async function listPayments(): Promise<PaymentListRow[]> {
     take: LIST_LIMIT,
     include: {
       paymentMethodLookup: { select: { lookupValue: true } },
+      paymentPurposeLookup: { select: { lookupValue: true } },
       collectedBy: { select: { id: true, fullName: true, email: true } },
       invoice: {
         select: {
@@ -50,6 +53,7 @@ export async function listPayments(): Promise<PaymentListRow[]> {
       amountPaid: p.amountPaid.toString(),
       transactionRef: p.transactionRef,
       paymentMethod: p.paymentMethodLookup.lookupValue,
+      paymentPurpose: p.paymentPurposeLookup?.lookupValue ?? null,
       invoiceId: p.invoice.id,
       patientId: patient?.id ?? null,
       patientName: patient?.fullName ?? accName ?? "—",

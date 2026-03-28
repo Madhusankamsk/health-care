@@ -12,10 +12,11 @@ export async function listOutstandingSubscriptionInvoicesHandler(_req: Request, 
 
 export async function recordSubscriptionInvoicePaymentHandler(req: Request, res: Response) {
   const { id: invoiceId } = req.params;
-  const { amountPaid, paymentMethodId, transactionRef } = req.body as Partial<{
+  const { amountPaid, paymentMethodId, transactionRef, paymentPurposeId } = req.body as Partial<{
     amountPaid: number | string;
     paymentMethodId: string;
     transactionRef: string | null;
+    paymentPurposeId: string | null;
   }>;
 
   const collectedByUserId = req.authUser?.sub;
@@ -27,6 +28,7 @@ export async function recordSubscriptionInvoicePaymentHandler(req: Request, res:
       paymentMethodId: paymentMethodId?.trim() ?? "",
       transactionRef: transactionRef ?? undefined,
       collectedByUserId: collectedByUserId ?? "",
+      paymentPurposeId: paymentPurposeId ?? undefined,
     });
     return res.status(201).json(result);
   } catch (error) {
@@ -37,6 +39,7 @@ export async function recordSubscriptionInvoicePaymentHandler(req: Request, res:
       message === "Amount must be positive" ||
       message === "Amount exceeds balance due" ||
       message === "Invalid paymentMethodId" ||
+      message === "Invalid paymentPurposeId" ||
       message.includes("collectedByUserId")
     ) {
       return res.status(400).json({ message });

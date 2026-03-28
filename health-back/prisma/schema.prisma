@@ -363,14 +363,18 @@ model Payment {
   invoiceId         String
   amountPaid        Decimal
   paymentMethodId   String
+  /** Why this payment was recorded (membership type, package, corporate fees, etc.). */
+  paymentPurposeId  String?
   transactionRef    String?
   paidAt            DateTime @default(now())
   collectedById     String
   invoice           Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   paymentMethodLookup Lookup @relation("PaymentMethod", fields: [paymentMethodId], references: [id])
+  paymentPurposeLookup Lookup? @relation("PaymentPurpose", fields: [paymentPurposeId], references: [id])
   collectedBy       User     @relation("PaymentCollectedBy", fields: [collectedById], references: [id])
 
   @@index([invoiceId])
+  @@index([paymentPurposeId])
 }
 
 model AccountTransaction {
@@ -449,6 +453,7 @@ model Lookup {
   bookingDoctorStatuses       Booking[]             @relation("BookingDoctorStatus")
   dispatchStatuses            DispatchRecord[]      @relation("DispatchStatus")
   paymentMethods              Payment[]             @relation("PaymentMethod")
+  paymentPurposes             Payment[]             @relation("PaymentPurpose")
   accountTransactionTypes     AccountTransaction[]  @relation("AccountTransactionType")
 
   @@unique([categoryId, lookupKey])

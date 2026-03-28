@@ -13,6 +13,7 @@ export type PaymentListRow = {
   amountPaid: string;
   transactionRef: string | null;
   paymentMethod: string;
+  paymentPurpose: string | null;
   invoiceId: string;
   patientId: string | null;
   patientName: string;
@@ -68,6 +69,7 @@ export default async function PaymentsAccountsPage() {
                   <th className="pb-2 pr-4 font-medium">Paid</th>
                   <th className="pb-2 pr-4 font-medium">Amount</th>
                   <th className="pb-2 pr-4 font-medium">Method</th>
+                  <th className="pb-2 pr-4 font-medium">Purpose</th>
                   <th className="pb-2 pr-4 font-medium">Patient</th>
                   <th className="pb-2 pr-4 font-medium">Account / plan</th>
                   <th className="pb-2 pr-4 font-medium">Reference</th>
@@ -84,6 +86,7 @@ export default async function PaymentsAccountsPage() {
                     <td className="py-2 pr-4 align-top">{formatPaidAt(row.paidAt)}</td>
                     <td className="py-2 pr-4 align-top tabular-nums">{row.amountPaid}</td>
                     <td className="py-2 pr-4 align-top">{row.paymentMethod}</td>
+                    <td className="py-2 pr-4 align-top">{row.paymentPurpose ?? "—"}</td>
                     <td className="py-2 pr-4 align-top">{row.patientName}</td>
                     <td className="py-2 pr-4 align-top">
                       <div className="flex flex-col gap-0.5">

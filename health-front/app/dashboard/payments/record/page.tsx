@@ -24,9 +24,10 @@ export default async function RecordSubscriptionPaymentPage() {
   const canView = hasAnyPermission(me.permissions, [...VIEW_PERMS]);
   if (!canView) redirect("/dashboard");
 
-  const [invoices, paymentMethods] = await Promise.all([
+  const [invoices, paymentMethods, paymentPurposes] = await Promise.all([
     backendJson<OutstandingSubscriptionInvoiceRow[]>("/api/subscription-invoices/outstanding"),
     backendJson<LookupOption[]>("/api/lookups?category=PAYMENT_METHOD"),
+    backendJson<LookupOption[]>("/api/lookups?category=PAYMENT_PURPOSE"),
   ]);
 
   return (
@@ -35,7 +36,7 @@ export default async function RecordSubscriptionPaymentPage() {
         title="Record subscription payment"
         description="Apply payments to subscription invoices that still have a balance. Registration creates invoices without payments; collect money here."
       >
-        {!invoices || !paymentMethods ? (
+        {!invoices || !paymentMethods || !paymentPurposes ? (
           <div className="text-sm text-red-700 dark:text-red-300">
             Unable to load data. Check permissions or try again.
           </div>
@@ -43,6 +44,7 @@ export default async function RecordSubscriptionPaymentPage() {
           <RecordSubscriptionPaymentSection
             initialInvoices={invoices}
             paymentMethods={paymentMethods}
+            paymentPurposes={paymentPurposes}
           />
         )}
       </Card>

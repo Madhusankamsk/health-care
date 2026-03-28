@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -17,6 +17,8 @@ export type OutstandingSubscriptionInvoiceRow = {
   accountName: string | null;
   planName: string;
   patientName: string | null;
+  /** Default PAYMENT_PURPOSE id from plan type (Individual / Family / Corporate). */
+  suggestedPaymentPurposeId: string;
 };
 
 type LookupOption = { id: string; lookupKey: string; lookupValue: string };
@@ -24,6 +26,7 @@ type LookupOption = { id: string; lookupKey: string; lookupValue: string };
 type Props = {
   initialInvoices: OutstandingSubscriptionInvoiceRow[];
   paymentMethods: LookupOption[];
+  paymentPurposes: LookupOption[];
 };
 
 function formatDate(iso: string) {
@@ -32,14 +35,28 @@ function formatDate(iso: string) {
   return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
-export function RecordSubscriptionPaymentSection({ initialInvoices, paymentMethods }: Props) {
+export function RecordSubscriptionPaymentSection({
+  initialInvoices,
+  paymentMethods,
+  paymentPurposes,
+}: Props) {
   const router = useRouter();
   const [invoices, setInvoices] = useState(initialInvoices);
   const [invoiceId, setInvoiceId] = useState(initialInvoices[0]?.id ?? "");
   const [amount, setAmount] = useState("");
   const [paymentMethodId, setPaymentMethodId] = useState(paymentMethods[0]?.id ?? "");
+  const [paymentPurposeId, setPaymentPurposeId] = useState(
+    () => initialInvoices[0]?.suggestedPaymentPurposeId ?? "",
+  );
   const [transactionRef, setTransactionRef] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const inv = invoices.find((r) => r.id === invoiceId);
+    if (inv?.suggestedPaymentPurposeId) {
+      setPaymentPurposeId(inv.suggestedPaymentPurposeId);
+    }
+  }, [invoiceId, invoices]);
 
   const selected = useMemo(
     () => invoices.find((r) => r.id === invoiceId) ?? null,
@@ -72,6 +89,10 @@ export function RecordSubscriptionPaymentSection({ initialInvoices, paymentMetho
       toast.error("Select a payment method");
       return;
     }
+    if (!paymentPurposeId.trim()) {
+      toast.error("Select a payment purpose");
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch(`/api/subscription-invoices/${encodeURIComponent(invoiceId)}/payments`, {
@@ -80,6 +101,7 @@ export function RecordSubscriptionPaymentSection({ initialInvoices, paymentMetho
         body: JSON.stringify({
           amountPaid: amount.trim(),
           paymentMethodId: paymentMethodId.trim(),
+          paymentPurposeId: paymentPurposeId.trim(),
           transactionRef: transactionRef.trim() || undefined,
         }),
       });
@@ -114,6 +136,15 @@ export function RecordSubscriptionPaymentSection({ initialInvoices, paymentMetho
       <p className="text-sm text-[var(--text-secondary)]">
         No subscription invoices with a balance due. New registrations create invoices here; record
         payments when money is collected.
+      </p>
+    );
+  }
+
+  if (paymentPurposes.length === 0) {
+    return (
+      <p className="text-sm text-amber-800 dark:text-amber-200">
+        No payment purposes are configured (PAYMENT_PURPOSE lookups). Run the database seed or add
+        lookups before recording payments.
       </p>
     );
   }
@@ -207,6 +238,25 @@ export function RecordSubscriptionPaymentSection({ initialInvoices, paymentMetho
             Balance due for this invoice: <span className="tabular-nums">{selected.balanceDue}</span>
           </p>
         ) : null}
+        <label className="flex flex-col gap-2 text-sm">
+          <span className="font-medium text-[var(--text-primary)]">Payment purpose</span>
+          <select
+            className={selectClass}
+            value={paymentPurposeId}
+            onChange={(e) => setPaymentPurposeId(e.target.value)}
+            required
+          >
+            <option value="">Select</option>
+            {paymentPurposes.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.lookupValue}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs text-[var(--text-secondary)]">
+            Defaults from the subscription plan type; change if this payment is for a different reason.
+          </span>
+        </label>
         <Input
           label="Amount"
           name="amountPaid"

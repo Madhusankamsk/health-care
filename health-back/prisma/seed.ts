@@ -261,6 +261,31 @@ async function main() {
     });
   }
 
+  const paymentPurposeCategory = await prisma.lookupCategory.upsert({
+    where: { categoryName: "PAYMENT_PURPOSE" },
+    update: {},
+    create: { categoryName: "PAYMENT_PURPOSE" },
+  });
+  for (const item of [
+    { lookupKey: "INDIVIDUAL_MEMBERSHIP", lookupValue: "Individual membership" },
+    { lookupKey: "FAMILY_PACKAGE_PAYMENT", lookupValue: "Family package payment" },
+    { lookupKey: "CORPORATE_SUBSCRIPTION", lookupValue: "Corporate subscription / member fees" },
+    { lookupKey: "OTHER", lookupValue: "Other" },
+  ] as const) {
+    await prisma.lookup.upsert({
+      where: {
+        categoryId_lookupKey: { categoryId: paymentPurposeCategory.id, lookupKey: item.lookupKey },
+      },
+      update: { lookupValue: item.lookupValue, isActive: true },
+      create: {
+        categoryId: paymentPurposeCategory.id,
+        lookupKey: item.lookupKey,
+        lookupValue: item.lookupValue,
+        isActive: true,
+      },
+    });
+  }
+
   const accountTransactionTypeCategory = await prisma.lookupCategory.upsert({
     where: { categoryName: "ACCOUNT_TRANSACTION_TYPE" },
     update: {},
