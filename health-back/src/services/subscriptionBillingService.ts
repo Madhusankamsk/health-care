@@ -44,23 +44,6 @@ async function validatePaymentMethod(
   }
 }
 
-async function validatePaymentPurpose(
-  tx: Prisma.TransactionClient,
-  paymentPurposeId: string,
-): Promise<void> {
-  const row = await tx.lookup.findFirst({
-    where: {
-      id: paymentPurposeId,
-      isActive: true,
-      category: { categoryName: "PAYMENT_PURPOSE" },
-    },
-    select: { id: true },
-  });
-  if (!row) {
-    throw new Error("Invalid paymentPurposeId");
-  }
-}
-
 /** Maps subscription plan type (SUB_TYPE) to PAYMENT_PURPOSE lookup key. */
 function planTypeLookupKeyToPaymentPurposeKey(
   planTypeLookupKey: string | null | undefined,
@@ -225,8 +208,10 @@ export type OutstandingSubscriptionInvoiceRow = {
   accountName: string | null;
   planName: string;
   patientName: string | null;
-  /** Default PAYMENT_PURPOSE id for new payments (from plan type). */
+  /** PAYMENT_PURPOSE id for payments on this invoice (fixed from plan type). */
   suggestedPaymentPurposeId: string;
+  /** Display label for {@link suggestedPaymentPurposeId}. */
+  suggestedPaymentPurposeLabel: string;
 };
 
 export async function listOutstandingSubscriptionInvoices(): Promise<
@@ -267,6 +252,10 @@ export async function listOutstandingSubscriptionInvoices(): Promise<
       prisma,
       r.subscriptionAccount?.plan?.planTypeLookup?.lookupKey,
     );
+    const purposeRow = await prisma.lookup.findUnique({
+      where: { id: suggestedPaymentPurposeId },
+      select: { lookupValue: true },
+    });
     out.push({
       id: r.id,
       createdAt: r.createdAt.toISOString(),
@@ -278,6 +267,7 @@ export async function listOutstandingSubscriptionInvoices(): Promise<
       planName: r.subscriptionAccount?.plan?.planName ?? "—",
       patientName: r.patient?.fullName ?? null,
       suggestedPaymentPurposeId,
+      suggestedPaymentPurposeLabel: purposeRow?.lookupValue ?? "—",
     });
   }
   return out;
@@ -289,8 +279,6 @@ export async function recordSubscriptionInvoicePayment(params: {
   paymentMethodId: string;
   transactionRef?: string | null;
   collectedByUserId: string;
-  /** Optional; defaults from subscription plan type (SUB_TYPE → PAYMENT_PURPOSE). */
-  paymentPurposeId?: string | null;
 }): Promise<{ invoiceId: string; balanceDue: string }> {
   return prisma.$transaction(async (tx) => {
     const invoice = await tx.invoice.findUnique({
@@ -333,17 +321,10 @@ export async function recordSubscriptionInvoicePayment(params: {
       throw new Error("collectedByUserId is required when recording payments");
     }
 
-    const purposeTrim = params.paymentPurposeId?.trim();
-    let paymentPurposeId: string;
-    if (purposeTrim) {
-      await validatePaymentPurpose(tx, purposeTrim);
-      paymentPurposeId = purposeTrim;
-    } else {
-      paymentPurposeId = await resolveSubscriptionPaymentPurposeId(
-        tx,
-        invoice.subscriptionAccount?.plan?.planTypeLookup?.lookupKey,
-      );
-    }
+    const paymentPurposeId = await resolveSubscriptionPaymentPurposeId(
+      tx,
+      invoice.subscriptionAccount?.plan?.planTypeLookup?.lookupKey,
+    );
 
     const creditTypeId = await requireLookupId(tx, "ACCOUNT_TRANSACTION_TYPE", "CREDIT");
 
