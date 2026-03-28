@@ -75,6 +75,10 @@ async function main() {
     "bookings:scope_own",
     "bookings:scope_all",
 
+    "dispatch:list",
+    "dispatch:read",
+    "dispatch:update",
+
     "files:upload",
     "files:delete",
 
@@ -389,6 +393,17 @@ async function main() {
     });
     await prisma.rolePermission.createMany({
       data: bookingPermissions.map((p) => ({ roleId: adminRole.id, permissionId: p.id })),
+      skipDuplicates: true,
+    });
+
+    const dispatchPermissions = await prisma.permission.findMany({
+      where: {
+        permissionKey: { in: ["dispatch:list", "dispatch:read", "dispatch:update"] },
+      },
+      select: { id: true },
+    });
+    await prisma.rolePermission.createMany({
+      data: dispatchPermissions.map((p) => ({ roleId: adminRole.id, permissionId: p.id })),
       skipDuplicates: true,
     });
   }

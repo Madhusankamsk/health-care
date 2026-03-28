@@ -265,18 +265,18 @@ router.delete("/bookings/:id", requireAnyPermission(["bookings:delete"]), delete
 // Dispatch (vehicle + crew assignments for accepted bookings)
 router.get(
   "/dispatch/upcoming",
-  requireAnyPermission(["bookings:list", "bookings:read"]),
+  requireAnyPermission(["dispatch:list", "dispatch:read", "dispatch:update"]),
   listUpcomingDispatchHandler,
 );
 router.get(
   "/dispatch/member-candidates",
-  requireAnyPermission(["bookings:update"]),
+  requireAnyPermission(["dispatch:update"]),
   listDispatchMemberCandidatesHandler,
 );
-router.post("/dispatch", requireAnyPermission(["bookings:update"]), createDispatchHandler);
+router.post("/dispatch", requireAnyPermission(["dispatch:update"]), createDispatchHandler);
 router.patch(
   "/dispatch/:id/status",
-  requireAnyPermission(["bookings:update"]),
+  requireAnyPermission(["dispatch:update"]),
   patchDispatchStatusHandler,
 );
 

@@ -77,7 +77,9 @@ export async function createBooking(data: BookingPayload) {
   const requestedDoctorId =
     data.requestedDoctorId?.trim() ? data.requestedDoctorId.trim() : null;
 
-  const doctorStatusId = await getDoctorStatusLookupId("PENDING");
+  // No requested doctor → nothing to wait on; treat as accepted for scheduling / dispatch.
+  const doctorStatusKey = requestedDoctorId ? "PENDING" : "ACCEPTED";
+  const doctorStatusId = await getDoctorStatusLookupId(doctorStatusKey);
 
   return prisma.booking.create({
     data: {
@@ -108,16 +110,44 @@ export async function updateBooking(
     (data.requestedDoctorId === null ||
       (typeof data.requestedDoctorId === "string" && !data.requestedDoctorId.trim()));
 
+  const newRequestedDoctorId =
+    data.requestedDoctorId === undefined
+      ? undefined
+      : data.requestedDoctorId === null
+        ? null
+        : typeof data.requestedDoctorId === "string" && data.requestedDoctorId.trim()
+          ? data.requestedDoctorId.trim()
+          : null;
+
   let doctorStatusId:
     | string
     | null
     | undefined;
 
   if (clearingDoctor) {
-    doctorStatusId = await getDoctorStatusLookupId("PENDING");
+    doctorStatusId = await getDoctorStatusLookupId("ACCEPTED");
   } else if (data.doctorStatusId !== undefined) {
     doctorStatusId =
       data.doctorStatusId === null ? null : data.doctorStatusId.trim();
+  } else if (
+    data.requestedDoctorId !== undefined &&
+    typeof newRequestedDoctorId === "string" &&
+    newRequestedDoctorId
+  ) {
+    const existing = await prisma.booking.findUnique({
+      where: { id },
+      select: { requestedDoctorId: true },
+    });
+    if (!existing) {
+      const err = new Error("BOOKING_NOT_FOUND") as Error & { code?: string };
+      err.code = "BOOKING_NOT_FOUND";
+      throw err;
+    }
+    if (existing.requestedDoctorId !== newRequestedDoctorId) {
+      doctorStatusId = await getDoctorStatusLookupId("PENDING");
+    } else {
+      doctorStatusId = undefined;
+    }
   } else {
     doctorStatusId = undefined;
   }
@@ -138,11 +168,8 @@ export async function updateBooking(
           : data.bookingRemark === null
             ? null
             : data.bookingRemark,
-      requestedDoctorId: data.requestedDoctorId === undefined
-        ? undefined
-        : data.requestedDoctorId === null
-          ? null
-          : data.requestedDoctorId.trim(),
+      requestedDoctorId:
+        newRequestedDoctorId === undefined ? undefined : newRequestedDoctorId,
       doctorStatusId,
     },
     include: bookingInclude,

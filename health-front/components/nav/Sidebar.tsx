@@ -89,13 +89,13 @@ const navItems: NavItem[] = [
     href: "/dashboard/dispatching",
     label: "Dispatching",
     icon: <Navigation className="h-4 w-4" aria-hidden />,
-    requiresAnyPermissions: ["bookings:list", "bookings:read"],
+    requiresAnyPermissions: ["dispatch:list", "dispatch:read", "dispatch:update"],
     children: [
       {
         href: "/dashboard/dispatching/upcoming-jobs",
         label: "Upcoming jobs",
         icon: <Navigation className="h-4 w-4" aria-hidden />,
-        requiresAnyPermissions: ["bookings:list", "bookings:read"],
+        requiresAnyPermissions: ["dispatch:list", "dispatch:read", "dispatch:update"],
       },
     ],
   },

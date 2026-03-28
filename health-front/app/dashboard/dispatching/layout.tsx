@@ -6,7 +6,7 @@ import { getIsAuthenticated } from "@/lib/auth";
 import { backendJson, type BackendMeResponse } from "@/lib/backend";
 import { hasAnyPermission } from "@/lib/rbac";
 
-const DISPATCH_VIEW_PERMS = ["bookings:list", "bookings:read"] as const;
+const DISPATCH_VIEW_PERMS = ["dispatch:list", "dispatch:read", "dispatch:update"] as const;
 
 export default async function DispatchingLayout({
   children,
