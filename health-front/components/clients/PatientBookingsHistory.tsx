@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -29,6 +28,15 @@ type PendingConfirm =
   | { type: "arrived"; dispatchId: string }
   | { type: "diagnostic"; dispatchId: string }
   | { type: "complete"; dispatchId: string };
+
+type DiagnosticTabId = "remark" | "reports" | "samples" | "medicines";
+
+const DIAGNOSTIC_TABS: { id: DiagnosticTabId; label: string }[] = [
+  { id: "remark", label: "Remark" },
+  { id: "reports", label: "Reports upload" },
+  { id: "samples", label: "Samples" },
+  { id: "medicines", label: "Medicines" },
+];
 
 function dispatchLead(dr: DispatchRecordRow) {
   return dr.assignments.find((a) => a.isTeamLeader);
@@ -183,11 +191,16 @@ export function PatientBookingsHistory({
   const router = useRouter();
   const [busyDispatchId, setBusyDispatchId] = useState<string | null>(null);
   const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm>(null);
-  const [remarkBookingId, setRemarkBookingId] = useState<string | null>(null);
-  const [draftNotes, setDraftNotes] = useState("");
-  const [draftDiagnosis, setDraftDiagnosis] = useState("");
-  const [savingDraft, setSavingDraft] = useState(false);
+  const [savingDraftBookingId, setSavingDraftBookingId] = useState<string | null>(null);
   const [detailBookingId, setDetailBookingId] = useState<string | null>(null);
+  /** Active sliding tab per booking (defaults to remark). */
+  const [diagnosticTabByBookingId, setDiagnosticTabByBookingId] = useState<
+    Record<string, DiagnosticTabId>
+  >({});
+  /** Local visit draft fields while editing on the card (keyed by booking id). */
+  const [visitDraftByBookingId, setVisitDraftByBookingId] = useState<
+    Record<string, { clinicalNotes: string; diagnosis: string }>
+  >({});
 
   async function patchDispatchStatus(
     dispatchId: string,
@@ -220,15 +233,62 @@ export function PatientBookingsHistory({
     }
   }
 
-  function openRemarkModal(b: UpcomingBookingRow) {
-    setDraftNotes(b.visitRecord?.clinicalNotes ?? "");
-    setDraftDiagnosis(b.visitRecord?.diagnosis ?? "");
-    setRemarkBookingId(b.id);
+  function visitDraftForBooking(
+    b: UpcomingBookingRow,
+  ): { clinicalNotes: string; diagnosis: string } {
+    const local = visitDraftByBookingId[b.id];
+    if (local) return local;
+    return {
+      clinicalNotes: b.visitRecord?.clinicalNotes ?? "",
+      diagnosis: b.visitRecord?.diagnosis ?? "",
+    };
   }
 
-  const remarkBooking = remarkBookingId
-    ? bookings.find((x) => x.id === remarkBookingId)
-    : null;
+  function setVisitDraftField(
+    bookingId: string,
+    field: "clinicalNotes" | "diagnosis",
+    value: string,
+    baseline: UpcomingBookingRow,
+  ) {
+    setVisitDraftByBookingId((prev) => {
+      const base = prev[bookingId] ?? {
+        clinicalNotes: baseline.visitRecord?.clinicalNotes ?? "",
+        diagnosis: baseline.visitRecord?.diagnosis ?? "",
+      };
+      return {
+        ...prev,
+        [bookingId]: { ...base, [field]: value },
+      };
+    });
+  }
+
+  async function saveVisitDraftForBooking(b: UpcomingBookingRow) {
+    const draft = visitDraftForBooking(b);
+    setSavingDraftBookingId(b.id);
+    try {
+      const res = await fetch(`/api/bookings/${b.id}/visit-draft`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clinicalNotes: draft.clinicalNotes.trim() ? draft.clinicalNotes : null,
+          diagnosis: draft.diagnosis.trim() ? draft.diagnosis : null,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { message?: string };
+      if (!res.ok) throw new Error(data.message || "Save failed");
+      toast.success("Saved.");
+      setVisitDraftByBookingId((prev) => {
+        const next = { ...prev };
+        delete next[b.id];
+        return next;
+      });
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Save failed");
+    } finally {
+      setSavingDraftBookingId(null);
+    }
+  }
 
   const detailBooking = detailBookingId
     ? bookings.find((x) => x.id === detailBookingId)
@@ -250,11 +310,16 @@ export function PatientBookingsHistory({
         const diagnostic = diagnosticDispatchForBooking(b);
         const visitDone = Boolean(b.visitRecord?.completedAt);
         const inDiagnosticPhase = Boolean(diagnostic) && !visitDone;
+        const activeDiagnosticTab = diagnosticTabByBookingId[b.id] ?? "remark";
+        const diagnosticTabIndex = Math.max(
+          0,
+          DIAGNOSTIC_TABS.findIndex((t) => t.id === activeDiagnosticTab),
+        );
 
         return (
           <article
             key={b.id}
-            className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-5"
+            className="flex flex-col rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-5"
           >
             <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--border)] pb-3">
               <div className="min-w-0 flex-1">
@@ -308,88 +373,182 @@ export function PatientBookingsHistory({
             </div>
 
             {inDiagnosticPhase && (canUpdateDispatch || canSaveVisitDraft) ? (
-              <div className="mt-4 flex flex-wrap gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-3">
-                {canSaveVisitDraft ? (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="h-8 px-3 text-xs font-medium"
-                    disabled={busyDispatchId !== null}
-                    onClick={() => openRemarkModal(b)}
+              <>
+                <div className="mt-4 flex flex-col gap-3">
+                  <div
+                    className="relative flex rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-1"
+                    role="tablist"
+                    aria-label="Visit workflow"
                   >
-                    Remark
-                  </Button>
-                ) : null}
-                {canUpdateDispatch ? (
-                  <>
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute bottom-1 left-1 top-1 z-0 w-[calc(25%-5px)] rounded-md bg-[var(--surface)] shadow-sm ring-1 ring-black/5 transition-transform duration-300 ease-out dark:ring-white/10"
+                      style={{
+                        transform: `translateX(calc(${diagnosticTabIndex} * 100%))`,
+                      }}
+                    />
+                    {DIAGNOSTIC_TABS.map((tab) => {
+                      const selected = activeDiagnosticTab === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          role="tab"
+                          id={`patient-booking-${b.id}-tab-${tab.id}`}
+                          aria-controls={`patient-booking-${b.id}-panel-${tab.id}`}
+                          aria-selected={selected}
+                          className={`relative z-10 flex min-h-9 min-w-0 flex-1 items-center justify-center rounded-md px-1.5 text-center text-xs font-medium transition-colors ${
+                            selected
+                              ? "text-[var(--text-primary)]"
+                              : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                          }`}
+                          onClick={() =>
+                            setDiagnosticTabByBookingId((prev) => ({
+                              ...prev,
+                              [b.id]: tab.id,
+                            }))
+                          }
+                        >
+                          {tab.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface-2)]">
+                    <div
+                      className="flex w-[400%] transition-transform duration-300 ease-out"
+                      style={{ transform: `translateX(-${diagnosticTabIndex * 25}%)` }}
+                    >
+                      <div
+                        className="w-1/4 shrink-0 px-3 py-3"
+                        role="tabpanel"
+                        aria-hidden={activeDiagnosticTab !== "remark"}
+                        id={`patient-booking-${b.id}-panel-remark`}
+                      >
+                        {canSaveVisitDraft ? (
+                          <div className="flex flex-col gap-3">
+                            <label className="flex flex-col gap-1 text-sm">
+                              <span className="font-medium text-[var(--text-secondary)]">
+                                Clinical notes
+                              </span>
+                              <textarea
+                                className="min-h-[100px] rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[var(--text-primary)]"
+                                value={visitDraftForBooking(b).clinicalNotes}
+                                onChange={(e) =>
+                                  setVisitDraftField(b.id, "clinicalNotes", e.target.value, b)
+                                }
+                              />
+                            </label>
+                            <label className="flex flex-col gap-1 text-sm">
+                              <span className="font-medium text-[var(--text-secondary)]">
+                                Diagnosis
+                              </span>
+                              <textarea
+                                className="min-h-[72px] rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[var(--text-primary)]"
+                                value={visitDraftForBooking(b).diagnosis}
+                                onChange={(e) =>
+                                  setVisitDraftField(b.id, "diagnosis", e.target.value, b)
+                                }
+                              />
+                            </label>
+                          </div>
+                        ) : (
+                          <div className="space-y-2 text-sm text-[var(--text-secondary)]">
+                            <p>
+                              <span className="font-medium text-[var(--text-primary)]">
+                                Booking remark:{" "}
+                              </span>
+                              {b.bookingRemark?.trim() ? b.bookingRemark : "—"}
+                            </p>
+                            {b.visitRecord ? (
+                              <>
+                                <p>
+                                  <span className="font-medium text-[var(--text-primary)]">
+                                    Clinical notes:{" "}
+                                  </span>
+                                  {b.visitRecord.clinicalNotes?.trim()
+                                    ? b.visitRecord.clinicalNotes
+                                    : "—"}
+                                </p>
+                                <p>
+                                  <span className="font-medium text-[var(--text-primary)]">
+                                    Diagnosis:{" "}
+                                  </span>
+                                  {b.visitRecord.diagnosis?.trim()
+                                    ? b.visitRecord.diagnosis
+                                    : "—"}
+                                </p>
+                              </>
+                            ) : (
+                              <p>No visit record yet.</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div
+                        className="w-1/4 shrink-0 px-3 py-3"
+                        role="tabpanel"
+                        aria-hidden={activeDiagnosticTab !== "reports"}
+                        id={`patient-booking-${b.id}-panel-reports`}
+                      >
+                        <p className="text-sm text-[var(--text-secondary)]">
+                          Report upload will connect to your file storage (coming soon).
+                        </p>
+                      </div>
+                      <div
+                        className="w-1/4 shrink-0 px-3 py-3"
+                        role="tabpanel"
+                        aria-hidden={activeDiagnosticTab !== "samples"}
+                        id={`patient-booking-${b.id}-panel-samples`}
+                      >
+                        <p className="text-sm text-[var(--text-secondary)]">
+                          Lab sample collection can be linked here (coming soon).
+                        </p>
+                      </div>
+                      <div
+                        className="w-1/4 shrink-0 px-3 py-3"
+                        role="tabpanel"
+                        aria-hidden={activeDiagnosticTab !== "medicines"}
+                        id={`patient-booking-${b.id}-panel-medicines`}
+                      >
+                        <p className="text-sm text-[var(--text-secondary)]">
+                          Medicines for this visit can be linked here (coming soon).
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-[var(--border)] pt-3">
+                  {canSaveVisitDraft ? (
                     <Button
                       type="button"
                       variant="secondary"
-                      className="h-8 px-3 text-xs font-medium"
-                      disabled={busyDispatchId !== null}
-                      onClick={() =>
-                        toast("Report upload will connect to your file storage (coming soon).")
-                      }
+                      className="h-9 px-4 text-xs font-medium"
+                      disabled={busyDispatchId !== null || savingDraftBookingId !== null}
+                      onClick={() => void saveVisitDraftForBooking(b)}
                     >
-                      Reports upload
+                      {savingDraftBookingId === b.id ? "Saving…" : "Save draft"}
                     </Button>
+                  ) : null}
+                  {canUpdateDispatch ? (
                     <Button
                       type="button"
-                      variant="secondary"
-                      className="h-8 px-3 text-xs font-medium"
+                      variant="primary"
+                      className="h-9 px-4 text-xs font-medium"
                       disabled={busyDispatchId !== null}
                       onClick={() =>
-                        toast("Lab sample collection can be linked here (coming soon).")
+                        diagnostic
+                          ? setPendingConfirm({ type: "complete", dispatchId: diagnostic.id })
+                          : undefined
                       }
                     >
-                      Samples
+                      Complete
                     </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      className="h-8 px-3 text-xs font-medium"
-                      disabled={busyDispatchId !== null}
-                      onClick={() =>
-                        toast("Medicines for this visit can be linked here (coming soon).")
-                      }
-                    >
-                      Medicines
-                    </Button>
-                    <Link
-                      href="/dashboard/payments"
-                      className="inline-flex h-8 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--surface-2)]"
-                    >
-                      Payment
-                    </Link>
-                  </>
-                ) : null}
-                {canSaveVisitDraft ? (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="h-8 px-3 text-xs font-medium"
-                    disabled={savingDraft || busyDispatchId !== null}
-                    onClick={() => openRemarkModal(b)}
-                  >
-                    Save draft
-                  </Button>
-                ) : null}
-                {canUpdateDispatch ? (
-                  <Button
-                    type="button"
-                    variant="primary"
-                    className="h-8 px-3 text-xs font-medium"
-                    disabled={busyDispatchId !== null}
-                    onClick={() =>
-                      diagnostic
-                        ? setPendingConfirm({ type: "complete", dispatchId: diagnostic.id })
-                        : undefined
-                    }
-                  >
-                    Complete
-                  </Button>
-                ) : null}
-              </div>
+                  ) : null}
+                </div>
+              </>
             ) : null}
           </article>
         );
@@ -415,7 +574,7 @@ export function PatientBookingsHistory({
       <ConfirmModal
         open={pendingConfirm?.type === "diagnostic"}
         title="Start diagnostic stage?"
-        message="This opens the clinical workflow (remarks, reports, samples, payment, completion) for this visit."
+        message="This opens the clinical workflow (remarks, reports, samples, medicines, completion) for this visit."
         confirmLabel="Start diagnostic"
         cancelLabel="Cancel"
         isConfirming={
@@ -459,68 +618,6 @@ export function PatientBookingsHistory({
             <BookingDetailContent b={detailBooking} />
           </div>
         ) : null}
-      </ModalShell>
-
-      <ModalShell
-        open={remarkBookingId !== null && remarkBooking !== undefined}
-        onClose={() => setRemarkBookingId(null)}
-        titleId="patient-visit-remark"
-        title="Visit remark and diagnosis"
-        subtitle="Saved as a draft on the visit record."
-        maxWidthClass="max-w-lg"
-      >
-        <div className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-[var(--text-secondary)]">Clinical notes</span>
-            <textarea
-              className="min-h-[100px] rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[var(--text-primary)]"
-              value={draftNotes}
-              onChange={(e) => setDraftNotes(e.target.value)}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-[var(--text-secondary)]">Diagnosis</span>
-            <textarea
-              className="min-h-[72px] rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[var(--text-primary)]"
-              value={draftDiagnosis}
-              onChange={(e) => setDraftDiagnosis(e.target.value)}
-            />
-          </label>
-          <div className="flex justify-end gap-2 border-t border-[var(--border)] pt-3">
-            <Button type="button" variant="ghost" onClick={() => setRemarkBookingId(null)}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={savingDraft || !remarkBooking}
-              onClick={async () => {
-                if (!remarkBooking) return;
-                setSavingDraft(true);
-                try {
-                  const res = await fetch(`/api/bookings/${remarkBooking.id}/visit-draft`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      clinicalNotes: draftNotes.trim() ? draftNotes : null,
-                      diagnosis: draftDiagnosis.trim() ? draftDiagnosis : null,
-                    }),
-                  });
-                  const data = (await res.json().catch(() => ({}))) as { message?: string };
-                  if (!res.ok) throw new Error(data.message || "Save failed");
-                  toast.success("Saved.");
-                  setRemarkBookingId(null);
-                  router.refresh();
-                } catch (e) {
-                  toast.error(e instanceof Error ? e.message : "Save failed");
-                } finally {
-                  setSavingDraft(false);
-                }
-              }}
-            >
-              {savingDraft ? "Saving…" : "Save draft"}
-            </Button>
-          </div>
-        </div>
       </ModalShell>
     </div>
   );
