@@ -440,6 +440,8 @@ async function main() {
   for (const item of [
     { lookupKey: "IN_TRANSIT", lookupValue: "In transit" },
     { lookupKey: "ARRIVED", lookupValue: "Arrived" },
+    { lookupKey: "DIAGNOSTIC", lookupValue: "Diagnostic" },
+    { lookupKey: "COMPLETED", lookupValue: "Completed" },
   ] as const) {
     await prisma.lookup.upsert({
       where: {

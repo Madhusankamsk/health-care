@@ -19,7 +19,12 @@ export type UpcomingBookingRow = {
   requestedDoctor?: { id: string; fullName: string; email: string } | null;
   doctorStatusLookup?: { id: string; lookupKey: string; lookupValue: string } | null;
   /** Set on GET /api/patients/:id/bookings responses. */
-  visitRecord?: { id: string; completedAt: string | null } | null;
+  visitRecord?: {
+    id: string;
+    completedAt: string | null;
+    clinicalNotes?: string | null;
+    diagnosis?: string | null;
+  } | null;
   dispatchRecords: Array<{
     id: string;
     dispatchedAt: string;

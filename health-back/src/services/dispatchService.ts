@@ -85,6 +85,7 @@ export async function listOngoingForDispatch(params: {
       OR: [
         { dispatchRecords: { some: { statusLookup: { lookupKey: "IN_TRANSIT" } } } },
         { dispatchRecords: { some: { statusLookup: { lookupKey: "ARRIVED" } } } },
+        { dispatchRecords: { some: { statusLookup: { lookupKey: "DIAGNOSTIC" } } } },
       ],
       ...scopeWhere,
     },
@@ -180,10 +181,11 @@ export async function createDispatchFromTeam(
       throw err;
     }
 
-    const hasArrived = booking.dispatchRecords.some(
-      (d) => d.statusLookup?.lookupKey === "ARRIVED",
-    );
-    if (hasArrived) {
+    const hasActivePipeline = booking.dispatchRecords.some((d) => {
+      const k = d.statusLookup?.lookupKey;
+      return k === "ARRIVED" || k === "DIAGNOSTIC";
+    });
+    if (hasActivePipeline) {
       const err = new Error("DISPATCH_ALREADY_COMPLETE") as Error & { code?: string };
       err.code = "DISPATCH_ALREADY_COMPLETE";
       throw err;
@@ -276,27 +278,34 @@ export async function createDispatchFromTeam(
   });
 }
 
+export type DispatchStatusUpdateKey = "ARRIVED" | "DIAGNOSTIC" | "COMPLETED";
+
+const dispatchUpdateInclude = {
+  statusLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
+  vehicle: { select: { id: true, vehicleNo: true, model: true } },
+  assignments: {
+    include: {
+      user: { select: dispatchAssignmentUserSelect },
+    },
+  },
+  booking: {
+    select: {
+      id: true,
+      patient: { select: { id: true, fullName: true } },
+    },
+  },
+} as const;
+
 export async function updateDispatchStatus(
   dispatchId: string,
-  statusLookupKey: "ARRIVED",
+  statusLookupKey: DispatchStatusUpdateKey,
   access?: { userId: string | undefined; scope: BookingListScope },
 ) {
-  if (statusLookupKey !== "ARRIVED") {
-    const err = new Error("INVALID_STATUS") as Error & { code?: string };
-    err.code = "INVALID_STATUS";
-    throw err;
-  }
-
-  const arrivedId = await getDispatchStatusLookupId("ARRIVED");
-  if (!arrivedId) {
-    throw new Error("DISPATCH_STATUS ARRIVED lookup missing");
-  }
-
   const dispatch = await prisma.dispatchRecord.findUnique({
     where: { id: dispatchId },
     include: {
       statusLookup: { select: { lookupKey: true } },
-      booking: { select: { requestedDoctorId: true } },
+      booking: { select: { id: true, patientId: true, requestedDoctorId: true } },
     },
   });
 
@@ -316,29 +325,77 @@ export async function updateDispatchStatus(
     throw err;
   }
 
-  if (dispatch.statusLookup?.lookupKey !== "IN_TRANSIT") {
-    const err = new Error("INVALID_TRANSITION") as Error & { code?: string };
-    err.code = "INVALID_TRANSITION";
-    throw err;
+  const current = dispatch.statusLookup?.lookupKey;
+
+  if (statusLookupKey === "ARRIVED") {
+    if (current !== "IN_TRANSIT") {
+      const err = new Error("INVALID_TRANSITION") as Error & { code?: string };
+      err.code = "INVALID_TRANSITION";
+      throw err;
+    }
+    const arrivedId = await getDispatchStatusLookupId("ARRIVED");
+    if (!arrivedId) throw new Error("DISPATCH_STATUS ARRIVED lookup missing");
+    return prisma.dispatchRecord.update({
+      where: { id: dispatchId },
+      data: { statusId: arrivedId },
+      include: dispatchUpdateInclude,
+    });
   }
 
-  return prisma.dispatchRecord.update({
-    where: { id: dispatchId },
-    data: { statusId: arrivedId },
-    include: {
-      statusLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
-      vehicle: { select: { id: true, vehicleNo: true, model: true } },
-      assignments: {
-        include: {
-          user: { select: dispatchAssignmentUserSelect },
+  if (statusLookupKey === "DIAGNOSTIC") {
+    if (current !== "ARRIVED") {
+      const err = new Error("INVALID_TRANSITION") as Error & { code?: string };
+      err.code = "INVALID_TRANSITION";
+      throw err;
+    }
+    const diagnosticId = await getDispatchStatusLookupId("DIAGNOSTIC");
+    if (!diagnosticId) throw new Error("DISPATCH_STATUS DIAGNOSTIC lookup missing");
+
+    return prisma.$transaction(async (tx) => {
+      await tx.visitRecord.upsert({
+        where: { bookingId: dispatch.booking.id },
+        create: {
+          bookingId: dispatch.booking.id,
+          patientId: dispatch.booking.patientId,
         },
-      },
-      booking: {
-        select: {
-          id: true,
-          patient: { select: { id: true, fullName: true } },
+        update: {},
+      });
+      return tx.dispatchRecord.update({
+        where: { id: dispatchId },
+        data: { statusId: diagnosticId },
+        include: dispatchUpdateInclude,
+      });
+    });
+  }
+
+  if (statusLookupKey === "COMPLETED") {
+    if (current !== "DIAGNOSTIC") {
+      const err = new Error("INVALID_TRANSITION") as Error & { code?: string };
+      err.code = "INVALID_TRANSITION";
+      throw err;
+    }
+    const completedId = await getDispatchStatusLookupId("COMPLETED");
+    if (!completedId) throw new Error("DISPATCH_STATUS COMPLETED lookup missing");
+
+    return prisma.$transaction(async (tx) => {
+      await tx.visitRecord.upsert({
+        where: { bookingId: dispatch.booking.id },
+        create: {
+          bookingId: dispatch.booking.id,
+          patientId: dispatch.booking.patientId,
+          completedAt: new Date(),
         },
-      },
-    },
-  });
+        update: { completedAt: new Date() },
+      });
+      return tx.dispatchRecord.update({
+        where: { id: dispatchId },
+        data: { statusId: completedId },
+        include: dispatchUpdateInclude,
+      });
+    });
+  }
+
+  const err = new Error("INVALID_STATUS") as Error & { code?: string };
+  err.code = "INVALID_STATUS";
+  throw err;
 }

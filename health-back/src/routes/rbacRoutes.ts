@@ -53,6 +53,7 @@ import {
   getBookingHandler,
   listBookingsForPatientHandler,
   listBookingsHandler,
+  patchVisitDraftHandler,
   updateBookingHandler,
 } from "../controllers/bookingController";
 import {
@@ -261,6 +262,11 @@ router.get("/lookups", requireAnyPermission(["patients:list", "patients:read"]),
 // Bookings
 router.get("/bookings", requireAnyPermission(["bookings:list"]), listBookingsHandler);
 router.post("/bookings", requireAnyPermission(["bookings:create"]), createBookingHandler);
+router.patch(
+  "/bookings/:id/visit-draft",
+  requireAnyPermission(["bookings:update"]),
+  patchVisitDraftHandler,
+);
 router.get("/bookings/:id", requireAnyPermission(["bookings:read"]), getBookingHandler);
 router.put("/bookings/:id", requireAnyPermission(["bookings:update"]), updateBookingHandler);
 router.delete("/bookings/:id", requireAnyPermission(["bookings:delete"]), deleteBookingHandler);

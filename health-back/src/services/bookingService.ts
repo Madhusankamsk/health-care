@@ -61,7 +61,9 @@ const bookingWithDispatchInclude = {
   doctorStatusLookup: {
     select: { id: true, lookupKey: true, lookupValue: true },
   },
-  visitRecord: { select: { id: true, completedAt: true } },
+  visitRecord: {
+    select: { id: true, completedAt: true, clinicalNotes: true, diagnosis: true },
+  },
   dispatchRecords: {
     orderBy: { dispatchedAt: "desc" as const },
     include: {

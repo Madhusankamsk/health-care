@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 
 import { loadPermissionKeys } from "../middleware/permissions";
 import { resolveBookingListScope } from "../services/bookingService";
+import type { DispatchStatusUpdateKey } from "../services/dispatchService";
 import {
   createDispatchFromTeam,
   listDispatchMemberCandidates,
@@ -108,6 +109,8 @@ export async function createDispatchHandler(req: Request, res: Response) {
   }
 }
 
+const DISPATCH_STATUS_KEYS: DispatchStatusUpdateKey[] = ["ARRIVED", "DIAGNOSTIC", "COMPLETED"];
+
 export async function patchDispatchStatusHandler(req: Request, res: Response) {
   const { id } = req.params;
   const { statusLookupKey } = req.body as Partial<{ statusLookupKey: string }>;
@@ -116,15 +119,17 @@ export async function patchDispatchStatusHandler(req: Request, res: Response) {
     return res.status(400).json({ message: "Invalid dispatch id" });
   }
 
-  const key = statusLookupKey?.trim();
-  if (key !== "ARRIVED") {
-    return res.status(400).json({ message: "statusLookupKey must be ARRIVED" });
+  const key = statusLookupKey?.trim() as DispatchStatusUpdateKey | undefined;
+  if (!key || !DISPATCH_STATUS_KEYS.includes(key)) {
+    return res.status(400).json({
+      message: "statusLookupKey must be ARRIVED, DIAGNOSTIC, or COMPLETED",
+    });
   }
 
   try {
     const scope = await getScope(req);
     const userId = req.authUser?.sub;
-    const updated = await updateDispatchStatus(id.trim(), "ARRIVED", { userId, scope });
+    const updated = await updateDispatchStatus(id.trim(), key, { userId, scope });
     return res.json(updated);
   } catch (e) {
     const err = e as { code?: string; message?: string };
@@ -132,7 +137,14 @@ export async function patchDispatchStatusHandler(req: Request, res: Response) {
       return res.status(404).json({ message: "Dispatch not found" });
     }
     if (err.code === "INVALID_TRANSITION") {
-      return res.status(409).json({ message: "Only an in-transit dispatch can be marked arrived" });
+      return res.status(409).json({
+        message:
+          key === "ARRIVED"
+            ? "Only an in-transit dispatch can be marked arrived"
+            : key === "DIAGNOSTIC"
+              ? "Only an arrived dispatch can enter diagnostic"
+              : "Only a diagnostic-stage dispatch can be completed",
+      });
     }
     if (err.code === "INVALID_STATUS") {
       return res.status(400).json({ message: "Invalid status" });

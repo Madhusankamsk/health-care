@@ -12,6 +12,7 @@ import {
   resolveBookingListScope,
   updateBooking,
 } from "../services/bookingService";
+import { saveVisitDraft } from "../services/visitService";
 
 async function getScope(req: Request) {
   const keys = await loadPermissionKeys(req);
@@ -187,6 +188,35 @@ export async function updateBookingHandler(req: Request, res: Response) {
     return res.json(booking);
   } catch {
     return res.status(409).json({ message: "Unable to update booking" });
+  }
+}
+
+export async function patchVisitDraftHandler(req: Request, res: Response) {
+  const { id } = req.params;
+  const body = req.body as Partial<{ clinicalNotes: string | null; diagnosis: string | null }>;
+
+  if (!id?.trim()) {
+    return res.status(400).json({ message: "Invalid booking id" });
+  }
+
+  try {
+    const scope = await getScope(req);
+    const userId = req.authUser?.sub;
+    const visit = await saveVisitDraft(
+      id.trim(),
+      {
+        clinicalNotes: body.clinicalNotes,
+        diagnosis: body.diagnosis,
+      },
+      { userId, scope },
+    );
+    return res.json(visit);
+  } catch (e) {
+    const err = e as { code?: string; message?: string };
+    if (err.code === "BOOKING_NOT_FOUND") {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+    return res.status(500).json({ message: err.message ?? "Unable to save visit draft" });
   }
 }
 

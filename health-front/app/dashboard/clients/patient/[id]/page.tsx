@@ -37,7 +37,8 @@ export default async function PatientFullPreviewPage({
   if (!patient) redirect("/dashboard/clients/patient");
 
   const canSeeBookings = hasAnyPermission(me.permissions, [...PERMS.bookingsHistory]);
-  const canMarkArrivedOnPatientBookings = hasAnyPermission(me.permissions, ["dispatch:update"]);
+  const canUpdateDispatch = hasAnyPermission(me.permissions, ["dispatch:update"]);
+  const canSaveVisitDraft = hasAnyPermission(me.permissions, ["bookings:update"]);
   const patientBookings = canSeeBookings
     ? await backendJson<UpcomingBookingRow[]>(`/api/patients/${id}/bookings`)
     : null;
@@ -185,7 +186,8 @@ export default async function PatientFullPreviewPage({
           ) : (
             <PatientBookingsHistory
               bookings={patientBookings}
-              canMarkArrived={canMarkArrivedOnPatientBookings}
+              canUpdateDispatch={canUpdateDispatch}
+              canSaveVisitDraft={canSaveVisitDraft}
             />
           )
         ) : (
