@@ -15,6 +15,7 @@ import {
 import {
   createDiagnosticReportForBooking,
   createLabSampleForBooking,
+  deleteLabSampleForBooking,
 } from "../services/visitClinicalService";
 import { saveVisitDraft } from "../services/visitService";
 
@@ -269,22 +270,16 @@ export async function postLabSampleHandler(req: Request, res: Response) {
     return res.status(400).json({ message: "Invalid booking id" });
   }
 
-  const body = req.body as Partial<{ sampleType: string; labName: string | null }>;
-  const sampleType = typeof body.sampleType === "string" ? body.sampleType : "";
-  const labName =
-    body.labName === undefined
-      ? undefined
-      : body.labName === null
-        ? null
-        : typeof body.labName === "string"
-          ? body.labName
-          : undefined;
+  const body = req.body as Partial<{ sampleTypeLookupId: string; labName: string }>;
+  const sampleTypeLookupId =
+    typeof body.sampleTypeLookupId === "string" ? body.sampleTypeLookupId : "";
+  const labName = typeof body.labName === "string" ? body.labName : "";
 
   try {
     const scope = await getScope(req);
     const sample = await createLabSampleForBooking(
       bookingId.trim(),
-      { sampleType, labName },
+      { sampleTypeLookupId, labName },
       userId,
       { userId, scope },
     );
@@ -294,10 +289,38 @@ export async function postLabSampleHandler(req: Request, res: Response) {
     if (err.code === "BOOKING_NOT_FOUND") {
       return res.status(404).json({ message: "Booking not found" });
     }
+    if (err.code === "MISSING_DESCRIPTION") {
+      return res.status(400).json({ message: err.message ?? "Description is required" });
+    }
     if (err.code === "INVALID_INPUT") {
-      return res.status(400).json({ message: "sampleType is required" });
+      return res.status(400).json({ message: "Sample type is required" });
+    }
+    if (err.code === "INVALID_SAMPLE_TYPE") {
+      return res.status(400).json({ message: "Invalid sample type" });
     }
     return res.status(500).json({ message: err.message ?? "Unable to record sample" });
+  }
+}
+
+export async function deleteLabSampleHandler(req: Request, res: Response) {
+  const { id: bookingId, sampleId } = req.params;
+  if (!bookingId?.trim() || !sampleId?.trim()) {
+    return res.status(400).json({ message: "Booking id and sample id are required" });
+  }
+
+  try {
+    const scope = await getScope(req);
+    await deleteLabSampleForBooking(bookingId.trim(), sampleId.trim(), {
+      userId: req.authUser?.sub,
+      scope,
+    });
+    return res.status(204).send();
+  } catch (e) {
+    const err = e as { code?: string; message?: string };
+    if (err.code === "BOOKING_NOT_FOUND" || err.code === "SAMPLE_NOT_FOUND") {
+      return res.status(404).json({ message: "Sample not found" });
+    }
+    return res.status(500).json({ message: err.message ?? "Unable to remove sample" });
   }
 }
 

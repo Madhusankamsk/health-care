@@ -457,6 +457,58 @@ async function main() {
     });
   }
 
+  const labSampleStatusCategory = await prisma.lookupCategory.upsert({
+    where: { categoryName: "LAB_SAMPLE_STATUS" },
+    update: {},
+    create: { categoryName: "LAB_SAMPLE_STATUS" },
+  });
+  for (const item of [
+    { lookupKey: "COLLECTED", lookupValue: "Collected" },
+    { lookupKey: "SENT_TO_LAB", lookupValue: "Sent to lab" },
+    { lookupKey: "RESULTS_PENDING", lookupValue: "Results pending" },
+    { lookupKey: "COMPLETED", lookupValue: "Completed" },
+  ] as const) {
+    await prisma.lookup.upsert({
+      where: {
+        categoryId_lookupKey: { categoryId: labSampleStatusCategory.id, lookupKey: item.lookupKey },
+      },
+      update: { lookupValue: item.lookupValue, isActive: true },
+      create: {
+        categoryId: labSampleStatusCategory.id,
+        lookupKey: item.lookupKey,
+        lookupValue: item.lookupValue,
+        isActive: true,
+      },
+    });
+  }
+
+  const labSampleTypeCategory = await prisma.lookupCategory.upsert({
+    where: { categoryName: "LAB_SAMPLE_TYPE" },
+    update: {},
+    create: { categoryName: "LAB_SAMPLE_TYPE" },
+  });
+  for (const item of [
+    { lookupKey: "BLOOD", lookupValue: "Blood" },
+    { lookupKey: "URINE", lookupValue: "Urine" },
+    { lookupKey: "STOOL", lookupValue: "Stool" },
+    { lookupKey: "SWAB", lookupValue: "Swab" },
+    { lookupKey: "SPUTUM", lookupValue: "Sputum" },
+    { lookupKey: "OTHER", lookupValue: "Other" },
+  ] as const) {
+    await prisma.lookup.upsert({
+      where: {
+        categoryId_lookupKey: { categoryId: labSampleTypeCategory.id, lookupKey: item.lookupKey },
+      },
+      update: { lookupValue: item.lookupValue, isActive: true },
+      create: {
+        categoryId: labSampleTypeCategory.id,
+        lookupKey: item.lookupKey,
+        lookupValue: item.lookupValue,
+        isActive: true,
+      },
+    });
+  }
+
   // --- Demo data for Bookings tab preview ---
   // Vehicle
   const vehicle = await prisma.vehicle.upsert({

@@ -2,7 +2,10 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 
 import type { Patient } from "@/components/admin/PatientManager";
-import { PatientBookingsHistory } from "@/components/clients/PatientBookingsHistory";
+import {
+  PatientBookingsHistory,
+  type LabSampleTypeLookup,
+} from "@/components/clients/PatientBookingsHistory";
 import type { UpcomingBookingRow } from "@/components/dispatch/types";
 import { Card } from "@/components/ui/Card";
 import { backendJson, type BackendMeResponse } from "@/lib/backend";
@@ -42,6 +45,12 @@ export default async function PatientFullPreviewPage({
   const patientBookings = canSeeBookings
     ? await backendJson<UpcomingBookingRow[]>(`/api/patients/${id}/bookings`)
     : null;
+  const labSampleTypeLookups =
+    canSaveVisitDraft && canSeeBookings
+      ? (await backendJson<LabSampleTypeLookup[]>(
+          `/api/lookups?category=${encodeURIComponent("LAB_SAMPLE_TYPE")}`,
+        )) ?? []
+      : [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -188,6 +197,7 @@ export default async function PatientFullPreviewPage({
               bookings={patientBookings}
               canUpdateDispatch={canUpdateDispatch}
               canSaveVisitDraft={canSaveVisitDraft}
+              labSampleTypeLookups={labSampleTypeLookups}
             />
           )
         ) : (

@@ -54,6 +54,7 @@ import {
   listBookingsForPatientHandler,
   listBookingsHandler,
   patchVisitDraftHandler,
+  deleteLabSampleHandler,
   postDiagnosticReportHandler,
   postLabSampleHandler,
   updateBookingHandler,
@@ -278,6 +279,11 @@ router.post(
   "/bookings/:id/lab-samples",
   requireAnyPermission(["bookings:update"]),
   postLabSampleHandler,
+);
+router.delete(
+  "/bookings/:id/lab-samples/:sampleId",
+  requireAnyPermission(["bookings:update"]),
+  deleteLabSampleHandler,
 );
 router.get("/bookings/:id", requireAnyPermission(["bookings:read"]), getBookingHandler);
 router.put("/bookings/:id", requireAnyPermission(["bookings:update"]), updateBookingHandler);

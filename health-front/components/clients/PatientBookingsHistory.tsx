@@ -13,12 +13,20 @@ import {
 import type { UpcomingBookingRow } from "@/components/dispatch/types";
 import { toast } from "@/lib/toast";
 
+export type LabSampleTypeLookup = {
+  id: string;
+  lookupKey: string;
+  lookupValue: string;
+};
+
 type PatientBookingsHistoryProps = {
   bookings: UpcomingBookingRow[];
   /** `dispatch:update` — Mark arrived, Start diagnostic, Complete dispatch */
   canUpdateDispatch?: boolean;
   /** `bookings:update` — Save draft (diagnosis remark); booking remark is read-only here */
   canSaveVisitDraft?: boolean;
+  /** From `/api/lookups?category=LAB_SAMPLE_TYPE` — sample type dropdown */
+  labSampleTypeLookups?: LabSampleTypeLookup[];
 };
 
 type DispatchRecordRow = UpcomingBookingRow["dispatchRecords"][number];
@@ -196,6 +204,7 @@ export function PatientBookingsHistory({
   bookings,
   canUpdateDispatch = false,
   canSaveVisitDraft = false,
+  labSampleTypeLookups = [],
 }: PatientBookingsHistoryProps) {
   const router = useRouter();
   const [busyDispatchId, setBusyDispatchId] = useState<string | null>(null);
@@ -209,11 +218,12 @@ export function PatientBookingsHistory({
     Record<string, string>
   >({});
   const [sampleFormByBookingId, setSampleFormByBookingId] = useState<
-    Record<string, { sampleType: string; labName: string }>
+    Record<string, { sampleTypeLookupId: string; labName: string }>
   >({});
   const [savingBookingId, setSavingBookingId] = useState<string | null>(null);
   const [uploadingReportBookingId, setUploadingReportBookingId] = useState<string | null>(null);
   const [addingSampleBookingId, setAddingSampleBookingId] = useState<string | null>(null);
+  const [removingSampleId, setRemovingSampleId] = useState<string | null>(null);
 
   async function patchDispatchStatus(
     dispatchId: string,
@@ -324,15 +334,21 @@ export function PatientBookingsHistory({
     }
   }
 
-  function sampleFormForBooking(b: UpcomingBookingRow): { sampleType: string; labName: string } {
-    return sampleFormByBookingId[b.id] ?? { sampleType: "", labName: "" };
+  function sampleFormForBooking(b: UpcomingBookingRow): {
+    sampleTypeLookupId: string;
+    labName: string;
+  } {
+    return sampleFormByBookingId[b.id] ?? { sampleTypeLookupId: "", labName: "" };
   }
 
   async function submitLabSample(b: UpcomingBookingRow) {
     const form = sampleFormForBooking(b);
-    const sampleType = form.sampleType.trim();
-    if (!sampleType) {
-      toast.error("Enter a sample type.");
+    if (!form.sampleTypeLookupId.trim()) {
+      toast.error("Select a sample type.");
+      return;
+    }
+    if (!form.labName.trim()) {
+      toast.error("Enter a description.");
       return;
     }
     setAddingSampleBookingId(b.id);
@@ -341,8 +357,8 @@ export function PatientBookingsHistory({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sampleType,
-          labName: form.labName.trim() ? form.labName.trim() : null,
+          sampleTypeLookupId: form.sampleTypeLookupId.trim(),
+          labName: form.labName.trim(),
         }),
       });
       const data = (await res.json().catch(() => ({}))) as { message?: string };
@@ -350,13 +366,32 @@ export function PatientBookingsHistory({
       toast.success("Sample recorded.");
       setSampleFormByBookingId((prev) => ({
         ...prev,
-        [b.id]: { sampleType: "", labName: "" },
+        [b.id]: { sampleTypeLookupId: "", labName: "" },
       }));
       router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
     } finally {
       setAddingSampleBookingId(null);
+    }
+  }
+
+  async function removeLabSample(b: UpcomingBookingRow, sampleId: string) {
+    setRemovingSampleId(sampleId);
+    try {
+      const res = await fetch(`/api/bookings/${b.id}/lab-samples/${sampleId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { message?: string };
+        throw new Error(data.message || "Could not remove sample");
+      }
+      toast.success("Sample removed.");
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setRemovingSampleId(null);
     }
   }
 
@@ -633,40 +668,60 @@ export function PatientBookingsHistory({
                                       <span className="font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                                         Sample type *
                                       </span>
-                                      <input
-                                        type="text"
-                                        value={sampleFormForBooking(b).sampleType}
+                                      <select
+                                        value={sampleFormForBooking(b).sampleTypeLookupId}
                                         onChange={(e) =>
-                                          setSampleFormByBookingId((prev) => ({
-                                            ...prev,
-                                            [b.id]: {
-                                              sampleType: e.target.value,
-                                              labName: prev[b.id]?.labName ?? "",
-                                            },
-                                          }))
+                                          setSampleFormByBookingId((prev) => {
+                                            const base = prev[b.id] ?? {
+                                              sampleTypeLookupId: "",
+                                              labName: "",
+                                            };
+                                            return {
+                                              ...prev,
+                                              [b.id]: {
+                                                ...base,
+                                                sampleTypeLookupId: e.target.value,
+                                              },
+                                            };
+                                          })
                                         }
                                         className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)]"
-                                        placeholder="e.g. Blood, Urine"
-                                      />
+                                        disabled={labSampleTypeLookups.length === 0}
+                                      >
+                                        <option value="">
+                                          {labSampleTypeLookups.length === 0
+                                            ? "No types — run DB seed"
+                                            : "Select sample type"}
+                                        </option>
+                                        {labSampleTypeLookups.map((opt) => (
+                                          <option key={opt.id} value={opt.id}>
+                                            {opt.lookupValue}
+                                          </option>
+                                        ))}
+                                      </select>
                                     </label>
                                     <label className="flex flex-col gap-1 text-xs">
                                       <span className="font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                                        Lab (optional)
+                                        Description
                                       </span>
                                       <input
                                         type="text"
+                                        required
                                         value={sampleFormForBooking(b).labName}
                                         onChange={(e) =>
-                                          setSampleFormByBookingId((prev) => ({
-                                            ...prev,
-                                            [b.id]: {
-                                              sampleType: prev[b.id]?.sampleType ?? "",
-                                              labName: e.target.value,
-                                            },
-                                          }))
+                                          setSampleFormByBookingId((prev) => {
+                                            const base = prev[b.id] ?? {
+                                              sampleTypeLookupId: "",
+                                              labName: "",
+                                            };
+                                            return {
+                                              ...prev,
+                                              [b.id]: { ...base, labName: e.target.value },
+                                            };
+                                          })
                                         }
                                         className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)]"
-                                        placeholder="Lab name"
+                                        placeholder="Description"
                                       />
                                     </label>
                                   </div>
@@ -676,7 +731,10 @@ export function PatientBookingsHistory({
                                       variant="secondary"
                                       className="h-8 px-3 text-xs"
                                       disabled={
-                                        addingSampleBookingId === b.id || busyDispatchId !== null
+                                        addingSampleBookingId === b.id ||
+                                        busyDispatchId !== null ||
+                                        labSampleTypeLookups.length === 0 ||
+                                        !sampleFormForBooking(b).labName.trim()
                                       }
                                       onClick={() => void submitLabSample(b)}
                                     >
@@ -686,11 +744,26 @@ export function PatientBookingsHistory({
                                 </>
                               ) : null}
                               <div className="overflow-hidden rounded-lg border border-[var(--border)]">
-                                <div className="grid grid-cols-2 gap-x-2 gap-y-1 border-b border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)] sm:grid-cols-4">
-                                  <span className="sm:col-span-1">Type</span>
-                                  <span className="hidden sm:block">Lab</span>
-                                  <span>Collected</span>
-                                  <span className="text-right">Status</span>
+                                <div
+                                  className={`flex flex-wrap items-center gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)] ${
+                                    canSaveVisitDraft ? "sm:pr-2" : ""
+                                  }`}
+                                >
+                                  <span className="min-w-0 flex-[2] sm:flex-1">Type</span>
+                                  <span className="hidden min-w-0 flex-1 sm:block">
+                                    Description
+                                  </span>
+                                  <span className="hidden flex-none sm:block sm:min-w-[9rem]">
+                                    Collected
+                                  </span>
+                                  <span className="min-w-0 flex-1 sm:flex-none sm:min-w-[7rem]">
+                                    Status
+                                  </span>
+                                  {canSaveVisitDraft ? (
+                                    <span className="ml-auto w-14 shrink-0 text-right sm:ml-0">
+                                      {" "}
+                                    </span>
+                                  ) : null}
                                 </div>
                                 {samples.length === 0 ? (
                                   <div className="px-3 py-6 text-center text-sm text-[var(--text-muted)]">
@@ -701,22 +774,34 @@ export function PatientBookingsHistory({
                                     {samples.map((s) => (
                                       <li
                                         key={s.id}
-                                        className="grid grid-cols-2 gap-x-2 gap-y-0.5 px-3 py-2 text-sm sm:grid-cols-4 sm:items-center"
+                                        className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm"
                                       >
-                                        <span className="font-medium text-[var(--text-primary)]">
+                                        <span className="min-w-0 flex-[2] font-medium text-[var(--text-primary)] sm:flex-1">
                                           {s.sampleType}
                                         </span>
-                                        <span className="hidden text-[var(--text-secondary)] sm:block">
+                                        <span className="hidden min-w-0 flex-1 text-[var(--text-secondary)] sm:block">
                                           {s.labName?.trim() ? s.labName : "—"}
                                         </span>
-                                        <span className="text-xs text-[var(--text-secondary)]">
+                                        <span className="hidden flex-none text-xs text-[var(--text-secondary)] sm:block sm:min-w-[9rem]">
                                           {formatScheduled(s.collectedAt)}
                                         </span>
-                                        <span className="text-right text-xs text-[var(--text-secondary)]">
+                                        <span className="min-w-0 flex-1 text-xs text-[var(--text-secondary)] sm:flex-none sm:min-w-[7rem] sm:text-sm">
                                           {s.statusLookup?.lookupValue ??
                                             s.statusLookup?.lookupKey ??
                                             "—"}
                                         </span>
+                                        {canSaveVisitDraft ? (
+                                          <span className="ml-auto w-14 shrink-0 text-right sm:ml-0">
+                                            <button
+                                              type="button"
+                                              className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50 dark:text-red-400"
+                                              disabled={removingSampleId === s.id}
+                                              onClick={() => void removeLabSample(b, s.id)}
+                                            >
+                                              {removingSampleId === s.id ? "…" : "Remove"}
+                                            </button>
+                                          </span>
+                                        ) : null}
                                       </li>
                                     ))}
                                   </ul>
@@ -765,7 +850,8 @@ export function PatientBookingsHistory({
                         busyDispatchId !== null ||
                         savingBookingId !== null ||
                         uploadingReportBookingId !== null ||
-                        addingSampleBookingId !== null
+                        addingSampleBookingId !== null ||
+                        removingSampleId !== null
                       }
                       onClick={() => void saveVisitDraftForBooking(b)}
                     >
