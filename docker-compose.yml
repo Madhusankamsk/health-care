@@ -39,6 +39,8 @@ services:
     environment:
       HEALTH_BACKEND_URL: http://health-back:4000
       NODE_ENV: production
+      # Required over plain HTTP (no TLS); browsers ignore Secure cookies on http://
+      COOKIE_SECURE: "false"
     depends_on:
       - health-back
 
