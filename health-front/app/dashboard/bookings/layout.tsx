@@ -20,7 +20,7 @@ export default async function BookingsLayout({
   if (!canViewBookings) redirect("/dashboard");
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2">
       <SectionIntro title="Bookings" tag="Scheduling" tagTone="info" />
       {children}
     </div>

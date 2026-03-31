@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { Card } from "@/components/ui/Card";
+import { CrudToolbar } from "@/components/ui/CrudToolbar";
 import { backendJson, type BackendMeResponse } from "@/lib/backend";
 import { getIsAuthenticated } from "@/lib/auth";
 import { hasAnyPermission } from "@/lib/rbac";
@@ -51,10 +52,11 @@ export default async function PaymentsAccountsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card
-        title="Accounts"
-        description="Recorded invoice payments (including subscription billing). Up to 200 most recent."
-      >
+      <Card>
+        <CrudToolbar
+          title="Accounts"
+          description="Recorded invoice payments (including subscription billing). Up to 200 most recent."
+        />
         {!payments ? (
           <div className="text-sm text-red-700 dark:text-red-300">
             Unable to load payments. Check permissions or try again.

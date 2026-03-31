@@ -130,7 +130,11 @@ export function VehicleManager({
         </div>
       ) : null}
 
-      <CrudToolbar description="Manage vehicles (create, edit, delete, preview).">
+      <CrudToolbar
+        title="Vehicles"
+        note="Actions are controlled by permissions."
+        description="Manage vehicles (create, edit, delete, preview)."
+      >
           {canCreate ? (
             <Button
               variant="create"

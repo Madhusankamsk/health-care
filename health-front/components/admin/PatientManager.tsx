@@ -168,7 +168,11 @@ export function PatientManager({
         </div>
       ) : null}
 
-      <CrudToolbar description="Manage patients (create, edit, delete, preview).">
+      <CrudToolbar
+        title="Patients"
+        note="Actions are controlled by permissions."
+        description="Manage patients (create, edit, delete, preview)."
+      >
           {canCreate ? (
             <Button
               variant="create"

@@ -6,18 +6,19 @@ type SectionIntroProps = {
   tagTone?: "success" | "warning" | "info" | "danger";
 };
 
+/** Compact page chrome: breadcrumbs + title. No card or filled panel — blends with app shell. */
 export function SectionIntro({ title, tag, tagTone = "info" }: SectionIntroProps) {
   return (
-    <div className="page-section px-4 py-4 sm:px-5">
-      <div className="flex flex-col gap-2">
+    <header className="border-b border-[var(--border)] pb-2 pt-0 sm:pb-2.5">
+      <div className="flex flex-col gap-0.5">
         <Breadcrumbs />
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <h1 className="min-w-0 text-xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-2xl">
+          <h1 className="min-w-0 text-lg font-semibold tracking-tight text-[var(--text-primary)] sm:text-xl">
             {title}
           </h1>
           {tag ? <span className={`pill pill-${tagTone}`}>{tag}</span> : null}
         </div>
       </div>
-    </div>
+    </header>
   );
 }

@@ -8,6 +8,7 @@ import {
 } from "@/components/dispatch/UpcomingJobsTable";
 import type { UpcomingBookingRow } from "@/components/dispatch/types";
 import { Card } from "@/components/ui/Card";
+import { CrudToolbar } from "@/components/ui/CrudToolbar";
 import { getIsAuthenticated } from "@/lib/auth";
 import { backendJson, type BackendMeResponse } from "@/lib/backend";
 import { hasAnyPermission } from "@/lib/rbac";
@@ -56,10 +57,12 @@ export default async function UpcomingJobsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card
-        title="Upcoming jobs"
-        description="Accepted bookings not yet dispatched. After you dispatch a team, the job moves to Ongoing jobs. Preview Full View opens the patient page when you have patients:read."
-      >
+      <Card>
+        <CrudToolbar
+          title="Upcoming jobs"
+          note="Actions are controlled by permissions."
+          description="Accepted bookings not yet dispatched. After you dispatch a team, the job moves to Ongoing jobs."
+        />
         {!rows ? (
           <div className="text-sm text-red-700 dark:text-red-300">
             Failed to load upcoming jobs.

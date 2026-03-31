@@ -52,7 +52,7 @@ async function AdminStaffPageServer() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card title="Staff" description="Actions are controlled by permissions.">
+      <Card>
         {!profiles ? (
           <div className="text-sm text-red-700 dark:text-red-300">
             Failed to load staff list.

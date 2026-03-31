@@ -49,7 +49,7 @@ export default async function AdminPlanSetupPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card title="Plan Setup" description="Manage subscription plans.">
+      <Card>
         {!plans ? (
           <div className="text-sm text-red-700 dark:text-red-300">
             Failed to load subscription plans.

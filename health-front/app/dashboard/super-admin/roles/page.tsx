@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { Card } from "@/components/ui/Card";
+import { CrudToolbar } from "@/components/ui/CrudToolbar";
 import { CreateRoleModal } from "@/components/forms/CreateRoleModal";
 import { RolesTable } from "@/components/admin/RolesTable";
 import { getIsAuthenticated } from "@/lib/auth";
@@ -45,13 +46,14 @@ export default async function SuperAdminRolesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {canCreateRoles ? (
-        <div className="flex justify-end">
-          <CreateRoleModal />
-        </div>
-      ) : null}
-
-      <Card title="All roles" description="Fetched from health-back.">
+      <Card>
+        <CrudToolbar
+          title="All roles"
+          note="Actions are controlled by permissions."
+          description="Fetched from health-back."
+        >
+          {canCreateRoles ? <CreateRoleModal /> : null}
+        </CrudToolbar>
         {!roles ? (
           <div className="text-sm text-[var(--danger)]">
             Failed to load roles.

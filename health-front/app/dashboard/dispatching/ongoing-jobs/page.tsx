@@ -4,6 +4,7 @@ import type { MedicalTeam } from "@/components/admin/MedicalTeamManager";
 import { OngoingJobsTable } from "@/components/dispatch/OngoingJobsTable";
 import type { UpcomingBookingRow } from "@/components/dispatch/types";
 import { Card } from "@/components/ui/Card";
+import { CrudToolbar } from "@/components/ui/CrudToolbar";
 import { getIsAuthenticated } from "@/lib/auth";
 import { backendJson, type BackendMeResponse } from "@/lib/backend";
 import { hasAnyPermission } from "@/lib/rbac";
@@ -39,10 +40,12 @@ export default async function OngoingJobsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card
-        title="Ongoing jobs"
-        description="Dispatched bookings (in transit or arrived on site). Use Preview for booking and patient details."
-      >
+      <Card>
+        <CrudToolbar
+          title="Ongoing jobs"
+          note="Actions are controlled by permissions."
+          description="Dispatched bookings (in transit or arrived on site)."
+        />
         {!rows ? (
           <div className="text-sm text-red-700 dark:text-red-300">Failed to load ongoing jobs.</div>
         ) : (

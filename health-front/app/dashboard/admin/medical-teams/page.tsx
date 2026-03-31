@@ -68,10 +68,7 @@ export default async function AdminMedicalTeamsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card
-        title="Medical Teams"
-        description="Actions are controlled by permissions."
-      >
+      <Card>
         {!teams ? (
           <div className="text-sm text-red-700 dark:text-red-300">
             Failed to load medical teams.

@@ -129,7 +129,11 @@ export function SubscriptionPlanManager({
         </div>
       ) : null}
 
-      <CrudToolbar description="Manage subscription plans (create, edit, delete, preview).">
+      <CrudToolbar
+        title="Plan setup"
+        note="Actions are controlled by permissions."
+        description="Manage subscription plans (create, edit, delete, preview)."
+      >
           {canCreate ? (
             <Button
               variant="create"

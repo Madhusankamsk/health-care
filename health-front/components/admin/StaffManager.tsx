@@ -147,7 +147,11 @@ export function StaffManager({
         </div>
       ) : null}
 
-      <CrudToolbar description="Manage staff accounts (create, edit, deactivate, delete, preview).">
+      <CrudToolbar
+        title="Staff"
+        note="Actions are controlled by permissions."
+        description="Manage staff accounts (create, edit, deactivate, delete, preview)."
+      >
           {canCreate ? (
             <Button
               variant="create"

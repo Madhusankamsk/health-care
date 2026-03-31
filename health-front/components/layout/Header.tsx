@@ -109,7 +109,7 @@ export function Header({
             </Link>
             {(canSeeAdmin || canSeeSuperAdmin) && canCreatePatient ? (
               <Link
-                href="/dashboard/clients/patient?open=create"
+                href="/dashboard/clients/patient"
                 className="inline-flex items-center gap-2 rounded-xl border border-transparent px-3 py-1.5 text-[var(--text-secondary)] hover:border-[var(--border)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
               >
                 <ShieldCheck className="h-4 w-4" aria-hidden />

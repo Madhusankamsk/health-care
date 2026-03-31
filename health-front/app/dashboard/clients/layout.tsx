@@ -20,7 +20,7 @@ export default async function ClientsLayout({
   if (!canViewClients) redirect("/dashboard");
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2">
       <SectionIntro title="Clients" tag="Care" tagTone="success" />
       {children}
     </div>

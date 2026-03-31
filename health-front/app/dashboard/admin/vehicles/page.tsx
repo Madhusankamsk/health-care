@@ -44,7 +44,7 @@ export default async function AdminVehiclesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card title="Vehicles" description="Actions are controlled by permissions.">
+      <Card>
         {!vehicles ? (
           <div className="text-sm text-red-700 dark:text-red-300">
             Failed to load vehicles.

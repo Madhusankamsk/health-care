@@ -58,7 +58,7 @@ export default async function PatientPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <Card title="Patients" description="Actions are controlled by permissions.">
+      <Card>
         {!patients ? (
           <div className="text-sm text-red-700 dark:text-red-300">
             Failed to load patients.

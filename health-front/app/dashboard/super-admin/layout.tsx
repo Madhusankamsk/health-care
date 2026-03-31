@@ -19,7 +19,7 @@ export default async function SuperAdminLayout({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2">
       <SectionIntro title="Super Admin" tag="Privileged" tagTone="warning" />
       {children}
     </div>

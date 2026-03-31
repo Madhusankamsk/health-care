@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { Card } from "@/components/ui/Card";
+import { CrudToolbar } from "@/components/ui/CrudToolbar";
 import { RolePermissionMatrix } from "@/components/admin/RolePermissionMatrix";
 import { CreatePermissionModal } from "@/components/forms/CreatePermissionModal";
 import { getIsAuthenticated } from "@/lib/auth";
@@ -55,17 +56,15 @@ export default async function SuperAdminPermissionsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {canCreatePermissions ? (
-        <div className="flex justify-end">
-          <CreatePermissionModal />
-        </div>
-      ) : null}
-
       {roles && roles.length > 0 && permissions && permissions.length > 0 ? (
-        <Card
-          title="Role permission matrix"
-          description="Grant or revoke permissions for each role."
-        >
+        <Card>
+          <CrudToolbar
+            title="Role permission matrix"
+            note="Actions are controlled by permissions."
+            description="Grant or revoke permissions for each role."
+          >
+            {canCreatePermissions ? <CreatePermissionModal /> : null}
+          </CrudToolbar>
           <RolePermissionMatrix roles={roles} permissions={permissions} />
         </Card>
       ) : null}

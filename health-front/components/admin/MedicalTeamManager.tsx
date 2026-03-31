@@ -162,7 +162,11 @@ export function MedicalTeamManager({
         </div>
       ) : null}
 
-      <CrudToolbar description="Manage medical teams, assign vehicles, and assign team members.">
+      <CrudToolbar
+        title="Medical teams"
+        note="Actions are controlled by permissions."
+        description="Manage medical teams, assign vehicles, and assign team members."
+      >
           {canCreate ? (
             <Button
               variant="create"

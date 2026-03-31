@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 
-import { DispatchingSubnav } from "@/components/nav/DispatchingSubnav";
 import { SectionIntro } from "@/components/ui/SectionIntro";
 import { getIsAuthenticated } from "@/lib/auth";
 import { backendJson, type BackendMeResponse } from "@/lib/backend";
@@ -21,12 +20,9 @@ export default async function DispatchingLayout({
   if (!canView) redirect("/dashboard");
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2">
       <SectionIntro title="Dispatching" tag="Operations" tagTone="info" />
-      <div className="flex flex-col gap-4 pt-2">
-        <DispatchingSubnav />
-        {children}
-      </div>
+      {children}
     </div>
   );
 }

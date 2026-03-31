@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
+import { CrudToolbar } from "@/components/ui/CrudToolbar";
 import { toast } from "@/lib/toast";
 
 import { RecordSubscriptionPaymentModal } from "./RecordSubscriptionPaymentModal";
@@ -108,7 +109,11 @@ export function RecordSubscriptionPaymentSection({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-end gap-2">
+      <CrudToolbar
+        title="Record subscription payments"
+        note="Actions are controlled by permissions."
+        description="Record payments against outstanding subscription invoices."
+      >
         <Button
           type="button"
           variant="secondary"
@@ -116,7 +121,7 @@ export function RecordSubscriptionPaymentSection({
         >
           Refresh list
         </Button>
-      </div>
+      </CrudToolbar>
 
       <div className="overflow-x-auto">
         <table className="min-w-full text-left text-sm">

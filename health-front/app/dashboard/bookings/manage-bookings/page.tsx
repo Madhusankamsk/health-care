@@ -71,7 +71,7 @@ export default async function ManageBookingsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card title="Manage Bookings" description="Actions are controlled by permissions.">
+      <Card>
         {!bookings ? (
           <div className="text-sm text-red-700 dark:text-red-300">
             Failed to load bookings.

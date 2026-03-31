@@ -247,7 +247,11 @@ export function SubscriptionAccountManager({
         </div>
       ) : null}
 
-      <CrudToolbar description="Manage family/corporate subscription accounts (create, edit, delete, preview).">
+      <CrudToolbar
+        title="Family and corporate accounts"
+        note="Actions are controlled by permissions."
+        description="Manage family/corporate subscription accounts (create, edit, delete, preview)."
+      >
           {canCreate ? (
             <Button
               variant="create"
