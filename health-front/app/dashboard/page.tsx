@@ -3,12 +3,8 @@ import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import type { Booking } from "@/components/admin/BookingManager";
 import { getIsAuthenticated } from "@/lib/auth";
-import { backendJson, type BackendMeResponse } from "@/lib/backend";
+import { type BackendMeResponse, backendJson } from "@/lib/backend";
 import { hasAnyPermission } from "@/lib/rbac";
-
-type BackendHealth =
-  | { status?: string; service?: string; timestamp?: string }
-  | { error: string };
 
 function formatWhen(value: string | null) {
   if (value === null || value === "") return "—";
@@ -22,22 +18,6 @@ export default async function DashboardPage() {
   if (!isAuthenticated) {
     redirect("/");
   }
-
-  const backendBaseUrl =
-    process.env.HEALTH_BACKEND_URL?.trim() || "http://localhost:4000";
-
-  const backendHealth: BackendHealth = await fetch(`${backendBaseUrl}/health`, {
-    cache: "no-store",
-  })
-    .then(async (res) => {
-      if (!res.ok) {
-        return { error: `Backend health failed (${res.status})` };
-      }
-      return (await res.json().catch(() => null)) ?? { error: "Invalid JSON" };
-    })
-    .catch((error) => ({
-      error: error instanceof Error ? error.message : "Failed to reach backend",
-    }));
 
   const me = await backendJson<BackendMeResponse>("/api/me");
   const canShowBookings =
@@ -68,53 +48,9 @@ export default async function DashboardPage() {
       </header>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card title="Backend connection" description="Live status from health-back.">
-          {"error" in backendHealth ? (
-            <div className="text-sm text-[var(--danger)]">
-              {backendHealth.error}
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2 text-sm text-[var(--text-secondary)]">
-              <div className="flex items-center justify-between">
-                <span>Service</span>
-                <span className="font-semibold text-[var(--text-primary)]">
-                  {backendHealth.service ?? "unknown"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Status</span>
-                <span className="pill pill-success">
-                  {backendHealth.status ?? "unknown"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Timestamp</span>
-                <span className="font-mono text-xs">
-                  {backendHealth.timestamp ?? "unknown"}
-                </span>
-              </div>
-            </div>
-          )}
-        </Card>
-
-        <Card
-          title="Quick links"
-          description="Common actions for your healthcare workflow."
-        >
-          <ul className="flex list-disc flex-col gap-2 pl-5 text-sm text-[var(--text-secondary)]">
-            <li>View appointments</li>
-            <li>Patient records</li>
-            <li>Messages</li>
-            <li>Billing</li>
-          </ul>
-        </Card>
-
         {canShowBookings && bookings ? (
           <>
-            <Card
-              title="Pending doctor acceptance"
-              description="Bookings waiting for the requested doctor to accept or reject."
-            >
+            <Card title="Pending doctor acceptance">
               {pendingDoctor.length === 0 ? (
                 <p className="text-sm text-[var(--text-secondary)]">None right now.</p>
               ) : (
@@ -142,10 +78,7 @@ export default async function DashboardPage() {
               )}
             </Card>
 
-            <Card
-              title="Accepted by doctor"
-              description="Bookings the requested doctor has accepted."
-            >
+            <Card title="Accepted by doctor">
               {acceptedDoctor.length === 0 ? (
                 <p className="text-sm text-[var(--text-secondary)]">None right now.</p>
               ) : (

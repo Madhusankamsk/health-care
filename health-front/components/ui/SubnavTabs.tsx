@@ -17,7 +17,10 @@ export function SubnavTabs({ tabs, ariaLabel }: SubnavTabsProps) {
   const pathname = usePathname();
 
   return (
-    <nav className="page-section flex flex-wrap gap-2 p-2" aria-label={ariaLabel}>
+    <nav
+      className="page-section -mx-1 flex min-w-0 flex-nowrap gap-2 overflow-x-auto overflow-y-hidden p-2 [-webkit-overflow-scrolling:touch]"
+      aria-label={ariaLabel}
+    >
       {tabs.map((tab) => {
         const active = pathname === tab.href;
         return (
@@ -25,7 +28,7 @@ export function SubnavTabs({ tabs, ariaLabel }: SubnavTabsProps) {
             key={tab.href}
             href={tab.href}
             className={[
-              "rounded-xl px-3 py-2 text-sm font-medium transition-colors",
+              "shrink-0 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium transition-colors",
               active
                 ? "bg-[var(--brand-primary)] text-white shadow-sm"
                 : "text-[var(--text-secondary)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]",

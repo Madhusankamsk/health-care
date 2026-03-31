@@ -10,7 +10,7 @@ export default async function LoginPage() {
   }
 
   return (
-    <div className="app-shell min-h-screen px-3 py-16 text-[var(--text-primary)] sm:px-4">
+    <div className="safe-auth-page app-shell min-h-screen pb-[calc(4rem+env(safe-area-inset-bottom,0px))] pt-[calc(4rem+env(safe-area-inset-top,0px))] text-[var(--text-primary)]">
       <div className="mx-auto flex w-full max-w-md flex-col gap-10">
         <header className="flex flex-col gap-2">
           <p className="text-sm font-semibold uppercase tracking-[0.12em] text-[var(--text-secondary)]">

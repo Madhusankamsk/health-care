@@ -7,9 +7,11 @@ type CrudToolbarProps = {
 
 export function CrudToolbar({ description, children }: CrudToolbarProps) {
   return (
-    <div className="page-section flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-      <div className="text-sm text-[var(--text-secondary)]">{description}</div>
-      <div className="flex items-center gap-2">{children}</div>
+    <div className="page-section flex flex-col gap-3 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      <div className="min-w-0 text-sm text-[var(--text-secondary)]">{description}</div>
+      <div className="flex flex-shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+        {children}
+      </div>
     </div>
   );
 }

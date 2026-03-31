@@ -6,7 +6,7 @@ import {
   Minimize,
   ShieldCheck,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type Ref } from "react";
 
 import { UserMenu } from "@/components/auth/UserMenu";
 import { canAccessAdmin, canAccessSuperAdmin } from "@/lib/adminAccess";
@@ -18,6 +18,10 @@ export type HeaderProps = {
   isMenuButtonVisible?: boolean;
   onMenuClick?: () => void;
   isFullscreenButtonVisible?: boolean;
+  /** Ref to the mobile menu button (focus return when nav drawer closes). */
+  menuButtonRef?: Ref<HTMLButtonElement>;
+  /** When the mobile nav drawer is open (for `aria-expanded`). */
+  isMobileNavOpen?: boolean;
 };
 
 export function Header({
@@ -25,6 +29,8 @@ export function Header({
   isMenuButtonVisible,
   onMenuClick,
   isFullscreenButtonVisible,
+  menuButtonRef,
+  isMobileNavOpen,
 }: HeaderProps) {
   const meState = useMe();
   const canSeeAdmin =
@@ -70,13 +76,16 @@ export function Header({
 
   return (
     <header className="border-b border-[var(--border)] bg-[var(--surface)]/85 backdrop-blur-md">
-      <div className="flex w-full items-center justify-between px-3 py-4 sm:px-4 lg:px-5">
+      <div className="safe-chrome-header flex w-full items-center justify-between">
         <div className="flex items-center gap-6">
           {isMenuButtonVisible ? (
             <button
+              ref={menuButtonRef}
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-[var(--text-secondary)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)] md:hidden"
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[var(--text-secondary)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)] md:hidden"
               aria-label="Open navigation"
+              aria-expanded={isMobileNavOpen ?? false}
+              aria-haspopup="dialog"
               onClick={onMenuClick}
             >
               <Menu className="h-5 w-5" aria-hidden />

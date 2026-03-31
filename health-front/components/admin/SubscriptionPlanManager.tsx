@@ -419,7 +419,7 @@ function SubscriptionPlanForm({
   const formBody = (
     <>
       {layout === "card" ? (
-        <div className="mb-6 flex items-center justify-between gap-3">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-lg font-semibold text-[var(--text-primary)]">{title}</div>
           <Button variant="secondary" onClick={onCancel} disabled={isSubmitting}>
             Cancel

@@ -84,6 +84,83 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Safe-area padding for notched devices (used with viewport-fit=cover) */
+.safe-chrome-header {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 1rem);
+  padding-bottom: 1rem;
+  padding-left: calc(env(safe-area-inset-left, 0px) + 0.75rem);
+  padding-right: calc(env(safe-area-inset-right, 0px) + 0.75rem);
+}
+
+@media (min-width: 640px) {
+  .safe-chrome-header {
+    padding-left: calc(env(safe-area-inset-left, 0px) + 1rem);
+    padding-right: calc(env(safe-area-inset-right, 0px) + 1rem);
+  }
+}
+
+@media (min-width: 1024px) {
+  .safe-chrome-header {
+    padding-left: calc(env(safe-area-inset-left, 0px) + 1.25rem);
+    padding-right: calc(env(safe-area-inset-right, 0px) + 1.25rem);
+  }
+}
+
+.safe-chrome-main {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  padding-left: calc(env(safe-area-inset-left, 0px) + 0.75rem);
+  padding-right: calc(env(safe-area-inset-right, 0px) + 0.75rem);
+}
+
+@media (min-width: 640px) {
+  .safe-chrome-main {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+    padding-left: calc(env(safe-area-inset-left, 0px) + 1rem);
+    padding-right: calc(env(safe-area-inset-right, 0px) + 1rem);
+  }
+}
+
+@media (min-width: 1024px) {
+  .safe-chrome-main {
+    padding-left: calc(env(safe-area-inset-left, 0px) + 1.5rem);
+    padding-right: calc(env(safe-area-inset-right, 0px) + 1.5rem);
+  }
+}
+
+.safe-chrome-footer {
+  padding-top: 0.5rem;
+  padding-left: calc(env(safe-area-inset-left, 0px) + 0.75rem);
+  padding-right: calc(env(safe-area-inset-right, 0px) + 0.75rem);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+}
+
+@media (min-width: 640px) {
+  .safe-chrome-footer {
+    padding-left: calc(env(safe-area-inset-left, 0px) + 1rem);
+    padding-right: calc(env(safe-area-inset-right, 0px) + 1rem);
+  }
+}
+
+.safe-auth-page {
+  padding-left: calc(env(safe-area-inset-left, 0px) + 0.75rem);
+  padding-right: calc(env(safe-area-inset-right, 0px) + 0.75rem);
+}
+
+@media (min-width: 640px) {
+  .safe-auth-page {
+    padding-left: calc(env(safe-area-inset-left, 0px) + 1rem);
+    padding-right: calc(env(safe-area-inset-right, 0px) + 1rem);
+  }
+}
+
 *,
 *::before,
 *::after {

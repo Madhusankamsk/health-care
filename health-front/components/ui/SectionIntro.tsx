@@ -11,8 +11,8 @@ export function SectionIntro({ title, tag, tagTone = "info" }: SectionIntroProps
     <div className="page-section px-4 py-4 sm:px-5">
       <div className="flex flex-col gap-2">
         <Breadcrumbs />
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-2xl">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <h1 className="min-w-0 text-xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-2xl">
             {title}
           </h1>
           {tag ? <span className={`pill pill-${tagTone}`}>{tag}</span> : null}
