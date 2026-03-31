@@ -48,22 +48,22 @@ export function OngoingJobsTable({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
+      <div className="tbl-shell overflow-x-auto">
         <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-[var(--border)] bg-[var(--surface-2)]">
+          <thead className="text-xs uppercase text-zinc-500 dark:text-zinc-400">
             <tr>
-              <th className="px-3 py-2 font-medium text-[var(--text-secondary)]">Patient</th>
-              <th className="px-3 py-2 font-medium text-[var(--text-secondary)]">Scheduled</th>
-              <th className="px-3 py-2 font-medium text-[var(--text-secondary)]">Doctor</th>
-              <th className="px-3 py-2 font-medium text-[var(--text-secondary)]">Remark</th>
-              <th className="px-3 py-2 font-medium text-[var(--text-secondary)]">Dispatch</th>
-              <th className="px-3 py-2 font-medium text-[var(--text-secondary)]">Actions</th>
+              <th className="px-4 py-3">Patient</th>
+              <th className="px-4 py-3">Scheduled</th>
+              <th className="px-4 py-3">Doctor</th>
+              <th className="px-4 py-3">Remark</th>
+              <th className="px-4 py-3">Dispatch</th>
+              <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             {initialRows.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-3 py-8 text-center text-[var(--text-muted)]">
+                <td colSpan={6} className="px-4 py-8 text-center text-[var(--text-muted)]">
                   No ongoing jobs. Dispatched bookings appear here while in transit or arrived on site
                   before the visit is started.
                 </td>
@@ -78,20 +78,20 @@ export function OngoingJobsTable({
                     : null;
 
                 return (
-                  <tr key={row.id} className="border-b border-[var(--border)] last:border-0">
-                    <td className="px-3 py-2 font-medium text-[var(--text-primary)]">
+                  <tr key={row.id} className="border-t border-zinc-200 dark:border-zinc-800">
+                    <td className="px-4 py-3 font-medium text-[var(--text-primary)]">
                       {row.patient?.fullName ?? "—"}
                     </td>
-                    <td className="px-3 py-2 text-[var(--text-secondary)]">
+                    <td className="px-4 py-3 text-[var(--text-secondary)]">
                       {formatScheduled(row.scheduledDate)}
                     </td>
-                    <td className="px-3 py-2 text-[var(--text-secondary)]">
+                    <td className="px-4 py-3 text-[var(--text-secondary)]">
                       {row.requestedDoctor?.fullName ?? "—"}
                     </td>
-                    <td className="max-w-[200px] truncate px-3 py-2 text-[var(--text-secondary)]">
+                    <td className="max-w-[200px] truncate px-4 py-3 text-[var(--text-secondary)]">
                       {row.bookingRemark?.trim() ? row.bookingRemark : "—"}
                     </td>
-                    <td className="px-3 py-2 text-[var(--text-secondary)]">
+                    <td className="px-4 py-3 text-[var(--text-secondary)]">
                       {latest ? (
                         <div className="flex flex-col gap-0.5">
                           <span className="font-medium text-[var(--text-primary)]">
@@ -110,12 +110,13 @@ export function OngoingJobsTable({
                         "—"
                       )}
                     </td>
-                    <td className="px-3 py-2">
-                      <div className="flex flex-wrap gap-2">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-2">
                         {canPreview ? (
                           <Button
                             type="button"
-                            variant="ghost"
+                            variant="preview"
+                            className="h-9 px-3"
                             onClick={() => setPreviewBookingId(row.id)}
                           >
                             Preview

@@ -36,7 +36,7 @@ export default async function RecordSubscriptionPaymentPage() {
         description="Apply payments to subscription invoices that still have a balance. Registration creates invoices without payments; collect money here."
       >
         {!invoices || !paymentMethods ? (
-          <div className="text-sm text-red-700 dark:text-red-300">
+          <div className="rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 px-4 py-3 text-sm text-[var(--danger)]">
             Unable to load data. Check permissions or try again.
           </div>
         ) : (

@@ -244,7 +244,7 @@ export function UpcomingJobsTable({
   return (
     <div className="flex flex-col gap-4">
       {canAssignTeam && teams === null ? (
-        <p className="text-sm text-red-700 dark:text-red-300">
+        <p className="rounded-lg border border-[var(--danger)]/30 bg-[var(--danger)]/10 px-3 py-2 text-sm text-[var(--danger)]">
           Failed to load medical teams. Assigning a team requires the teams list.
         </p>
       ) : canAssignTeam && teamsWithMembers.length === 0 ? (
@@ -253,22 +253,22 @@ export function UpcomingJobsTable({
         </p>
       ) : null}
 
-      <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
+      <div className="tbl-shell overflow-x-auto">
         <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-[var(--border)] bg-[var(--surface-2)]">
+          <thead className="text-xs uppercase text-zinc-500 dark:text-zinc-400">
             <tr>
-              <th className="px-3 py-2 font-medium text-[var(--text-secondary)]">Patient</th>
-              <th className="px-3 py-2 font-medium text-[var(--text-secondary)]">Scheduled</th>
-              <th className="px-3 py-2 font-medium text-[var(--text-secondary)]">Doctor</th>
-              <th className="px-3 py-2 font-medium text-[var(--text-secondary)]">Remark</th>
-              <th className="px-3 py-2 font-medium text-[var(--text-secondary)]">Assigned team</th>
-              <th className="px-3 py-2 font-medium text-[var(--text-secondary)]">Actions</th>
+              <th className="px-4 py-3">Patient</th>
+              <th className="px-4 py-3">Scheduled</th>
+              <th className="px-4 py-3">Doctor</th>
+              <th className="px-4 py-3">Remark</th>
+              <th className="px-4 py-3">Assigned team</th>
+              <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-3 py-8 text-center text-[var(--text-muted)]">
+                <td colSpan={6} className="px-4 py-8 text-center text-[var(--text-muted)]">
                   No upcoming jobs. Accept bookings in Manage Bookings to queue them here.
                 </td>
               </tr>
@@ -278,28 +278,29 @@ export function UpcomingJobsTable({
                 const showAssignTeam = !latest && canAssignTeam && teamsWithMembers.length > 0;
 
                 return (
-                  <tr key={row.id} className="border-b border-[var(--border)] last:border-0">
-                    <td className="px-3 py-2 font-medium text-[var(--text-primary)]">
+                  <tr key={row.id} className="border-t border-zinc-200 dark:border-zinc-800">
+                    <td className="px-4 py-3 font-medium text-[var(--text-primary)]">
                       {row.patient?.fullName ?? "—"}
                     </td>
-                    <td className="px-3 py-2 text-[var(--text-secondary)]">
+                    <td className="px-4 py-3 text-[var(--text-secondary)]">
                       {formatScheduled(row.scheduledDate)}
                     </td>
-                    <td className="px-3 py-2 text-[var(--text-secondary)]">
+                    <td className="px-4 py-3 text-[var(--text-secondary)]">
                       {row.requestedDoctor?.fullName ?? "—"}
                     </td>
-                    <td className="max-w-[200px] truncate px-3 py-2 text-[var(--text-secondary)]">
+                    <td className="max-w-[200px] truncate px-4 py-3 text-[var(--text-secondary)]">
                       {row.bookingRemark?.trim() ? row.bookingRemark : "—"}
                     </td>
-                    <td className="px-3 py-2 text-[var(--text-secondary)]">
+                    <td className="px-4 py-3 text-[var(--text-secondary)]">
                       <span className="text-[var(--text-muted)]">No team assigned</span>
                     </td>
-                    <td className="px-3 py-2">
-                      <div className="flex flex-wrap gap-2">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-2">
                         {canPreview ? (
                           <Button
                             type="button"
-                            variant="ghost"
+                            variant="preview"
+                            className="h-9 px-3"
                             disabled={busyId !== null}
                             onClick={() => {
                               setModalMode("preview");
@@ -312,7 +313,8 @@ export function UpcomingJobsTable({
                         {showAssignTeam ? (
                           <Button
                             type="button"
-                            variant="secondary"
+                            variant="edit"
+                            className="h-9 px-3"
                             disabled={busyId !== null}
                             onClick={() => {
                               const first = teamsWithMembers[0];
@@ -345,7 +347,7 @@ export function UpcomingJobsTable({
           isPreview
             ? "Read-only details."
             : dispatchTarget
-              ? `Vehicle and on-site leader are chosen for this dispatch only. Crew and vehicle choices are not saved back to Admin teams or the fleet list.`
+              ? ""
               : ""
         }
         maxWidthClass="max-w-4xl"
@@ -373,7 +375,7 @@ export function UpcomingJobsTable({
         {!isPreview ? (
           <div className="flex flex-col gap-4 p-1">
               {crewCandidates === null ? (
-                <p className="text-sm text-red-700 dark:text-red-300">
+                <p className="rounded-lg border border-[var(--danger)]/30 bg-[var(--danger)]/10 px-3 py-2 text-sm text-[var(--danger)]">
                   Could not load staff directory for adding crew. You can still edit the crew list on
                   the right.
                 </p>
@@ -401,7 +403,7 @@ export function UpcomingJobsTable({
               </label>
 
               {vehicles === null ? (
-                <p className="text-xs text-red-700 dark:text-red-300">
+                <p className="rounded-lg border border-[var(--danger)]/30 bg-[var(--danger)]/10 px-3 py-2 text-xs text-[var(--danger)]">
                   Vehicles could not be loaded. You need permission to list vehicles to pick one for
                   dispatch.
                 </p>
@@ -455,29 +457,9 @@ export function UpcomingJobsTable({
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                 Extra staff and final crew
               </p>
-              <p className="text-xs text-[var(--text-muted)]">
-                {dispatchTarget?.requestedDoctor ? (
-                  <>
-                    <span className="font-medium text-[var(--text-primary)]">
-                      {dispatchTarget.requestedDoctor.fullName}
-                    </span>{" "}
-                    is included as the requested doctor when they are not already on the team roster.
-                    Remove them from the list below if they will not attend.
-                  </>
-                ) : (
-                  <>
-                    No requested doctor on this booking — build the crew from the team roster and optional
-                    extra staff.
-                  </>
-                )}
-              </p>
-
               {crewCandidates && crewCandidates.length > 0 ? (
                 <div className="flex flex-col gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2">
                   <p className="text-xs font-medium text-[var(--text-primary)]">Add other staff</p>
-                  <p className="text-xs text-[var(--text-muted)]">
-                    Anyone active in the system can be added; they do not have to be on this team.
-                  </p>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                     <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs text-[var(--text-secondary)]">
                       Staff member

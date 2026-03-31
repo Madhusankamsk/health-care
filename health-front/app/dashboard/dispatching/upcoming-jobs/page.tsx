@@ -64,7 +64,7 @@ export default async function UpcomingJobsPage() {
           description="Accepted bookings not yet dispatched. After you dispatch a team, the job moves to Ongoing jobs."
         />
         {!rows ? (
-          <div className="text-sm text-red-700 dark:text-red-300">
+          <div className="rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 px-4 py-3 text-sm text-[var(--danger)]">
             Failed to load upcoming jobs.
           </div>
         ) : (

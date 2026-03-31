@@ -58,39 +58,36 @@ export default async function PaymentsAccountsPage() {
           description="Recorded invoice payments (including subscription billing). Up to 200 most recent."
         />
         {!payments ? (
-          <div className="text-sm text-red-700 dark:text-red-300">
+          <div className="rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 px-4 py-3 text-sm text-[var(--danger)]">
             Unable to load payments. Check permissions or try again.
           </div>
         ) : payments.length === 0 ? (
           <p className="text-sm text-[var(--text-secondary)]">No payments yet.</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="tbl-shell overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border)] text-[var(--text-secondary)]">
-                  <th className="pb-2 pr-4 font-medium">Paid</th>
-                  <th className="pb-2 pr-4 font-medium">Amount</th>
-                  <th className="pb-2 pr-4 font-medium">Method</th>
-                  <th className="pb-2 pr-4 font-medium">Purpose</th>
-                  <th className="pb-2 pr-4 font-medium">Patient</th>
-                  <th className="pb-2 pr-4 font-medium">Account / plan</th>
-                  <th className="pb-2 pr-4 font-medium">Reference</th>
-                  <th className="pb-2 pr-4 font-medium">Collected by</th>
-                  <th className="pb-2 font-medium">Bill</th>
+              <thead className="text-xs uppercase text-zinc-500 dark:text-zinc-400">
+                <tr>
+                  <th className="px-4 py-3">Paid</th>
+                  <th className="px-4 py-3">Amount</th>
+                  <th className="px-4 py-3">Method</th>
+                  <th className="px-4 py-3">Purpose</th>
+                  <th className="px-4 py-3">Patient</th>
+                  <th className="px-4 py-3">Account / plan</th>
+                  <th className="px-4 py-3">Reference</th>
+                  <th className="px-4 py-3">Collected by</th>
+                  <th className="px-4 py-3 text-right">Bill</th>
                 </tr>
               </thead>
               <tbody>
                 {payments.map((row) => (
-                  <tr
-                    key={row.id}
-                    className="border-b border-[var(--border)]/60 text-[var(--text-primary)] last:border-0"
-                  >
-                    <td className="py-2 pr-4 align-top">{formatPaidAt(row.paidAt)}</td>
-                    <td className="py-2 pr-4 align-top tabular-nums">{row.amountPaid}</td>
-                    <td className="py-2 pr-4 align-top">{row.paymentMethod}</td>
-                    <td className="py-2 pr-4 align-top">{row.paymentPurpose ?? "—"}</td>
-                    <td className="py-2 pr-4 align-top">{row.patientName}</td>
-                    <td className="py-2 pr-4 align-top">
+                  <tr key={row.id} className="border-t border-zinc-200 dark:border-zinc-800">
+                    <td className="px-4 py-3 align-top">{formatPaidAt(row.paidAt)}</td>
+                    <td className="px-4 py-3 align-top tabular-nums">{row.amountPaid}</td>
+                    <td className="px-4 py-3 align-top">{row.paymentMethod}</td>
+                    <td className="px-4 py-3 align-top">{row.paymentPurpose ?? "—"}</td>
+                    <td className="px-4 py-3 align-top">{row.patientName}</td>
+                    <td className="px-4 py-3 align-top">
                       <div className="flex flex-col gap-0.5">
                         <span>{row.subscriptionAccountName ?? "—"}</span>
                         {row.planName ? (
@@ -98,11 +95,11 @@ export default async function PaymentsAccountsPage() {
                         ) : null}
                       </div>
                     </td>
-                    <td className="py-2 pr-4 align-top text-[var(--text-secondary)]">
+                    <td className="px-4 py-3 align-top text-[var(--text-secondary)]">
                       {row.transactionRef ?? "—"}
                     </td>
-                    <td className="py-2 pr-4 align-top">{row.collectedByName}</td>
-                    <td className="py-2 align-top">
+                    <td className="px-4 py-3 align-top">{row.collectedByName}</td>
+                    <td className="px-4 py-3 text-right align-top">
                       {row.subscriptionAccountId ? (
                         <a
                           className="text-[var(--brand-primary)] underline-offset-2 hover:underline"

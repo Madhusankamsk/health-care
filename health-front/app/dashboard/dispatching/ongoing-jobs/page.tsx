@@ -47,7 +47,9 @@ export default async function OngoingJobsPage() {
           description="Dispatched bookings (in transit or arrived on site)."
         />
         {!rows ? (
-          <div className="text-sm text-red-700 dark:text-red-300">Failed to load ongoing jobs.</div>
+          <div className="rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 px-4 py-3 text-sm text-[var(--danger)]">
+            Failed to load ongoing jobs.
+          </div>
         ) : (
           <OngoingJobsTable
             initialRows={rows}

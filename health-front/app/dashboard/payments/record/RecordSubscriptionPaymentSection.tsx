@@ -76,28 +76,25 @@ export function RecordSubscriptionPaymentSection({
   if (paymentMethods.length === 0) {
     return (
       <div className="flex flex-col gap-4">
-        <p className="text-sm text-amber-800 dark:text-amber-200">
+        <p className="rounded-lg border border-[var(--warning)]/30 bg-[var(--warning)]/10 px-3 py-2 text-sm text-[var(--warning)]">
           No payment methods are available (PAYMENT_METHOD lookups). Configure them before recording
           payments.
         </p>
-        <div className="overflow-x-auto">
+        <div className="tbl-shell overflow-x-auto">
           <table className="min-w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-[var(--border)] text-[var(--text-secondary)]">
-                <th className="pb-2 pr-4 font-medium">Created</th>
-                <th className="pb-2 pr-4 font-medium">Account</th>
-                <th className="pb-2 pr-4 font-medium">Balance</th>
+            <thead className="text-xs uppercase text-zinc-500 dark:text-zinc-400">
+              <tr>
+                <th className="px-4 py-3">Created</th>
+                <th className="px-4 py-3">Account</th>
+                <th className="px-4 py-3">Balance</th>
               </tr>
             </thead>
             <tbody>
               {invoices.map((row) => (
-                <tr
-                  key={row.id}
-                  className="border-b border-[var(--border)]/60 text-[var(--text-primary)] last:border-0"
-                >
-                  <td className="py-2 pr-4 align-top">{formatDate(row.createdAt)}</td>
-                  <td className="py-2 pr-4 align-top">{row.accountName ?? "—"}</td>
-                  <td className="py-2 align-top tabular-nums">{row.balanceDue}</td>
+                <tr key={row.id} className="border-t border-zinc-200 dark:border-zinc-800">
+                  <td className="px-4 py-3 align-top">{formatDate(row.createdAt)}</td>
+                  <td className="px-4 py-3 align-top">{row.accountName ?? "—"}</td>
+                  <td className="px-4 py-3 align-top tabular-nums">{row.balanceDue}</td>
                 </tr>
               ))}
             </tbody>
@@ -123,34 +120,31 @@ export function RecordSubscriptionPaymentSection({
         </Button>
       </CrudToolbar>
 
-      <div className="overflow-x-auto">
+      <div className="tbl-shell overflow-x-auto">
         <table className="min-w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-[var(--border)] text-[var(--text-secondary)]">
-              <th className="pb-2 pr-4 font-medium">Created</th>
-              <th className="pb-2 pr-4 font-medium">Account</th>
-              <th className="pb-2 pr-4 font-medium">Plan</th>
-              <th className="pb-2 pr-4 font-medium">Patient</th>
-              <th className="pb-2 pr-4 font-medium">Total</th>
-              <th className="pb-2 pr-4 font-medium">Paid</th>
-              <th className="pb-2 pr-4 font-medium">Balance</th>
-              <th className="pb-2 pr-2 font-medium text-right">Pay</th>
+          <thead className="text-xs uppercase text-zinc-500 dark:text-zinc-400">
+            <tr>
+              <th className="px-4 py-3">Created</th>
+              <th className="px-4 py-3">Account</th>
+              <th className="px-4 py-3">Plan</th>
+              <th className="px-4 py-3">Patient</th>
+              <th className="px-4 py-3">Total</th>
+              <th className="px-4 py-3">Paid</th>
+              <th className="px-4 py-3">Balance</th>
+              <th className="px-4 py-3 text-right">Pay</th>
             </tr>
           </thead>
           <tbody>
             {invoices.map((row) => (
-              <tr
-                key={row.id}
-                className="border-b border-[var(--border)]/60 text-[var(--text-primary)] last:border-0"
-              >
-                <td className="py-2 pr-4 align-top">{formatDate(row.createdAt)}</td>
-                <td className="py-2 pr-4 align-top">{row.accountName ?? "—"}</td>
-                <td className="py-2 pr-4 align-top">{row.planName}</td>
-                <td className="py-2 pr-4 align-top">{row.patientName ?? "—"}</td>
-                <td className="py-2 pr-4 align-top tabular-nums">{row.totalAmount}</td>
-                <td className="py-2 pr-4 align-top tabular-nums">{row.paidAmount}</td>
-                <td className="py-2 pr-4 align-top tabular-nums font-medium">{row.balanceDue}</td>
-                <td className="py-2 pl-2 text-right align-top">
+              <tr key={row.id} className="border-t border-zinc-200 dark:border-zinc-800">
+                <td className="px-4 py-3 align-top">{formatDate(row.createdAt)}</td>
+                <td className="px-4 py-3 align-top">{row.accountName ?? "—"}</td>
+                <td className="px-4 py-3 align-top">{row.planName}</td>
+                <td className="px-4 py-3 align-top">{row.patientName ?? "—"}</td>
+                <td className="px-4 py-3 align-top tabular-nums">{row.totalAmount}</td>
+                <td className="px-4 py-3 align-top tabular-nums">{row.paidAmount}</td>
+                <td className="px-4 py-3 align-top tabular-nums font-medium">{row.balanceDue}</td>
+                <td className="px-4 py-3 text-right align-top">
                   <Button
                     type="button"
                     variant="create"
