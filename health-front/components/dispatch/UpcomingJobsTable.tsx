@@ -355,7 +355,7 @@ export function UpcomingJobsTable({
           isPreview && dispatchTarget && canFullViewBooking ? (
             <Link
               href={previewFullViewHref}
-              className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--surface-2)]"
+              className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-sm font-semibold text-[var(--text-primary)] transition-all duration-150 hover:bg-[var(--surface-2)] focus-visible:outline-none active:translate-y-px"
             >
               Full View
             </Link>

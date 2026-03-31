@@ -381,12 +381,7 @@ export function SubscriptionAccountManager({
           titleId="preview-subscription-account-title"
           title="Preview subscription account"
           subtitle="Read-only account details."
-          onClose={() => {
-            setMode("none");
-            setError(null);
-          }}
-        >
-          <div className="mb-4 flex justify-end">
+          headerTrailing={
             <Button
               type="button"
               variant="secondary"
@@ -395,9 +390,14 @@ export function SubscriptionAccountManager({
                 router.push(`/dashboard/clients/family-corporate/${selected.id}`);
               }}
             >
-              Full Preview
+              Full View
             </Button>
-          </div>
+          }
+          onClose={() => {
+            setMode("none");
+            setError(null);
+          }}
+        >
           <div className="preview-shell sm:grid-cols-2">
             <section className="preview-section">
               <h3 className="preview-section-title">Account</h3>

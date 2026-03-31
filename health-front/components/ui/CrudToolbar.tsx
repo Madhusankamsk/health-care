@@ -11,7 +11,7 @@ export function CrudToolbar({ title, note, description, children }: CrudToolbarP
   const helperText = note ?? description;
 
   return (
-    <div className="flex flex-col gap-2 py-1.5 sm:flex-row sm:items-center sm:justify-between sm:py-2">
+    <div className="flex flex-col gap-1.5 py-1 sm:flex-row sm:items-center sm:justify-between sm:py-1.5">
       {(title || helperText) && (
         <div className="min-w-0">
           {title ? (
@@ -23,7 +23,7 @@ export function CrudToolbar({ title, note, description, children }: CrudToolbarP
         </div>
       )}
       {children ? (
-        <div className="flex flex-shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+        <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5 sm:justify-end">
           {children}
         </div>
       ) : null}

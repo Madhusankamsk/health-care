@@ -48,7 +48,7 @@ export function Button({
       {...rest}
       disabled={isDisabled}
       className={[
-        "inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold",
+        "inline-flex h-9 items-center justify-center gap-1.5 rounded-xl px-3.5 text-sm font-semibold",
         "transition-all duration-150 focus-visible:outline-none active:translate-y-px",
         "disabled:cursor-not-allowed disabled:opacity-60",
         variantClassName[variant],

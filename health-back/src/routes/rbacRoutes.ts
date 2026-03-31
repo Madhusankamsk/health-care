@@ -84,7 +84,11 @@ import {
   updateSubscriptionAccountHandler,
 } from "../controllers/subscriptionAccountController";
 import { getInvoicePdfHandler } from "../controllers/invoiceController";
-import { listPaymentsHandler } from "../controllers/paymentController";
+import {
+  listCollectorDailySummaryHandler,
+  listPaymentsHandler,
+  settleCollectorDailyHandler,
+} from "../controllers/paymentController";
 import {
   listOutstandingSubscriptionInvoicesHandler,
   recordSubscriptionInvoicePaymentHandler,
@@ -324,6 +328,16 @@ router.get(
   "/payments",
   requireAnyPermission(["invoices:read", "patients:read", "profiles:read"]),
   listPaymentsHandler,
+);
+router.get(
+  "/payments/collectors/daily",
+  requireAnyPermission(["invoices:read", "patients:read", "profiles:read"]),
+  listCollectorDailySummaryHandler,
+);
+router.post(
+  "/payments/collectors/settle",
+  requireAnyPermission(["invoices:read", "patients:read", "profiles:read"]),
+  settleCollectorDailyHandler,
 );
 
 router.get(

@@ -9,6 +9,7 @@ const labelMap: Record<string, string> = {
   patient: "Patient",
   accounts: "Accounts",
   payments: "Payments",
+  collector: "Collector",
   record: "Record payment",
   "record-subscription-payment": "Record payment",
   bookings: "Bookings",

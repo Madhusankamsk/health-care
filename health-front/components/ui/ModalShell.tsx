@@ -58,7 +58,7 @@ export function ModalShell({
               <button
                 type="button"
                 aria-label="Close"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--danger)] hover:bg-[var(--danger)]/10 hover:text-[var(--action-delete-hover)]"
                 onClick={onClose}
               >
                 ×

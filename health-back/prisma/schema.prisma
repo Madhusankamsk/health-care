@@ -55,6 +55,8 @@ model User {
   requestedBookings         Booking[]           @relation("BookingRequestedDoctor")
   dispatchAssignments       DispatchAssignment[]
   paymentsCollected         Payment[]             @relation("PaymentCollectedBy")
+  collectorSettlements      PaymentCollectorSettlement[] @relation("CollectorSettlementCollector")
+  settlementsRecorded       PaymentCollectorSettlement[] @relation("CollectorSettlementRecordedBy")
 }
 
 // 3. DYNAMIC TEAM & FLEET
@@ -375,6 +377,23 @@ model Payment {
 
   @@index([invoiceId])
   @@index([paymentPurposeId])
+}
+
+model PaymentCollectorSettlement {
+  id                  String   @id @default(uuid())
+  collectorId         String
+  settledDate         DateTime
+  paymentMethodKey    String
+  totalAmountAtSettle Decimal
+  settledAt           DateTime @default(now())
+  settledById         String?
+
+  collector           User     @relation("CollectorSettlementCollector", fields: [collectorId], references: [id], onDelete: Cascade)
+  settledBy           User?    @relation("CollectorSettlementRecordedBy", fields: [settledById], references: [id], onDelete: SetNull)
+
+  @@unique([collectorId, settledDate, paymentMethodKey])
+  @@index([settledDate])
+  @@index([paymentMethodKey])
 }
 
 model AccountTransaction {

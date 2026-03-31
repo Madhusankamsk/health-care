@@ -5,6 +5,7 @@ import { SubnavTabs } from "@/components/ui/SubnavTabs";
 const TABS = [
   { href: "/dashboard/payments/record", label: "Record payment" },
   { href: "/dashboard/payments/accounts", label: "Accounts" },
+  { href: "/dashboard/payments/collector", label: "Collector" },
 ] as const;
 
 export function PaymentsSubnav() {

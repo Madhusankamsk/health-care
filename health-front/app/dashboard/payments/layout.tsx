@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { PaymentsSubnav } from "@/components/nav/PaymentsSubnav";
 import { SectionIntro } from "@/components/ui/SectionIntro";
 import { getIsAuthenticated } from "@/lib/auth";
 import { backendJson, type BackendMeResponse } from "@/lib/backend";
@@ -22,6 +23,7 @@ export default async function PaymentsLayout({
   return (
     <div className="flex flex-col gap-2">
       <SectionIntro title="Payments" tag="Billing" tagTone="info" />
+      <PaymentsSubnav />
       {children}
     </div>
   );
