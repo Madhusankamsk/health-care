@@ -93,6 +93,21 @@ import {
   listOutstandingSubscriptionInvoicesHandler,
   recordSubscriptionInvoicePaymentHandler,
 } from "../controllers/subscriptionInvoicePaymentController";
+import {
+  assignMobileSubstoreHandler,
+  createInventoryBatchHandler,
+  createInventoryMedicineHandler,
+  createStockMovementHandler,
+  deleteInventoryBatchHandler,
+  deleteInventoryMedicineHandler,
+  getInventoryMedicineHandler,
+  listInventoryBatchesHandler,
+  listInventoryMedicinesHandler,
+  listMobileSubstoresHandler,
+  listStockMovementsHandler,
+  updateInventoryBatchHandler,
+  updateInventoryMedicineHandler,
+} from "../controllers/inventoryController";
 import { requireAnyPermission } from "../middleware/permissions";
 import prisma from "../prisma/client";
 
@@ -420,6 +435,30 @@ router.delete(
   requireAnyPermission(["profiles:update", "patients:update"]),
   detachSubscriptionMemberHandler,
 );
+
+// Inventory
+router.get("/inventory/medicines", requireAnyPermission(["inventory:list", "inventory:read"]), listInventoryMedicinesHandler);
+router.post("/inventory/medicines", requireAnyPermission(["inventory:create"]), createInventoryMedicineHandler);
+router.get("/inventory/medicines/:id", requireAnyPermission(["inventory:read"]), getInventoryMedicineHandler);
+router.put("/inventory/medicines/:id", requireAnyPermission(["inventory:update"]), updateInventoryMedicineHandler);
+router.delete("/inventory/medicines/:id", requireAnyPermission(["inventory:delete"]), deleteInventoryMedicineHandler);
+
+router.get("/inventory/medical-items", requireAnyPermission(["inventory:list", "inventory:read"]), listInventoryMedicinesHandler);
+router.post("/inventory/medical-items", requireAnyPermission(["inventory:create"]), createInventoryMedicineHandler);
+router.get("/inventory/medical-items/:id", requireAnyPermission(["inventory:read"]), getInventoryMedicineHandler);
+router.put("/inventory/medical-items/:id", requireAnyPermission(["inventory:update"]), updateInventoryMedicineHandler);
+router.delete("/inventory/medical-items/:id", requireAnyPermission(["inventory:delete"]), deleteInventoryMedicineHandler);
+
+router.get("/inventory/batches", requireAnyPermission(["inventory:list", "inventory:batches:manage"]), listInventoryBatchesHandler);
+router.post("/inventory/batches", requireAnyPermission(["inventory:batches:manage"]), createInventoryBatchHandler);
+router.put("/inventory/batches/:id", requireAnyPermission(["inventory:batches:manage"]), updateInventoryBatchHandler);
+router.delete("/inventory/batches/:id", requireAnyPermission(["inventory:batches:manage"]), deleteInventoryBatchHandler);
+
+router.get("/inventory/mobile-substores", requireAnyPermission(["inventory:list", "inventory:substores:manage"]), listMobileSubstoresHandler);
+router.post("/inventory/mobile-substores/assign", requireAnyPermission(["inventory:substores:manage"]), assignMobileSubstoreHandler);
+
+router.get("/inventory/stock-movements", requireAnyPermission(["inventory:list", "inventory:movements:manage"]), listStockMovementsHandler);
+router.post("/inventory/stock-movements", requireAnyPermission(["inventory:movements:manage"]), createStockMovementHandler);
 
 export default router;
 

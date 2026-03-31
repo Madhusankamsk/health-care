@@ -83,6 +83,15 @@ async function main() {
     "files:delete",
 
     "invoices:read",
+
+    "inventory:list",
+    "inventory:read",
+    "inventory:create",
+    "inventory:update",
+    "inventory:delete",
+    "inventory:batches:manage",
+    "inventory:substores:manage",
+    "inventory:movements:manage",
   ] as const;
 
   for (const permissionKey of permissionKeys) {
@@ -132,6 +141,86 @@ async function main() {
       update: { lookupValue: item.lookupValue, isActive: true },
       create: {
         categoryId: genderCategory.id,
+        lookupKey: item.lookupKey,
+        lookupValue: item.lookupValue,
+        isActive: true,
+      },
+    });
+  }
+
+  const inventoryLocationTypeCategory = await prisma.lookupCategory.upsert({
+    where: { categoryName: "INVENTORY_LOCATION_TYPE" },
+    update: {},
+    create: { categoryName: "INVENTORY_LOCATION_TYPE" },
+  });
+  for (const item of [
+    { lookupKey: "WAREHOUSE", lookupValue: "Warehouse" },
+    { lookupKey: "NURSE", lookupValue: "Nurse" },
+    { lookupKey: "VEHICLE", lookupValue: "Vehicle" },
+  ] as const) {
+    await prisma.lookup.upsert({
+      where: {
+        categoryId_lookupKey: {
+          categoryId: inventoryLocationTypeCategory.id,
+          lookupKey: item.lookupKey,
+        },
+      },
+      update: { lookupValue: item.lookupValue, isActive: true },
+      create: {
+        categoryId: inventoryLocationTypeCategory.id,
+        lookupKey: item.lookupKey,
+        lookupValue: item.lookupValue,
+        isActive: true,
+      },
+    });
+  }
+
+  const transferStatusCategory = await prisma.lookupCategory.upsert({
+    where: { categoryName: "TRANSFER_STATUS" },
+    update: {},
+    create: { categoryName: "TRANSFER_STATUS" },
+  });
+  for (const item of [
+    { lookupKey: "PENDING", lookupValue: "Pending" },
+    { lookupKey: "COMPLETED", lookupValue: "Completed" },
+    { lookupKey: "CANCELLED", lookupValue: "Cancelled" },
+  ] as const) {
+    await prisma.lookup.upsert({
+      where: {
+        categoryId_lookupKey: {
+          categoryId: transferStatusCategory.id,
+          lookupKey: item.lookupKey,
+        },
+      },
+      update: { lookupValue: item.lookupValue, isActive: true },
+      create: {
+        categoryId: transferStatusCategory.id,
+        lookupKey: item.lookupKey,
+        lookupValue: item.lookupValue,
+        isActive: true,
+      },
+    });
+  }
+
+  const medicineUomCategory = await prisma.lookupCategory.upsert({
+    where: { categoryName: "MEDICINE_UOM" },
+    update: {},
+    create: { categoryName: "MEDICINE_UOM" },
+  });
+  for (const item of [
+    { lookupKey: "TAB", lookupValue: "Tablet" },
+    { lookupKey: "PCS", lookupValue: "Pieces" },
+  ] as const) {
+    await prisma.lookup.upsert({
+      where: {
+        categoryId_lookupKey: {
+          categoryId: medicineUomCategory.id,
+          lookupKey: item.lookupKey,
+        },
+      },
+      update: { lookupValue: item.lookupValue, isActive: true },
+      create: {
+        categoryId: medicineUomCategory.id,
         lookupKey: item.lookupKey,
         lookupValue: item.lookupValue,
         isActive: true,
@@ -368,6 +457,31 @@ async function main() {
     },
   });
 
+  const adminRoleForInventory = await prisma.role.findUnique({
+    where: { roleName: "Admin" },
+    select: { id: true },
+  });
+
+  const inventoryAgent = await prisma.user.upsert({
+    where: { email: "inventory.agent@health.local" },
+    update: {
+      fullName: "Inventory Agent",
+      phoneNumber: "+10000000001",
+      roleId: adminRoleForInventory?.id ?? superAdminRole.id,
+      isActive: true,
+      baseConsultationFee: 0,
+    },
+    create: {
+      fullName: "Inventory Agent",
+      email: "inventory.agent@health.local",
+      password: passwordHash,
+      phoneNumber: "+10000000001",
+      roleId: adminRoleForInventory?.id ?? superAdminRole.id,
+      isActive: true,
+      baseConsultationFee: 0,
+    },
+  });
+
   // Ensure admin role also has booking-related permissions for dashboard usage
   const adminRole = await prisma.role.findUnique({
     where: { roleName: "Admin" },
@@ -404,6 +518,28 @@ async function main() {
     });
     await prisma.rolePermission.createMany({
       data: dispatchPermissions.map((p) => ({ roleId: adminRole.id, permissionId: p.id })),
+      skipDuplicates: true,
+    });
+
+    const inventoryPermissions = await prisma.permission.findMany({
+      where: {
+        permissionKey: {
+          in: [
+            "inventory:list",
+            "inventory:read",
+            "inventory:create",
+            "inventory:update",
+            "inventory:delete",
+            "inventory:batches:manage",
+            "inventory:substores:manage",
+            "inventory:movements:manage",
+          ],
+        },
+      },
+      select: { id: true },
+    });
+    await prisma.rolePermission.createMany({
+      data: inventoryPermissions.map((p) => ({ roleId: adminRole.id, permissionId: p.id })),
       skipDuplicates: true,
     });
   }
@@ -629,6 +765,173 @@ async function main() {
     });
   }
 
+  const uomTab = await prisma.lookup.findFirst({
+    where: { categoryId: medicineUomCategory.id, lookupKey: "TAB" },
+    select: { id: true },
+  });
+  const uomPcs = await prisma.lookup.findFirst({
+    where: { categoryId: medicineUomCategory.id, lookupKey: "PCS" },
+    select: { id: true },
+  });
+  const locationWarehouse = await prisma.lookup.findFirst({
+    where: { categoryId: inventoryLocationTypeCategory.id, lookupKey: "WAREHOUSE" },
+    select: { id: true },
+  });
+  const locationNurse = await prisma.lookup.findFirst({
+    where: { categoryId: inventoryLocationTypeCategory.id, lookupKey: "NURSE" },
+    select: { id: true },
+  });
+  const transferCompleted = await prisma.lookup.findFirst({
+    where: { categoryId: transferStatusCategory.id, lookupKey: "COMPLETED" },
+    select: { id: true },
+  });
+
+  const medicineParacetamol = await prisma.medicine.upsert({
+    where: { id: "medicine-demo-001" },
+    update: {
+      name: "Paracetamol 500mg",
+      genericName: "Paracetamol",
+      sellingPrice: 12.5,
+      uom: "TAB",
+      uomId: uomTab?.id ?? null,
+      minStockLevel: 100,
+    },
+    create: {
+      id: "medicine-demo-001",
+      name: "Paracetamol 500mg",
+      genericName: "Paracetamol",
+      sellingPrice: 12.5,
+      uom: "TAB",
+      uomId: uomTab?.id ?? null,
+      minStockLevel: 100,
+    },
+  });
+
+  const itemSyringe = await prisma.medicine.upsert({
+    where: { id: "medicine-demo-002" },
+    update: {
+      name: "Syringe 5ml",
+      genericName: "__ITEM__:Disposable Syringe",
+      sellingPrice: 35,
+      uom: "PCS",
+      uomId: uomPcs?.id ?? null,
+      minStockLevel: 50,
+    },
+    create: {
+      id: "medicine-demo-002",
+      name: "Syringe 5ml",
+      genericName: "__ITEM__:Disposable Syringe",
+      sellingPrice: 35,
+      uom: "PCS",
+      uomId: uomPcs?.id ?? null,
+      minStockLevel: 50,
+    },
+  });
+
+  const now = new Date();
+  const nextYear = new Date(now.getFullYear() + 1, 11, 31);
+  const nextTwoYears = new Date(now.getFullYear() + 2, 5, 30);
+
+  const mainParacetamolBatch = await prisma.inventoryBatch.upsert({
+    where: { id: "inv-batch-demo-001" },
+    update: {
+      medicineId: medicineParacetamol.id,
+      batchNo: "PCM-001",
+      expiryDate: nextYear,
+      quantity: 500,
+      buyingPrice: 6.75,
+      locationType: "WAREHOUSE",
+      locationTypeId: locationWarehouse?.id ?? null,
+      locationId: null,
+    },
+    create: {
+      id: "inv-batch-demo-001",
+      medicineId: medicineParacetamol.id,
+      batchNo: "PCM-001",
+      expiryDate: nextYear,
+      quantity: 500,
+      buyingPrice: 6.75,
+      locationType: "WAREHOUSE",
+      locationTypeId: locationWarehouse?.id ?? null,
+      locationId: null,
+    },
+  });
+
+  await prisma.inventoryBatch.upsert({
+    where: { id: "inv-batch-demo-002" },
+    update: {
+      medicineId: itemSyringe.id,
+      batchNo: "SYR-001",
+      expiryDate: nextTwoYears,
+      quantity: 200,
+      buyingPrice: 18.5,
+      locationType: "WAREHOUSE",
+      locationTypeId: locationWarehouse?.id ?? null,
+      locationId: null,
+    },
+    create: {
+      id: "inv-batch-demo-002",
+      medicineId: itemSyringe.id,
+      batchNo: "SYR-001",
+      expiryDate: nextTwoYears,
+      quantity: 200,
+      buyingPrice: 18.5,
+      locationType: "WAREHOUSE",
+      locationTypeId: locationWarehouse?.id ?? null,
+      locationId: null,
+    },
+  });
+
+  await prisma.inventoryBatch.upsert({
+    where: { id: "inv-batch-demo-003" },
+    update: {
+      medicineId: medicineParacetamol.id,
+      batchNo: "PCM-001",
+      expiryDate: nextYear,
+      quantity: 40,
+      buyingPrice: 6.75,
+      locationType: "NURSE",
+      locationTypeId: locationNurse?.id ?? null,
+      locationId: inventoryAgent.id,
+    },
+    create: {
+      id: "inv-batch-demo-003",
+      medicineId: medicineParacetamol.id,
+      batchNo: "PCM-001",
+      expiryDate: nextYear,
+      quantity: 40,
+      buyingPrice: 6.75,
+      locationType: "NURSE",
+      locationTypeId: locationNurse?.id ?? null,
+      locationId: inventoryAgent.id,
+    },
+  });
+
+  await prisma.stockTransfer.upsert({
+    where: { id: "stock-transfer-demo-001" },
+    update: {
+      medicineId: medicineParacetamol.id,
+      batchId: mainParacetamolBatch.id,
+      fromLocationId: "MAIN_STORE",
+      toLocationId: inventoryAgent.id,
+      quantity: 40,
+      status: "Completed",
+      statusId: transferCompleted?.id ?? null,
+      transferredById: superAdminUser.id,
+    },
+    create: {
+      id: "stock-transfer-demo-001",
+      medicineId: medicineParacetamol.id,
+      batchId: mainParacetamolBatch.id,
+      fromLocationId: "MAIN_STORE",
+      toLocationId: inventoryAgent.id,
+      quantity: 40,
+      status: "Completed",
+      statusId: transferCompleted?.id ?? null,
+      transferredById: superAdminUser.id,
+    },
+  });
+
   console.log("Super admin seeded.");
   console.log("Email:", superAdminEmail);
   console.log("Password:", superAdminPassword);
@@ -636,6 +939,7 @@ async function main() {
   console.log("Permissions attached:", allPermissions.length);
   console.log("Demo data seeded: vehicle, team, patient, bookings.");
   console.log("Subscription plan types and demo plan seeded.");
+  console.log("Inventory demo data seeded: medicines, items, batches, substore, transfer.");
 }
 
 main()

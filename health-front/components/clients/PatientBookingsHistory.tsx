@@ -39,6 +39,21 @@ type PendingConfirm =
   | { type: "diagnostic"; dispatchId: string }
   | { type: "complete"; dispatchId: string };
 
+type InventoryBatchRow = {
+  id: string;
+  medicineId: string;
+  batchNo: string;
+  quantity: number;
+  expiryDate: string;
+  locationType: string;
+  locationId?: string | null;
+  medicine?: {
+    id: string;
+    name: string;
+    uom?: string | null;
+  };
+};
+
 type DiagnosticTabId = "remark" | "reports" | "samples" | "medicines";
 
 const DIAGNOSTIC_TABS: { id: DiagnosticTabId; label: string }[] = [
@@ -81,6 +96,16 @@ function arrivedDispatchForBooking(b: UpcomingBookingRow): DispatchRecordRow | n
 
 function diagnosticDispatchForBooking(b: UpcomingBookingRow): DispatchRecordRow | null {
   return b.dispatchRecords.find((dr) => dr.statusLookup?.lookupKey === "DIAGNOSTIC") ?? null;
+}
+
+function preferredDispatchForInventory(b: UpcomingBookingRow): DispatchRecordRow | null {
+  return (
+    diagnosticDispatchForBooking(b) ??
+    arrivedDispatchForBooking(b) ??
+    inTransitDispatchForBooking(b) ??
+    b.dispatchRecords[0] ??
+    null
+  );
 }
 
 /** Schedule & doctor, visit, and dispatch blocks (used in the card and in the details popup). */
@@ -226,6 +251,13 @@ export function PatientBookingsHistory({
   const [uploadingReportBookingId, setUploadingReportBookingId] = useState<string | null>(null);
   const [addingSampleBookingId, setAddingSampleBookingId] = useState<string | null>(null);
   const [removingSampleId, setRemovingSampleId] = useState<string | null>(null);
+  const [inventoryBatches, setInventoryBatches] = useState<InventoryBatchRow[] | null>(null);
+  const [inventoryError, setInventoryError] = useState<string | null>(null);
+  const [selectedBatchByBookingId, setSelectedBatchByBookingId] = useState<Record<string, string>>({});
+  const [issueQtyByBookingId, setIssueQtyByBookingId] = useState<Record<string, string>>({});
+  const [issuingBookingId, setIssuingBookingId] = useState<string | null>(null);
+
+  const inventoryFeatureEnabled = canUpdateDispatch;
 
   async function patchDispatchStatus(
     dispatchId: string,
@@ -394,6 +426,84 @@ export function PatientBookingsHistory({
       toast.error(e instanceof Error ? e.message : "Failed");
     } finally {
       setRemovingSampleId(null);
+    }
+  }
+
+  async function ensureInventoryLoaded() {
+    if (inventoryBatches !== null || inventoryError) return;
+    try {
+      const res = await fetch("/api/inventory/batches", { cache: "no-store" });
+      const data = (await res.json().catch(() => [])) as InventoryBatchRow[] | { message?: string };
+      if (!res.ok) {
+        throw new Error(
+          typeof data === "object" && !Array.isArray(data) && data?.message
+            ? data.message
+            : "Could not load team inventory",
+        );
+      }
+      setInventoryBatches(Array.isArray(data) ? data : []);
+    } catch (e) {
+      setInventoryError(e instanceof Error ? e.message : "Could not load team inventory");
+    }
+  }
+
+  function teamLeaderBatchesForBooking(b: UpcomingBookingRow) {
+    if (!inventoryBatches) return [];
+    const sourceDispatch = preferredDispatchForInventory(b);
+    const leadUserId = sourceDispatch?.assignments.find((a) => a.isTeamLeader)?.user.id;
+    if (!leadUserId) return [];
+    return inventoryBatches
+      .filter(
+        (batch) =>
+          batch.locationId === leadUserId &&
+          batch.quantity > 0 &&
+          (batch.locationType === "NURSE" || batch.locationType === "USER"),
+      )
+      .sort((a, z) => new Date(a.expiryDate).getTime() - new Date(z.expiryDate).getTime());
+  }
+
+  async function issueMedicineToPatient(b: UpcomingBookingRow) {
+    const batchId = selectedBatchByBookingId[b.id];
+    const qtyText = issueQtyByBookingId[b.id] ?? "1";
+    const quantity = Number.parseInt(qtyText, 10);
+    if (!batchId) {
+      toast.error("Select a medicine batch.");
+      return;
+    }
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      toast.error("Enter a valid quantity.");
+      return;
+    }
+    if (!b.patient?.id) {
+      toast.error("Patient reference is missing for this booking.");
+      return;
+    }
+
+    setIssuingBookingId(b.id);
+    try {
+      const res = await fetch("/api/inventory/stock-movements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          batchId,
+          quantity,
+          toLocationType: "PATIENT",
+          toLocationId: b.patient.id,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { message?: string };
+      if (!res.ok) throw new Error(data.message || "Could not issue medicine");
+
+      toast.success("Medicine issued to patient.");
+      setIssueQtyByBookingId((prev) => ({ ...prev, [b.id]: "1" }));
+      setSelectedBatchByBookingId((prev) => ({ ...prev, [b.id]: "" }));
+      setInventoryBatches(null);
+      setInventoryError(null);
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not issue medicine");
+    } finally {
+      setIssuingBookingId(null);
     }
   }
 
@@ -819,25 +929,136 @@ export function PatientBookingsHistory({
                       hidden={activeDiagnosticTab !== "medicines"}
                       className="px-3 py-3"
                     >
-                        <div className="flex flex-col gap-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                              Prescribed / dispensed
-                            </span>
-                            <button
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                            Team leader mobile inventory
+                          </span>
+                          {inventoryFeatureEnabled ? (
+                            <Button
                               type="button"
-                              disabled
-                              className="cursor-not-allowed rounded-md border border-dashed border-[var(--border)] px-2 py-1 text-xs text-[var(--text-muted)]"
+                              variant="secondary"
+                              className="h-8 px-3 text-xs"
+                              onClick={() => void ensureInventoryLoaded()}
                             >
-                              + Add
-                            </button>
-                          </div>
-                          <ul className="space-y-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3">
-                            <li className="text-center text-sm text-[var(--text-muted)]">
-                              No medicines — UI preview
-                            </li>
-                          </ul>
+                              Load
+                            </Button>
+                          ) : null}
                         </div>
+
+                        {!inventoryFeatureEnabled ? (
+                          <p className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+                            Issuing medicines requires dispatch update access.
+                          </p>
+                        ) : inventoryError ? (
+                          <p className="rounded-lg border border-[var(--danger)]/30 bg-[var(--danger)]/10 px-3 py-2 text-sm text-[var(--danger)]">
+                            {inventoryError}
+                          </p>
+                        ) : inventoryBatches === null ? (
+                          <p className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+                            Click load to view the assigned team leader stock.
+                          </p>
+                        ) : (() => {
+                            const sourceDispatch = preferredDispatchForInventory(b);
+                            const lead = sourceDispatch?.assignments.find((a) => a.isTeamLeader)?.user ?? null;
+                            const options = teamLeaderBatchesForBooking(b);
+                            const selectedBatchId = selectedBatchByBookingId[b.id] ?? "";
+                            const selectedBatch = options.find((x) => x.id === selectedBatchId) ?? null;
+                            const qtyText = issueQtyByBookingId[b.id] ?? "1";
+                            const qtyInt = Number.parseInt(qtyText, 10);
+                            const qtyInvalid = !Number.isInteger(qtyInt) || qtyInt <= 0;
+                            const qtyTooHigh = !!selectedBatch && qtyInt > selectedBatch.quantity;
+
+                            return (
+                              <div className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3">
+                                <p className="text-sm text-[var(--text-secondary)]">
+                                  Team leader:{" "}
+                                  <span className="font-medium text-[var(--text-primary)]">
+                                    {lead?.fullName ?? "Not assigned"}
+                                  </span>
+                                </p>
+                                {options.length === 0 ? (
+                                  <p className="text-sm text-[var(--text-muted)]">
+                                    No available medicine batches in this team leader&apos;s mobile store.
+                                  </p>
+                                ) : (
+                                  <>
+                                    <div className="grid gap-2 sm:grid-cols-3">
+                                      <label className="flex flex-col gap-1 text-xs sm:col-span-2">
+                                        <span className="font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                                          Medicine batch
+                                        </span>
+                                        <SelectBase
+                                          value={selectedBatchId}
+                                          onChange={(e) =>
+                                            setSelectedBatchByBookingId((prev) => ({
+                                              ...prev,
+                                              [b.id]: e.target.value,
+                                            }))
+                                          }
+                                          className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--text-primary)]"
+                                        >
+                                          <option value="">Select batch</option>
+                                          {options.map((row) => (
+                                            <option key={row.id} value={row.id}>
+                                              {row.medicine?.name ?? "Medicine"} - {row.batchNo} (stock {row.quantity})
+                                            </option>
+                                          ))}
+                                        </SelectBase>
+                                      </label>
+                                      <label className="flex flex-col gap-1 text-xs">
+                                        <span className="font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                                          Qty
+                                        </span>
+                                        <input
+                                          type="number"
+                                          min={1}
+                                          step={1}
+                                          value={qtyText}
+                                          onChange={(e) =>
+                                            setIssueQtyByBookingId((prev) => ({
+                                              ...prev,
+                                              [b.id]: e.target.value,
+                                            }))
+                                          }
+                                          className="h-10 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 text-sm text-[var(--text-primary)]"
+                                        />
+                                      </label>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-2">
+                                      <p className="text-xs text-[var(--text-muted)]">
+                                        {selectedBatch
+                                          ? `Available: ${selectedBatch.quantity} ${
+                                              selectedBatch.medicine?.uom?.trim() || "units"
+                                            }`
+                                          : "Select a batch to issue medicine"}
+                                      </p>
+                                      <Button
+                                        type="button"
+                                        variant="primary"
+                                        className="h-8 px-3 text-xs"
+                                        disabled={
+                                          issuingBookingId === b.id ||
+                                          !selectedBatchId ||
+                                          qtyInvalid ||
+                                          qtyTooHigh
+                                        }
+                                        onClick={() => void issueMedicineToPatient(b)}
+                                      >
+                                        {issuingBookingId === b.id ? "Issuing..." : "Issue to patient"}
+                                      </Button>
+                                    </div>
+                                    {qtyTooHigh ? (
+                                      <p className="text-xs text-[var(--danger)]">
+                                        Quantity is higher than available stock.
+                                      </p>
+                                    ) : null}
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })()}
+                      </div>
                     </div>
                   </div>
                 </div>
