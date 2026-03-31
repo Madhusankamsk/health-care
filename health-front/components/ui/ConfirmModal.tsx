@@ -3,7 +3,7 @@
 import { useEscapeKey } from "@/lib/useEscapeKey";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
 export type ConfirmModalVariant = "delete" | "edit" | "primary";
 
@@ -41,13 +41,15 @@ export function ConfirmModal({
         overlayClassName="z-[80] bg-black/40"
       >
         <Card>
-          <h2
+          <DialogTitle
             id="confirm-modal-title"
             className="mb-2 text-lg font-semibold tracking-tight text-[var(--text-primary)]"
           >
             {title}
-          </h2>
-          <p className="text-sm text-[var(--text-secondary)]">{message}</p>
+          </DialogTitle>
+          <DialogDescription className="text-sm text-[var(--text-secondary)]">
+            {message}
+          </DialogDescription>
           <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
             <Button
               type="button"
