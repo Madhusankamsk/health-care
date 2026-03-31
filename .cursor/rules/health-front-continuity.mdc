@@ -1,0 +1,18 @@
+---
+description: Keep health-front changes aligned with existing structure and patterns
+globs: health-front/**/*.{ts,tsx,css}
+alwaysApply: false
+---
+
+# health-front continuity guardrails
+
+- Extend existing structure; do not re-architect working flows unless explicitly requested.
+- Favor shared primitives in `@/components/ui/*` (Button, Card, Input, ModalShell, ConfirmModal, table and base controls) before creating page-specific variants.
+- Keep styling token-first via `app/globals.css` variables (`--surface*`, `--text-*`, `--brand-*`, semantic tokens). Avoid hardcoded black/white or one-off hex colors in feature code.
+- Preserve API contracts and RBAC behavior when making UI changes (no payload/status/permission logic drift).
+- Keep pages lean and server-first: data/auth in `app/**/page.tsx`, interactive state in colocated client components.
+- For dense dashboard screens, prioritize information hierarchy and compact spacing over decorative wrappers.
+- Reuse established patterns:
+  - CRUD toolbar + table shells for manager pages.
+  - ModalShell for form/content dialogs and ConfirmModal for short confirmations.
+  - Conditional rendering of optional sections (for example, guardian-related blocks only when relevant data exists).
