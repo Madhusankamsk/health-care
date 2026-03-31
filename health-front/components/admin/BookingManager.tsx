@@ -180,7 +180,11 @@ export function BookingManager({
         </div>
       ) : null}
 
-      <CrudToolbar description="Manage bookings: requested doctor, doctor acceptance status, and booking remark.">
+      <CrudToolbar
+        title="Manage bookings"
+        note="Actions are controlled by permissions."
+        description="Manage bookings: requested doctor, doctor acceptance status, and booking remark."
+      >
           {canCreate ? (
             <Button
               variant="create"
@@ -788,7 +792,7 @@ function BookingForm({
   const formBody = (
     <>
       {layout === "card" ? (
-        <div className="mb-6 flex items-center justify-between gap-3">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-lg font-semibold text-[var(--text-primary)]">{title}</div>
           <Button variant="secondary" onClick={onCancel} disabled={isSubmitting}>
             Cancel
