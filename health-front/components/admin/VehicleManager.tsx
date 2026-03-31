@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { ModalShell } from "@/components/ui/ModalShell";
+import { CrudToolbar } from "@/components/ui/CrudToolbar";
 import { Input } from "@/components/ui/Input";
 import { toast } from "@/lib/toast";
 import { useEscapeKey } from "@/lib/useEscapeKey";
@@ -129,11 +130,7 @@ export function VehicleManager({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="text-sm text-zinc-600 dark:text-zinc-400">
-          Manage vehicles (create, edit, delete, preview).
-        </div>
-        <div className="flex items-center gap-2">
+      <CrudToolbar description="Manage vehicles (create, edit, delete, preview).">
           {canCreate ? (
             <Button
               variant="create"
@@ -163,8 +160,7 @@ export function VehicleManager({
           >
             Refresh
           </Button>
-        </div>
-      </div>
+      </CrudToolbar>
 
       {mode === "create" && canCreate ? (
         <ModalShell

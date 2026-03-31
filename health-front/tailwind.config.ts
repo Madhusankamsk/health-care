@@ -8,7 +8,21 @@ const config: Config = {
     "./lib/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      borderRadius: {
+        xl: "0.9rem",
+        "2xl": "1.1rem",
+      },
+      boxShadow: {
+        soft: "var(--shadow-soft)",
+      },
+      colors: {
+        brand: {
+          DEFAULT: "var(--brand-primary)",
+          strong: "var(--brand-primary-strong)",
+        },
+      },
+    },
   },
   plugins: [],
 };

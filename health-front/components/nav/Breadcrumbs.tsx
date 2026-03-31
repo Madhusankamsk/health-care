@@ -37,7 +37,7 @@ export function Breadcrumbs() {
   });
 
   return (
-    <nav className="text-xs text-[var(--text-muted)]">
+    <nav className="text-xs text-[var(--text-muted)]" aria-label="Breadcrumb">
       <ol className="flex flex-wrap items-center gap-1.5">
         {crumbs.map((c) => (
           <li key={c.href} className="flex items-center gap-1">
@@ -46,7 +46,7 @@ export function Breadcrumbs() {
                 {c.label}
               </span>
             ) : (
-              <Link className="hover:text-[var(--text-primary)] hover:underline" href={c.href}>
+              <Link className="rounded-md px-1 py-0.5 hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]" href={c.href}>
                 {c.label}
               </Link>
             )}

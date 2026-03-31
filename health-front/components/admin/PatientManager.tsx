@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { ModalShell } from "@/components/ui/ModalShell";
 import { Input } from "@/components/ui/Input";
+import { CrudToolbar } from "@/components/ui/CrudToolbar";
 import { openInvoicePdf } from "@/lib/openInvoicePdf";
 import { toast } from "@/lib/toast";
 import { useEscapeKey } from "@/lib/useEscapeKey";
@@ -167,11 +168,7 @@ export function PatientManager({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="text-sm text-zinc-600 dark:text-zinc-400">
-          Manage patients (create, edit, delete, preview).
-        </div>
-        <div className="flex items-center gap-2">
+      <CrudToolbar description="Manage patients (create, edit, delete, preview).">
           {canCreate ? (
             <Button
               variant="create"
@@ -201,8 +198,7 @@ export function PatientManager({
           >
             Refresh
           </Button>
-        </div>
-      </div>
+      </CrudToolbar>
 
       {mode === "create" && canCreate ? (
         <ModalShell

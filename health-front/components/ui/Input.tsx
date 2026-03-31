@@ -3,11 +3,13 @@ import type { InputHTMLAttributes } from "react";
 export type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
   errorMessage?: string;
+  hint?: string;
 };
 
 export function Input({
   label,
   errorMessage,
+  hint,
   className,
   id,
   ...rest
@@ -29,9 +31,9 @@ export function Input({
         className={[
           "h-11 rounded-xl border px-3 text-sm outline-none transition-colors",
           "border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
-          "focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[color-mix(in_srgb,var(--brand-primary)_25%,transparent)]",
+          "focus:border-[var(--brand-primary)]",
           hasError
-            ? "border-[var(--danger)] focus:ring-[color-mix(in_srgb,var(--danger)_24%,transparent)]"
+            ? "border-[var(--danger)]"
             : "",
           className,
         ]
@@ -42,6 +44,8 @@ export function Input({
         <span id={errorId} className="text-xs text-[var(--danger)]">
           {errorMessage}
         </span>
+      ) : hint ? (
+        <span className="text-xs text-[var(--text-muted)]">{hint}</span>
       ) : null}
     </label>
   );

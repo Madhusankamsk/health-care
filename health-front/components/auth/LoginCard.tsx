@@ -111,6 +111,7 @@ export function LoginCard() {
           errorMessage={
             touched.email || hasSubmitted ? validationErrors.email : undefined
           }
+          hint="Use your work email."
           autoComplete="email"
         />
         <Input
@@ -131,6 +132,7 @@ export function LoginCard() {
               ? validationErrors.password
               : undefined
           }
+          hint="Minimum 4 characters."
           autoComplete="current-password"
         />
 

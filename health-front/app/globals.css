@@ -3,18 +3,19 @@
 @import "sonner/dist/styles.css";
 
 :root {
-  --background: #f3f7f9;
-  --foreground: #0f2b39;
+  --background: #f5f7fb;
+  --foreground: #0f172a;
   --surface: #ffffff;
-  --surface-2: #f8fbfc;
-  --border: #dce7ec;
-  --border-strong: #c9dbe3;
-  --text-primary: #0f2b39;
-  --text-secondary: #355667;
-  --text-muted: #6d8795;
-  --brand-primary: #14b8a6;
+  --surface-2: #f8fafc;
+  --surface-3: #f1f5f9;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --brand-primary: #0ea5a4;
   --brand-primary-strong: #0f766e;
-  --brand-secondary: #3b82f6;
+  --brand-secondary: #2563eb;
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
@@ -27,19 +28,22 @@
   --action-delete-hover: #dc2626;
   --action-preview: var(--purple);
   --action-preview-hover: #7c3aed;
-  --shadow-soft: 0 8px 24px rgba(15, 43, 57, 0.08);
+  --ring: color-mix(in srgb, var(--brand-secondary) 35%, transparent);
+  --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --shadow-strong: 0 24px 60px rgba(15, 23, 42, 0.16);
 }
 
 :root.dark {
-  --background: #07161f;
-  --foreground: #ebf4f7;
-  --surface: #0d1f2a;
-  --surface-2: #102734;
-  --border: #1f3a4a;
-  --border-strong: #2b4a5c;
-  --text-primary: #ebf4f7;
-  --text-secondary: #bfd4df;
-  --text-muted: #8ea9b8;
+  --background: #020617;
+  --foreground: #e2e8f0;
+  --surface: #0f172a;
+  --surface-2: #111c31;
+  --surface-3: #1e293b;
+  --border: #1f2937;
+  --border-strong: #334155;
+  --text-primary: #e2e8f0;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
   --brand-primary: #2dd4bf;
   --brand-primary-strong: #14b8a6;
   --brand-secondary: #60a5fa;
@@ -55,7 +59,9 @@
   --action-delete-hover: #ef4444;
   --action-preview: var(--purple);
   --action-preview-hover: #8b5cf6;
-  --shadow-soft: 0 12px 28px rgba(0, 0, 0, 0.35);
+  --ring: color-mix(in srgb, var(--brand-secondary) 45%, transparent);
+  --shadow-soft: 0 12px 30px rgba(0, 0, 0, 0.35);
+  --shadow-strong: 0 30px 70px rgba(0, 0, 0, 0.5);
 }
 
 @theme inline {
@@ -75,6 +81,18 @@ body {
   font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system,
     Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
   letter-spacing: 0.01em;
+  text-rendering: optimizeLegibility;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 /* Ensure toasts sit above dashboard chrome (header z-50, modals z-70–80) */
@@ -85,7 +103,21 @@ body {
 .surface-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 18px;
+  box-shadow: var(--shadow-soft);
+}
+
+.app-shell {
+  background:
+    radial-gradient(1200px 600px at 10% -20%, color-mix(in srgb, var(--brand-secondary) 10%, transparent), transparent),
+    radial-gradient(900px 500px at 90% -15%, color-mix(in srgb, var(--brand-primary) 10%, transparent), transparent),
+    var(--background);
+}
+
+.page-section {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
   box-shadow: var(--shadow-soft);
 }
 
@@ -120,10 +152,11 @@ body {
 }
 
 .tbl-shell {
-  border-radius: 16px;
+  border-radius: 18px;
   border: 1px solid var(--border);
   background: var(--surface);
   box-shadow: var(--shadow-soft);
+  overflow: hidden;
 }
 
 .tbl-shell thead {
@@ -132,6 +165,12 @@ body {
 
 .tbl-shell tbody tr:hover {
   background: color-mix(in srgb, var(--brand-primary) 8%, transparent);
+}
+
+.muted-panel {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-2);
 }
 
 .preview-shell {

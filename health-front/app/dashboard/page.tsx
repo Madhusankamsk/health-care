@@ -54,7 +54,7 @@ export default async function DashboardPage() {
     bookings?.filter((b) => b.doctorStatusLookup?.lookupKey === "ACCEPTED") ?? [];
 
   return (
-    <div className="flex w-full flex-col gap-8">
+    <div className="flex w-full flex-col gap-6">
       <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-semibold tracking-tight text-[var(--text-primary)]">

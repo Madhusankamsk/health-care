@@ -32,7 +32,7 @@ export function ModalShell({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 px-4 py-8"
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/55 px-4 py-8 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}

@@ -369,7 +369,7 @@ export function Sidebar({
                           className={[
                             "flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition-colors",
                             childActive
-                              ? "bg-[var(--surface-2)] text-[var(--text-primary)]"
+                              ? "bg-[var(--surface-3)] text-[var(--text-primary)]"
                               : "text-[var(--text-secondary)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]",
                           ].join(" ")}
                           onClick={() => onNavigate?.()}

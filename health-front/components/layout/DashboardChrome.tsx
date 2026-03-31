@@ -27,7 +27,7 @@ export function DashboardChrome({
   }, [isMobileNavOpen]);
 
   return (
-    <div className="flex h-screen flex-col bg-[var(--background)] text-[var(--text-primary)]">
+    <div className="app-shell flex h-screen flex-col text-[var(--text-primary)]">
       <div className="sticky top-0 z-50">
         <Header
           onMenuClick={() => setIsMobileNavOpen(true)}
@@ -42,8 +42,8 @@ export function DashboardChrome({
           onToggleCollapsed={() => setIsSidebarCollapsed((v) => !v)}
         />
 
-        <main className="min-w-0 flex-1 overflow-y-auto bg-[var(--background)]">
-          <div className="w-full px-3 py-4 sm:px-4 sm:py-6">
+        <main className="min-w-0 flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-[1600px] px-3 py-4 sm:px-4 sm:py-6 lg:px-6">
             {children}
           </div>
         </main>
@@ -62,7 +62,7 @@ export function DashboardChrome({
             onClick={() => setIsMobileNavOpen(false)}
           />
 
-          <div className="absolute left-0 top-0 h-full w-80 max-w-[85vw] border-r border-[var(--border)] bg-[var(--surface)] shadow-2xl">
+          <div className="absolute left-0 top-0 h-full w-80 max-w-[85vw] border-r border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-strong)]">
             <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
               <span className="text-sm font-semibold">Menu</span>
               <button

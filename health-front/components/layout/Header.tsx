@@ -69,7 +69,7 @@ export function Header({
   }
 
   return (
-    <header className="border-b border-[var(--border)] bg-[var(--surface)]/90 backdrop-blur">
+    <header className="border-b border-[var(--border)] bg-[var(--surface)]/85 backdrop-blur-md">
       <div className="flex w-full items-center justify-between px-3 py-4 sm:px-4 lg:px-5">
         <div className="flex items-center gap-6">
           {isMenuButtonVisible ? (
@@ -85,7 +85,7 @@ export function Header({
 
           <Link
             href="/dashboard"
-            className="text-sm font-semibold tracking-wide text-[var(--text-primary)] hover:text-[var(--brand-primary-strong)]"
+            className="text-sm font-semibold tracking-tight text-[var(--text-primary)] hover:text-[var(--brand-primary-strong)]"
           >
             {title}
           </Link>
@@ -93,7 +93,7 @@ export function Header({
           <nav className="hidden items-center gap-4 text-sm sm:flex">
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[var(--text-secondary)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
+              className="inline-flex items-center gap-2 rounded-xl border border-transparent px-3 py-1.5 text-[var(--text-secondary)] hover:border-[var(--border)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
             >
               <LayoutDashboard className="h-4 w-4" aria-hidden />
               Home
@@ -101,7 +101,7 @@ export function Header({
             {(canSeeAdmin || canSeeSuperAdmin) && canCreatePatient ? (
               <Link
                 href="/dashboard/clients/patient?open=create"
-                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[var(--text-secondary)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
+                className="inline-flex items-center gap-2 rounded-xl border border-transparent px-3 py-1.5 text-[var(--text-secondary)] hover:border-[var(--border)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
               >
                 <ShieldCheck className="h-4 w-4" aria-hidden />
                 Patient
