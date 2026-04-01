@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { SelectBase } from "@/components/ui/select-base";
+import { ModalShell } from "@/components/ui/ModalShell";
 import type { UpcomingBookingRow } from "@/components/dispatch/types";
 import { CompletedVisitReport } from "@/components/clients/patient-bookings/CompletedVisitReport";
 import { MedicinesTab } from "@/components/clients/patient-bookings/tabs/MedicinesTab";
@@ -81,6 +83,7 @@ export function DiagnosticWorkflowPanel(props: Props) {
     onRemoveQueuedMedicine,
     onConfirmComplete,
   } = props;
+  const [billModalOpen, setBillModalOpen] = useState(false);
 
   const arrived = arrivedDispatchForBooking(b);
   const visitDone = Boolean(b.visitRecord?.completedAt);
@@ -94,7 +97,6 @@ export function DiagnosticWorkflowPanel(props: Props) {
     0,
     DIAGNOSTIC_TABS.findIndex((t) => t.id === activeDiagnosticTab),
   );
-  const reports = b.visitRecord?.diagnosticReports ?? [];
   const reportBusy = uploadingReportBookingId === b.id;
 
   if (isCompleted) {
@@ -212,12 +214,47 @@ export function DiagnosticWorkflowPanel(props: Props) {
             variant="primary"
             className="h-9 px-4 text-xs font-medium"
             disabled={busyDispatchId !== null}
-            onClick={onConfirmComplete}
+            onClick={() => setBillModalOpen(true)}
           >
-            Complete
+            Generate bill
           </Button>
         ) : null}
       </div>
+
+      <ModalShell
+        open={billModalOpen}
+        onClose={() => setBillModalOpen(false)}
+        titleId={`patient-booking-${b.id}-bill-preview`}
+        title="Bill preview"
+        subtitle="Hardcoded preview for now."
+        maxWidthClass="max-w-2xl"
+      >
+        <div className="space-y-3 text-sm">
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3">
+            <p className="font-semibold text-[var(--text-primary)]">Patient visit bill</p>
+            <p className="text-[var(--text-secondary)]">Consultation fee: LKR 2,500</p>
+            <p className="text-[var(--text-secondary)]">Nursing service: LKR 1,500</p>
+            <p className="text-[var(--text-secondary)]">Medicine charges: LKR 1,000</p>
+            <p className="mt-2 border-t border-[var(--border)] pt-2 font-semibold text-[var(--text-primary)]">
+              Total: LKR 5,000
+            </p>
+          </div>
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="primary"
+              className="h-9 px-4 text-xs font-medium"
+              disabled={busyDispatchId !== null}
+              onClick={() => {
+                onConfirmComplete();
+                setBillModalOpen(false);
+              }}
+            >
+              Complete
+            </Button>
+          </div>
+        </div>
+      </ModalShell>
     </>
   );
 }
