@@ -45,53 +45,101 @@ function startOfUtcDay(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0));
 }
 
-export async function listUpcomingAcceptedForDispatch(params: {
+function upcomingAcceptedForDispatchWhere(params: {
   userId: string | undefined;
   scope: BookingListScope;
 }) {
   const startOfToday = startOfUtcDay(new Date());
-
   const scopeWhere =
     params.scope === "own" && params.userId
       ? { requestedDoctorId: params.userId }
       : {};
+  return {
+    doctorStatusLookup: { lookupKey: "ACCEPTED" as const },
+    OR: [{ scheduledDate: null }, { scheduledDate: { gte: startOfToday } }],
+    dispatchRecords: { none: {} },
+    ...scopeWhere,
+  };
+}
 
+export async function countUpcomingAcceptedForDispatch(params: {
+  userId: string | undefined;
+  scope: BookingListScope;
+}) {
+  return prisma.booking.count({ where: upcomingAcceptedForDispatchWhere(params) });
+}
+
+export async function listUpcomingAcceptedForDispatch(params: {
+  userId: string | undefined;
+  scope: BookingListScope;
+  /** When set, only fetch this many rows (e.g. dashboard preview). */
+  limit?: number;
+}) {
   return prisma.booking.findMany({
-    where: {
-      doctorStatusLookup: { lookupKey: "ACCEPTED" },
-      OR: [{ scheduledDate: null }, { scheduledDate: { gte: startOfToday } }],
-      /** Not yet dispatched — once a dispatch exists, the job moves to Ongoing. */
-      dispatchRecords: { none: {} },
-      ...scopeWhere,
-    },
+    where: upcomingAcceptedForDispatchWhere(params),
     orderBy: { scheduledDate: { sort: "asc", nulls: "last" } },
     include: upcomingInclude,
+    ...(params.limit != null ? { take: params.limit } : {}),
   });
+}
+
+const activeDispatchStatusKeys = ["IN_TRANSIT", "ARRIVED", "DIAGNOSTIC"] as const;
+
+function ongoingForDispatchWhere(params: { userId: string | undefined; scope: BookingListScope }) {
+  const dispatchActiveOr = [
+    { dispatchRecords: { some: { statusLookup: { lookupKey: "IN_TRANSIT" } } } },
+    { dispatchRecords: { some: { statusLookup: { lookupKey: "ARRIVED" } } } },
+    { dispatchRecords: { some: { statusLookup: { lookupKey: "DIAGNOSTIC" } } } },
+  ] as const;
+
+  if (params.scope === "own" && params.userId) {
+    return {
+      doctorStatusLookup: { lookupKey: "ACCEPTED" as const },
+      visitRecord: null,
+      OR: [
+        {
+          AND: [
+            { requestedDoctorId: params.userId },
+            { OR: [...dispatchActiveOr] },
+          ],
+        },
+        {
+          dispatchRecords: {
+            some: {
+              statusLookup: { lookupKey: { in: [...activeDispatchStatusKeys] } },
+              assignments: { some: { userId: params.userId } },
+            },
+          },
+        },
+      ],
+    };
+  }
+
+  return {
+    doctorStatusLookup: { lookupKey: "ACCEPTED" as const },
+    visitRecord: null,
+    OR: [...dispatchActiveOr],
+  };
+}
+
+export async function countOngoingForDispatch(params: {
+  userId: string | undefined;
+  scope: BookingListScope;
+}) {
+  return prisma.booking.count({ where: ongoingForDispatchWhere(params) });
 }
 
 /** Accepted bookings with an in-transit or arrived dispatch and no visit started yet. */
 export async function listOngoingForDispatch(params: {
   userId: string | undefined;
   scope: BookingListScope;
+  limit?: number;
 }) {
-  const scopeWhere =
-    params.scope === "own" && params.userId
-      ? { requestedDoctorId: params.userId }
-      : {};
-
   return prisma.booking.findMany({
-    where: {
-      doctorStatusLookup: { lookupKey: "ACCEPTED" },
-      visitRecord: null,
-      OR: [
-        { dispatchRecords: { some: { statusLookup: { lookupKey: "IN_TRANSIT" } } } },
-        { dispatchRecords: { some: { statusLookup: { lookupKey: "ARRIVED" } } } },
-        { dispatchRecords: { some: { statusLookup: { lookupKey: "DIAGNOSTIC" } } } },
-      ],
-      ...scopeWhere,
-    },
+    where: ongoingForDispatchWhere(params),
     orderBy: { scheduledDate: { sort: "asc", nulls: "last" } },
     include: upcomingInclude,
+    ...(params.limit != null ? { take: params.limit } : {}),
   });
 }
 

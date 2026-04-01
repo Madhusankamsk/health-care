@@ -120,11 +120,15 @@ import {
 } from "../controllers/inventoryController";
 import { requireAnyPermission } from "../middleware/permissions";
 import prisma from "../prisma/client";
+import { getDashboardSummaryHandler } from "../controllers/dashboardController";
 
 const router = Router();
 
 // Protect RBAC routes with auth middleware
 router.use(requireAuth);
+
+// Dashboard (tile visibility is enforced in buildDashboardSummary from role permissions)
+router.get("/dashboard/summary", getDashboardSummaryHandler);
 
 // Current user + permissions (for frontend privilege checks)
 router.get("/me", async (req, res) => {
