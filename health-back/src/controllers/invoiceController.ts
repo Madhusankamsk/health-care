@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 
 import prisma from "../prisma/client";
-import { buildSubscriptionInvoicePdfBuffer } from "../services/invoicePdfService";
+import { buildSubscriptionInvoicePdfBuffer, buildVisitInvoicePdfBuffer } from "../services/invoicePdfService";
 
 export async function getInvoicePdfHandler(req: Request, res: Response) {
   const { id } = req.params;
@@ -23,6 +23,9 @@ export async function getInvoicePdfHandler(req: Request, res: Response) {
           plan: { select: { planName: true } },
         },
       },
+      booking: {
+        select: { scheduledDate: true },
+      },
       paymentStatusLookup: { select: { lookupValue: true } },
     },
   });
@@ -31,19 +34,26 @@ export async function getInvoicePdfHandler(req: Request, res: Response) {
     return res.status(404).json({ message: "Invoice not found" });
   }
 
-  if (!invoice.subscriptionAccountId) {
-    return res.status(400).json({ message: "PDF is only available for subscription invoices" });
-  }
-
   const company = await prisma.companySettings.findFirst({
     orderBy: { updatedAt: "desc" },
   });
 
   try {
-    const pdf = await buildSubscriptionInvoicePdfBuffer(company, invoice);
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="invoice-${invoice.id}.pdf"`);
-    return res.status(200).send(pdf);
+    if (invoice.subscriptionAccountId) {
+      const pdf = await buildSubscriptionInvoicePdfBuffer(company, invoice);
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="invoice-${invoice.id}.pdf"`);
+      return res.status(200).send(pdf);
+    }
+
+    if (invoice.bookingId) {
+      const pdf = await buildVisitInvoicePdfBuffer(company, invoice);
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="visit-invoice-${invoice.id}.pdf"`);
+      return res.status(200).send(pdf);
+    }
+
+    return res.status(400).json({ message: "PDF is not available for this invoice type" });
   } catch {
     return res.status(500).json({ message: "Unable to generate PDF" });
   }

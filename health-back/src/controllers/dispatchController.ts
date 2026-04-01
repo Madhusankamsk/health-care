@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 
+import prisma from "../prisma/client";
 import { loadPermissionKeys } from "../middleware/permissions";
 import { resolveBookingListScope } from "../services/bookingService";
 import type { DispatchStatusUpdateKey } from "../services/dispatchService";
@@ -138,6 +139,15 @@ export async function patchDispatchStatusHandler(req: Request, res: Response) {
       { remark: remark === undefined ? undefined : remark },
       { userId, scope },
     );
+
+    if (key === "COMPLETED" && updated.booking?.id) {
+      const visitInvoice = await prisma.invoice.findFirst({
+        where: { bookingId: updated.booking.id, subscriptionAccountId: null },
+        select: { id: true },
+      });
+      return res.json({ ...updated, visitInvoiceId: visitInvoice?.id ?? null });
+    }
+
     return res.json(updated);
   } catch (e) {
     const err = e as { code?: string; message?: string };

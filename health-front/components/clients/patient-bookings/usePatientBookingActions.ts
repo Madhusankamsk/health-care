@@ -52,12 +52,19 @@ export function usePatientBookingActions(onAfterSuccess: () => void) {
   ) {
     setBusyDispatchId(dispatchId);
     try {
-      await patchDispatchStatusApi(dispatchId, statusLookupKey, remark);
+      const result = await patchDispatchStatusApi(dispatchId, statusLookupKey, remark);
       const msg =
         statusLookupKey === "ARRIVED"
           ? "Marked as arrived."
           : "Visit completed.";
       toast.success(msg);
+      if (statusLookupKey === "COMPLETED" && result.visitInvoiceId) {
+        window.open(
+          `/api/invoices/${encodeURIComponent(result.visitInvoiceId)}/pdf`,
+          "_blank",
+          "noopener,noreferrer",
+        );
+      }
       onAfterSuccess();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Update failed");

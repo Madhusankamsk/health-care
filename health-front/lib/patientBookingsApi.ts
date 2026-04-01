@@ -6,11 +6,15 @@ async function readJson<T>(res: Response, fallback: T): Promise<T> {
   return (await res.json().catch(() => fallback)) as T;
 }
 
+export type PatchDispatchStatusResponse = {
+  visitInvoiceId?: string | null;
+};
+
 export async function patchDispatchStatusApi(
   dispatchId: string,
   statusLookupKey: "ARRIVED" | "COMPLETED",
   remark?: string | null,
-) {
+): Promise<PatchDispatchStatusResponse> {
   const res = await fetch(`/api/dispatch/${dispatchId}/status`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -19,8 +23,9 @@ export async function patchDispatchStatusApi(
       ...(remark !== undefined ? { remark } : {}),
     }),
   });
-  const data = await readJson<MessageResponse>(res, {});
+  const data = await readJson<MessageResponse & PatchDispatchStatusResponse>(res, {});
   if (!res.ok) throw new Error(data.message || "Update failed");
+  return { visitInvoiceId: data.visitInvoiceId };
 }
 
 export async function saveVisitDraftApi(bookingId: string, remark: string | null) {
