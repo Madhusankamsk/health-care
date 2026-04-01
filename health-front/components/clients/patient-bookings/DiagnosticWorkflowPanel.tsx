@@ -20,9 +20,6 @@ type Props = {
   setActiveDiagnosticTab: (tab: DiagnosticTabId) => void;
   diagnosisRemark: string;
   setDiagnosisRemark: (value: string) => void;
-  saveVisitDraftDisabled: boolean;
-  savingBookingId: string | null;
-  onSaveVisitDraft: () => void;
   uploadingReportBookingId: string | null;
   onUploadReports: (files: FileList | null) => void;
   sampleForm: SampleForm;
@@ -45,6 +42,7 @@ type Props = {
   onChangeQty: (qty: string) => void;
   issuingBookingId: string | null;
   onIssueMedicine: () => void;
+  onRemoveQueuedMedicine: (queuedItemId: string) => void;
   onConfirmComplete: () => void;
 };
 
@@ -58,9 +56,6 @@ export function DiagnosticWorkflowPanel(props: Props) {
     setActiveDiagnosticTab,
     diagnosisRemark,
     setDiagnosisRemark,
-    saveVisitDraftDisabled,
-    savingBookingId,
-    onSaveVisitDraft,
     uploadingReportBookingId,
     onUploadReports,
     sampleForm,
@@ -83,6 +78,7 @@ export function DiagnosticWorkflowPanel(props: Props) {
     onChangeQty,
     issuingBookingId,
     onIssueMedicine,
+    onRemoveQueuedMedicine,
     onConfirmComplete,
   } = props;
 
@@ -108,13 +104,15 @@ export function DiagnosticWorkflowPanel(props: Props) {
   return (
     <>
       <div className="mt-4 flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-xs md:hidden">
-          <span className="font-semibold uppercase tracking-wide text-[var(--text-muted)]">Visit workflow</span>
+        <label className="flex flex-col gap-1 text-xs sm:hidden">
+          <span className="font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+            Visit workflow
+          </span>
           <SelectBase
             value={activeDiagnosticTab}
             onChange={(e) => setActiveDiagnosticTab(e.target.value as DiagnosticTabId)}
             className="h-10 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 text-sm text-[var(--text-primary)]"
-            aria-label="Select visit workflow section"
+            aria-label="Visit workflow"
           >
             {DIAGNOSTIC_TABS.map((tab) => (
               <option key={tab.id} value={tab.id}>
@@ -124,7 +122,7 @@ export function DiagnosticWorkflowPanel(props: Props) {
           </SelectBase>
         </label>
         <div
-          className="relative hidden rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-1 md:flex"
+          className="relative hidden rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-1 sm:flex"
           role="tablist"
           aria-label="Visit workflow"
         >
@@ -201,23 +199,13 @@ export function DiagnosticWorkflowPanel(props: Props) {
             onChangeQty={onChangeQty}
             issuingBookingId={issuingBookingId}
             onIssueMedicine={onIssueMedicine}
+            onRemoveQueuedMedicine={onRemoveQueuedMedicine}
             issuedMedicineSamples={issuedMedicineSamples}
           />
         </div>
       </div>
 
       <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-[var(--border)] pt-3">
-        {canSaveVisitDraft ? (
-          <Button
-            type="button"
-            variant="secondary"
-            className="h-9 px-4 text-xs font-medium"
-            disabled={saveVisitDraftDisabled}
-            onClick={onSaveVisitDraft}
-          >
-            {savingBookingId === b.id ? "Saving…" : "Save draft"}
-          </Button>
-        ) : null}
         {canUpdateDispatch ? (
           <Button
             type="button"

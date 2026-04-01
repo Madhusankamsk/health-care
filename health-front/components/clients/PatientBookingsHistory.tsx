@@ -18,7 +18,7 @@ type PatientBookingsHistoryProps = {
   bookings: UpcomingBookingRow[];
   /** `dispatch:update` — Mark arrived and Complete dispatch */
   canUpdateDispatch?: boolean;
-  /** `bookings:update` — Save draft (diagnosis remark); booking remark is read-only here */
+  /** `bookings:update` — visit workflow editing permission */
   canSaveVisitDraft?: boolean;
   /** From `/api/lookups?category=LAB_SAMPLE_TYPE` — sample type dropdown */
   labSampleTypeLookups?: LabSampleTypeLookup[];
@@ -85,15 +85,6 @@ export function PatientBookingsHistory({
             }
             diagnosisRemark={bookingActions.diagnosisRemarkDraftForBooking(b)}
             setDiagnosisRemark={(value) => bookingActions.setDiagnosisRemarkDraft(b.id, value)}
-            saveVisitDraftDisabled={
-              bookingActions.busyDispatchId !== null ||
-              bookingActions.savingBookingId !== null ||
-              bookingActions.uploadingReportBookingId !== null ||
-              bookingActions.addingSampleBookingId !== null ||
-              bookingActions.removingSampleId !== null
-            }
-            savingBookingId={bookingActions.savingBookingId}
-            onSaveVisitDraft={() => void bookingActions.saveVisitDraftForBooking(b)}
             uploadingReportBookingId={bookingActions.uploadingReportBookingId}
             onUploadReports={(files) => void bookingActions.uploadReportsForBooking(b, files)}
             sampleForm={sampleForm}
@@ -119,6 +110,7 @@ export function PatientBookingsHistory({
             }
             issuingBookingId={inventory.issuingBookingId}
             onIssueMedicine={() => void inventory.issueMedicineToPatient(b)}
+            onRemoveQueuedMedicine={(queuedItemId) => inventory.removePendingIssue(b.id, queuedItemId)}
           />
         );
       })}
@@ -161,12 +153,18 @@ export function PatientBookingsHistory({
             const remarkText = activeBooking
               ? bookingActions.diagnosisRemarkDraftForBooking(activeBooking).trim()
               : "";
-            void bookingActions.patchDispatchStatus(
-              pendingConfirm.dispatchId,
-              "COMPLETED",
-              remarkText ? remarkText : null,
-            );
-            setPendingConfirm(null);
+            void (async () => {
+              if (activeBooking) {
+                const issued = await inventory.persistPendingIssuesForBooking(activeBooking);
+                if (!issued) return;
+              }
+              await bookingActions.patchDispatchStatus(
+                pendingConfirm.dispatchId,
+                "COMPLETED",
+                remarkText ? remarkText : null,
+              );
+              setPendingConfirm(null);
+            })();
           }
         }}
       />
