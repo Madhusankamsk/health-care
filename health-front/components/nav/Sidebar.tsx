@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
+  ArrowLeftRight,
   Banknote,
   CalendarCheck2,
   Building2,
@@ -11,15 +12,19 @@ import {
   Crown,
   HandCoins,
   KeyRound,
+  Layers,
   LayoutDashboard,
   Navigation,
-  Route,
   PanelLeftClose,
   PanelLeftOpen,
+  Pill,
   Receipt,
+  Route,
   ShieldCheck,
+  Smartphone,
   Package,
   Stethoscope,
+  Syringe,
   Truck,
   Users,
   Wallet,
@@ -109,10 +114,42 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    href: "/dashboard/inventory/medicines",
+    href: "/dashboard/inventory",
     label: "Inventory",
     icon: <Package className="h-4 w-4" aria-hidden />,
     requiresAnyPermissions: ["inventory:list", "inventory:read"],
+    children: [
+      {
+        href: "/dashboard/inventory/medicines",
+        label: "Medicines",
+        icon: <Pill className="h-4 w-4" aria-hidden />,
+        requiresAnyPermissions: ["inventory:list", "inventory:read"],
+      },
+      {
+        href: "/dashboard/inventory/medical-items",
+        label: "Medical Items",
+        icon: <Syringe className="h-4 w-4" aria-hidden />,
+        requiresAnyPermissions: ["inventory:list", "inventory:read"],
+      },
+      {
+        href: "/dashboard/inventory/batches",
+        label: "Batches",
+        icon: <Layers className="h-4 w-4" aria-hidden />,
+        requiresAnyPermissions: ["inventory:list", "inventory:read"],
+      },
+      {
+        href: "/dashboard/inventory/mobile-substores",
+        label: "Mobile Substores",
+        icon: <Smartphone className="h-4 w-4" aria-hidden />,
+        requiresAnyPermissions: ["inventory:list", "inventory:read"],
+      },
+      {
+        href: "/dashboard/inventory/stock-movements",
+        label: "Stock Movements",
+        icon: <ArrowLeftRight className="h-4 w-4" aria-hidden />,
+        requiresAnyPermissions: ["inventory:list", "inventory:read"],
+      },
+    ],
   },
   {
     href: "/dashboard/payments",
