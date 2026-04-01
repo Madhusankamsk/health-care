@@ -1,13 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { safeFileKeySegment } from "@/components/clients/patient-bookings/utils";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ModalShell } from "@/components/ui/ModalShell";
+import { uploadFileApi } from "@/lib/patientBookingsApi";
 import { toast } from "@/lib/toast";
 
 import type { OutstandingVisitInvoiceRow } from "./visitInvoiceTypes";
+
+const MAX_PAY_SLIP_BYTES = 5 * 1024 * 1024;
 
 type LookupOption = { id: string; lookupKey: string; lookupValue: string };
 
@@ -31,7 +35,27 @@ export function RecordVisitPaymentModal({
     () => paymentMethods[0]?.id ?? "",
   );
   const [transactionRef, setTransactionRef] = useState("");
+  const [paySlipFile, setPaySlipFile] = useState<File | null>(null);
+  const [paySlipPreview, setPaySlipPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!open || !invoice) return;
+    setAmount(invoice.balanceDue);
+    setPaymentMethodId(paymentMethods[0]?.id ?? "");
+    setTransactionRef("");
+    setPaySlipFile(null);
+  }, [open, invoice?.id, paymentMethods]);
+
+  useEffect(() => {
+    if (!paySlipFile) {
+      setPaySlipPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(paySlipFile);
+    setPaySlipPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [paySlipFile]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -40,8 +64,17 @@ export function RecordVisitPaymentModal({
       toast.error("Select a payment method");
       return;
     }
+    if (paySlipFile && paySlipFile.size > MAX_PAY_SLIP_BYTES) {
+      toast.error("Pay slip image must be 5 MB or smaller.");
+      return;
+    }
     setSubmitting(true);
     try {
+      let paySlipUrl: string | undefined;
+      if (paySlipFile) {
+        const key = `payment-slips/visit-invoices/${invoice.id}/${crypto.randomUUID()}-${safeFileKeySegment(paySlipFile.name)}`;
+        paySlipUrl = await uploadFileApi(paySlipFile, key);
+      }
       const res = await fetch(`/api/visit-invoices/${encodeURIComponent(invoice.id)}/payments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -49,6 +82,7 @@ export function RecordVisitPaymentModal({
           amountPaid: amount.trim(),
           paymentMethodId: paymentMethodId.trim(),
           transactionRef: transactionRef.trim() || undefined,
+          ...(paySlipUrl ? { paySlipUrl } : {}),
         }),
       });
       const raw = await res.text().catch(() => "");
@@ -153,6 +187,30 @@ export function RecordVisitPaymentModal({
               value={transactionRef}
               onChange={(e) => setTransactionRef(e.target.value)}
             />
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-[var(--text-primary)]">
+                Pay slip (optional)
+              </span>
+              <p className="text-xs text-[var(--text-muted)]">
+                Upload a photo of a bank transfer receipt or cheque — JPG, PNG, or WebP, max 5 MB.
+              </p>
+              <input
+                type="file"
+                accept="image/*"
+                className="text-sm text-[var(--text-secondary)] file:mr-3 file:rounded-lg file:border file:border-[var(--border)] file:bg-[var(--surface-2)] file:px-3 file:py-1.5 file:text-xs"
+                onChange={(e) => setPaySlipFile(e.target.files?.[0] ?? null)}
+              />
+              {paySlipPreview ? (
+                <div className="mt-1 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={paySlipPreview}
+                    alt="Pay slip preview"
+                    className="mx-auto max-h-48 w-auto max-w-full object-contain"
+                  />
+                </div>
+              ) : null}
+            </div>
             <div className="flex flex-wrap justify-end gap-2 pt-2">
               <Button type="button" variant="secondary" disabled={submitting} onClick={onClose}>
                 Cancel

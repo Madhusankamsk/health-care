@@ -12,10 +12,11 @@ export async function listOutstandingSubscriptionInvoicesHandler(_req: Request, 
 
 export async function recordSubscriptionInvoicePaymentHandler(req: Request, res: Response) {
   const { id: invoiceId } = req.params;
-  const { amountPaid, paymentMethodId, transactionRef } = req.body as Partial<{
+  const { amountPaid, paymentMethodId, transactionRef, paySlipUrl } = req.body as Partial<{
     amountPaid: number | string;
     paymentMethodId: string;
     transactionRef: string | null;
+    paySlipUrl: string | null;
   }>;
 
   const collectedByUserId = req.authUser?.sub;
@@ -26,6 +27,7 @@ export async function recordSubscriptionInvoicePaymentHandler(req: Request, res:
       amountPaid: amountPaid ?? "",
       paymentMethodId: paymentMethodId?.trim() ?? "",
       transactionRef: transactionRef ?? undefined,
+      paySlipUrl: paySlipUrl ?? undefined,
       collectedByUserId: collectedByUserId ?? "",
     });
     return res.status(201).json(result);

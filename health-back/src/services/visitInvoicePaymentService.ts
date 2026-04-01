@@ -89,6 +89,7 @@ export async function recordVisitInvoicePayment(params: {
   amountPaid: string | number;
   paymentMethodId: string;
   transactionRef?: string | null;
+  paySlipUrl?: string | null;
   collectedByUserId: string;
 }): Promise<{ invoiceId: string; balanceDue: string }> {
   const result = await prisma.$transaction(async (tx) => {
@@ -131,6 +132,7 @@ export async function recordVisitInvoicePayment(params: {
 
     const paymentPurposeId = await requireLookupId(tx, "PAYMENT_PURPOSE", "OTHER");
 
+    const slip = params.paySlipUrl?.trim();
     await tx.payment.create({
       data: {
         invoiceId: invoice.id,
@@ -138,6 +140,7 @@ export async function recordVisitInvoicePayment(params: {
         paymentMethodId: params.paymentMethodId.trim(),
         paymentPurposeId,
         transactionRef: params.transactionRef?.trim() ? params.transactionRef.trim() : null,
+        paySlipUrl: slip ? slip : null,
         collectedById: collector,
       },
     });

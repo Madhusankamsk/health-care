@@ -366,6 +366,8 @@ model Payment {
   /** Why this payment was recorded (membership type, package, corporate fees, etc.). */
   paymentPurposeId  String?
   transactionRef    String?
+  /** Optional proof-of-payment image URL (e.g. bank slip) hosted on Cloudinary. */
+  paySlipUrl        String?
   paidAt            DateTime @default(now())
   collectedById     String
   invoice           Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)

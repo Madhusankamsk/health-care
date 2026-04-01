@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth";
-import { uploadObject, deleteObject } from "../services/r2Storage";
+import { uploadObject, deleteObject } from "../services/cloudinaryStorage";
 
 const router = Router();
 
@@ -30,7 +30,7 @@ router.post("/upload", requireAuth, async (req, res) => {
       return res.status(201).json({ url });
     } catch (error) {
       // eslint-disable-next-line no-console
-      console.error("R2 upload error", error);
+      console.error("Cloudinary upload error", error);
       return res.status(500).json({ message: "Failed to upload file" });
     }
   });
@@ -44,7 +44,7 @@ router.delete("/:key", requireAuth, async (req, res) => {
     return res.status(204).send();
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error("R2 delete error", error);
+    console.error("Cloudinary delete error", error);
     return res.status(500).json({ message: "Failed to delete file" });
   }
 });

@@ -13,6 +13,7 @@ export type PaymentListRow = {
   paidAt: string;
   amountPaid: string;
   transactionRef: string | null;
+  paySlipUrl: string | null;
   paymentMethod: string;
   paymentPurpose: string | null;
   invoiceId: string;
@@ -75,6 +76,7 @@ export default async function PaymentsAccountsPage() {
                   <th className="px-4 py-3">Patient</th>
                   <th className="px-4 py-3">Account / plan</th>
                   <th className="px-4 py-3">Reference</th>
+                  <th className="px-4 py-3">Pay slip</th>
                   <th className="px-4 py-3">Collected by</th>
                   <th className="px-4 py-3 text-right">Bill</th>
                 </tr>
@@ -97,6 +99,20 @@ export default async function PaymentsAccountsPage() {
                     </td>
                     <td className="px-4 py-3 align-top text-[var(--text-secondary)]">
                       {row.transactionRef ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 align-top">
+                      {row.paySlipUrl ? (
+                        <a
+                          className="text-[var(--brand-primary)] underline-offset-2 hover:underline"
+                          href={row.paySlipUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          View
+                        </a>
+                      ) : (
+                        <span className="text-[var(--text-muted)]">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 align-top">{row.collectedByName}</td>
                     <td className="px-4 py-3 text-right align-top">

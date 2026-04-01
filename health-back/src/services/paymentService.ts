@@ -5,6 +5,7 @@ export type PaymentListRow = {
   paidAt: string;
   amountPaid: string;
   transactionRef: string | null;
+  paySlipUrl: string | null;
   paymentMethod: string;
   /** PAYMENT_PURPOSE lookup label, if set. */
   paymentPurpose: string | null;
@@ -54,6 +55,7 @@ export async function listPayments(): Promise<PaymentListRow[]> {
       paidAt: p.paidAt.toISOString(),
       amountPaid: p.amountPaid.toString(),
       transactionRef: p.transactionRef,
+      paySlipUrl: p.paySlipUrl,
       paymentMethod: p.paymentMethodLookup.lookupValue,
       paymentPurpose: p.paymentPurposeLookup?.lookupValue ?? null,
       invoiceId: p.invoice.id,
