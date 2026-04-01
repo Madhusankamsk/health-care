@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { SelectBase } from "@/components/ui/select-base";
 import type { UpcomingBookingRow } from "@/components/dispatch/types";
@@ -8,6 +9,7 @@ import { MedicinesTab } from "@/components/clients/patient-bookings/tabs/Medicin
 import { ReportsTab } from "@/components/clients/patient-bookings/tabs/ReportsTab";
 import { RemarkTab } from "@/components/clients/patient-bookings/tabs/RemarkTab";
 import { SamplesTab } from "@/components/clients/patient-bookings/tabs/SamplesTab";
+import { VisitBillModal } from "@/components/clients/patient-bookings/VisitBillModal";
 import { DIAGNOSTIC_TABS, type DiagnosticTabId, type InventoryBatchRow, type IssuedMedicineSampleRow, type LabSampleTypeLookup, type SampleForm } from "@/components/clients/patient-bookings/types";
 import { arrivedDispatchForBooking } from "@/components/clients/patient-bookings/utils";
 
@@ -86,6 +88,7 @@ export function DiagnosticWorkflowPanel(props: Props) {
     onConfirmComplete,
   } = props;
 
+  const [billModalOpen, setBillModalOpen] = useState(false);
   const arrived = arrivedDispatchForBooking(b);
   const visitDone = Boolean(b.visitRecord?.completedAt);
   const completedDispatch = b.dispatchRecords.some((dr) => dr.statusLookup?.lookupKey === "COMPLETED");
@@ -98,7 +101,6 @@ export function DiagnosticWorkflowPanel(props: Props) {
     0,
     DIAGNOSTIC_TABS.findIndex((t) => t.id === activeDiagnosticTab),
   );
-  const reports = b.visitRecord?.diagnosticReports ?? [];
   const reportBusy = uploadingReportBookingId === b.id;
 
   if (isCompleted) {
@@ -226,12 +228,21 @@ export function DiagnosticWorkflowPanel(props: Props) {
             variant="primary"
             className="h-9 px-4 text-xs font-medium"
             disabled={busyDispatchId !== null}
-            onClick={onConfirmComplete}
+            onClick={() => setBillModalOpen(true)}
           >
-            Complete
+            Generate bill
           </Button>
         ) : null}
       </div>
+
+      <VisitBillModal
+        open={billModalOpen}
+        onClose={() => setBillModalOpen(false)}
+        bookingId={b.id}
+        patientDisplayName={b.patient?.fullName?.trim() || "Patient"}
+        completeDisabled={busyDispatchId !== null}
+        onComplete={onConfirmComplete}
+      />
     </>
   );
 }
