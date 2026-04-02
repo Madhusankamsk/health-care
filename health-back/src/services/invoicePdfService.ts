@@ -36,6 +36,9 @@ type CompanyRow = {
 /** Default product name on PDFs; legacy "Moodify Health" from DB is normalized here. */
 const BRAND_NAME = "Health Scan";
 
+/** Shown on subscription invoices (not duplicated from company header). */
+const SUBSCRIPTION_SUPPORT_EMAIL = "support@healthscan.com";
+
 const COL = {
   headerBg: "#0f766e",
   headerSub: "#ccfbf1",
@@ -94,10 +97,8 @@ export function buildSubscriptionInvoicePdfBuffer(
     if (company?.companyAddress) {
       doc.text(company.companyAddress, { align: "center" });
     }
-    if (company?.companyPhone || company?.companyEmail) {
-      doc.text([company?.companyPhone, company?.companyEmail].filter(Boolean).join(" · "), {
-        align: "center",
-      });
+    if (company?.companyPhone) {
+      doc.text(company.companyPhone, { align: "center" });
     }
     doc.moveDown(1);
 
@@ -182,7 +183,11 @@ export function buildSubscriptionInvoicePdfBuffer(
     doc.y = summaryTop + 120;
     doc.moveDown(1.2);
 
-    doc.font("Helvetica").fontSize(8).fillColor("#a3a3a3").text(`Thank you · ${BRAND_NAME}`, {
+    doc.font("Helvetica").fontSize(8).fillColor("#a3a3a3").text(`Support: ${SUBSCRIPTION_SUPPORT_EMAIL}`, {
+      align: "center",
+    });
+    doc.moveDown(0.35);
+    doc.text(`Thank you · ${BRAND_NAME}`, {
       align: "center",
     });
 
