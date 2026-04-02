@@ -1,6 +1,22 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import {
+  Activity,
+  ArrowUpRight,
+  CalendarDays,
+  Car,
+  CircleCheck,
+  Clock,
+  FlaskConical,
+  Receipt,
+  Stethoscope,
+  TriangleAlert,
+  Truck,
+  Users,
+  Wallet,
+} from "lucide-react";
+
 import { Card } from "@/components/ui/Card";
 import { getIsAuthenticated } from "@/lib/auth";
 import { type BackendMeResponse, backendJson } from "@/lib/backend";
@@ -40,8 +56,10 @@ type DashboardSummaryResponse = {
 
 type TileSection = "kpi" | "list";
 
+type DashboardTileKey = keyof NonNullable<DashboardSummaryResponse["tiles"]>;
+
 const TILE_LABELS: {
-  key: keyof NonNullable<DashboardSummaryResponse["tiles"]>;
+  key: DashboardTileKey;
   title: string;
   section: TileSection;
 }[] = [
@@ -58,55 +76,120 @@ const TILE_LABELS: {
   { key: "labPending", title: "Lab — pending samples", section: "list" },
 ];
 
+function DashboardTileIcon({ tileKey }: { tileKey: DashboardTileKey }) {
+  const commonProps = {
+    className: "h-5 w-5 text-[var(--brand-primary)]",
+    "aria-hidden": true,
+  } as const;
+
+  switch (tileKey) {
+    case "countPatients":
+      return <Users {...commonProps} />;
+    case "countBookings":
+      return <CalendarDays {...commonProps} />;
+    case "countVehicles":
+      return <Car {...commonProps} />;
+    case "statRevenue":
+      return <Wallet {...commonProps} />;
+    case "statOutstanding":
+      return <TriangleAlert {...commonProps} />;
+    case "bookingsPending":
+      return <Clock {...commonProps} />;
+    case "bookingsAccepted":
+      return <CircleCheck {...commonProps} />;
+    case "dispatchUpcoming":
+      return <Truck {...commonProps} />;
+    case "dispatchOngoing":
+      return <Activity {...commonProps} />;
+    case "opdWaiting":
+      return <Stethoscope {...commonProps} />;
+    case "labPending":
+      return <FlaskConical {...commonProps} />;
+    default:
+      return <Receipt {...commonProps} />;
+  }
+}
+
 function DashboardKpiTile({
   label,
+  tileKey,
   tile,
 }: {
   label: string;
+  tileKey: DashboardTileKey;
   tile: DashboardSummaryTile;
 }) {
   return (
-    <Card title={label}>
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="pill pill-info text-xs font-medium">{tile.summaryPill}</span>
-          <Link
-            href={tile.href}
-            className="text-xs font-medium text-[var(--accent)] underline-offset-2 hover:underline"
-          >
-            Open
-          </Link>
+    <div className="surface-card p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--surface-2)]">
+            <DashboardTileIcon tileKey={tileKey} />
+          </div>
+
+          <div className="min-w-0">
+            <div className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
+              {label}
+            </div>
+            <div className="mt-2 line-clamp-2 text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
+              {tile.summaryPill}
+            </div>
+            {tile.kpiHint ? (
+              <p className="mt-2 text-xs text-[var(--text-secondary)]">{tile.kpiHint}</p>
+            ) : null}
+          </div>
         </div>
-        {tile.kpiHint ? (
-          <p className="text-xs text-[var(--text-secondary)]">{tile.kpiHint}</p>
-        ) : null}
+
+        <Link
+          href={tile.href}
+          className="inline-flex items-center gap-1 rounded-lg text-xs font-semibold text-[var(--brand-primary)] underline-offset-2 hover:underline"
+        >
+          Open <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+        </Link>
       </div>
-    </Card>
+    </div>
   );
 }
 
 function DashboardListTile({
   label,
+  tileKey,
   tile,
 }: {
   label: string;
+  tileKey: DashboardTileKey;
   tile: DashboardSummaryTile;
 }) {
   return (
-    <Card title={label}>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <span className="pill pill-info text-xs font-medium">{tile.summaryPill}</span>
+    <div className="surface-card p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--surface-2)]">
+            <DashboardTileIcon tileKey={tileKey} />
+          </div>
+
+          <div className="min-w-0">
+            <div className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
+              {label}
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="pill pill-info text-xs font-medium">{tile.summaryPill}</span>
+            </div>
+          </div>
+        </div>
+
         <Link
           href={tile.href}
-          className="text-xs font-medium text-[var(--accent)] underline-offset-2 hover:underline"
+          className="inline-flex items-center gap-1 rounded-lg text-xs font-semibold text-[var(--brand-primary)] underline-offset-2 hover:underline"
         >
-          Go to screen
+          Open <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
         </Link>
       </div>
+
       {tile.items.length === 0 ? (
-        <p className="text-sm text-[var(--text-secondary)]">None right now.</p>
+        <p className="mt-4 text-sm text-[var(--text-secondary)]">None right now.</p>
       ) : (
-        <ul className="flex flex-col gap-3 text-sm">
+        <ul className="mt-4 flex flex-col gap-3 text-sm">
           {tile.items.map((item) => (
             <li
               key={item.id}
@@ -121,7 +204,7 @@ function DashboardListTile({
           ))}
         </ul>
       )}
-    </Card>
+    </div>
   );
 }
 
@@ -152,10 +235,10 @@ export default async function DashboardPage() {
     <div className="flex w-full flex-col gap-8">
       <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-semibold tracking-tight text-[var(--text-primary)]">
+          <h1 className="text-3xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-4xl">
             Dashboard
           </h1>
-          <p className="text-sm text-[var(--text-secondary)]">
+          <p className="text-sm leading-relaxed text-[var(--text-secondary)] sm:text-base">
             KPI counts and urgent queues from modules your role can access.{currencyNote}
           </p>
         </div>
@@ -175,14 +258,14 @@ export default async function DashboardPage() {
         <>
           {kpiKeys.length > 0 ? (
             <section className="flex flex-col gap-3">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-secondary)]">
                 Counts and totals
               </h2>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 {TILE_LABELS.filter((t) => t.section === "kpi").map(({ key, title }) => {
                   const tile = tiles[key];
                   if (!tile) return null;
-                  return <DashboardKpiTile key={key} label={title} tile={tile} />;
+                  return <DashboardKpiTile key={key} label={title} tileKey={key} tile={tile} />;
                 })}
               </div>
             </section>
@@ -190,14 +273,14 @@ export default async function DashboardPage() {
 
           {listKeys.length > 0 ? (
             <section className="flex flex-col gap-3">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-secondary)]">
                 Urgent and queues
               </h2>
               <div className="grid gap-6 md:grid-cols-2">
                 {TILE_LABELS.filter((t) => t.section === "list").map(({ key, title }) => {
                   const tile = tiles[key];
                   if (!tile) return null;
-                  return <DashboardListTile key={key} label={title} tile={tile} />;
+                  return <DashboardListTile key={key} label={title} tileKey={key} tile={tile} />;
                 })}
               </div>
             </section>

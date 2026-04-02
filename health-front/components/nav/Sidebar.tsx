@@ -4,7 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
+  Activity,
   ArrowLeftRight,
+  BarChart3,
   Banknote,
   CalendarCheck2,
   Building2,
@@ -14,7 +16,6 @@ import {
   KeyRound,
   Layers,
   LayoutDashboard,
-  Navigation,
   PanelLeftClose,
   PanelLeftOpen,
   Pill,
@@ -154,6 +155,50 @@ const navItems: NavItem[] = [
         label: "Stock Movements",
         icon: <ArrowLeftRight className="h-4 w-4" aria-hidden />,
         requiresAnyPermissions: ["inventory:list", "inventory:read"],
+      },
+    ],
+  },
+  {
+    href: "/dashboard/reports",
+    label: "Reports",
+    icon: <BarChart3 className="h-4 w-4" aria-hidden />,
+    requiresAnyPermissions: [
+      "patients:read",
+      "bookings:read",
+      "invoices:read",
+      "dispatch:read",
+      "opd:read",
+    ],
+    children: [
+      {
+        href: "/dashboard/reports/overview",
+        label: "Overview",
+        icon: <LayoutDashboard className="h-4 w-4" aria-hidden />,
+        requiresAnyPermissions: ["patients:read", "bookings:read", "invoices:read"],
+      },
+      {
+        href: "/dashboard/reports/financial",
+        label: "Financial",
+        icon: <Wallet className="h-4 w-4" aria-hidden />,
+        requiresAnyPermissions: ["invoices:read"],
+      },
+      {
+        href: "/dashboard/reports/operations",
+        label: "Operations",
+        icon: <Truck className="h-4 w-4" aria-hidden />,
+        requiresAnyPermissions: ["bookings:read", "dispatch:read", "opd:read"],
+      },
+      {
+        href: "/dashboard/reports/clinical",
+        label: "Clinical",
+        icon: <Stethoscope className="h-4 w-4" aria-hidden />,
+        requiresAnyPermissions: ["bookings:read", "patients:read"],
+      },
+      {
+        href: "/dashboard/reports/activity",
+        label: "Activity",
+        icon: <Activity className="h-4 w-4" aria-hidden />,
+        requiresAnyPermissions: ["bookings:read", "dispatch:read", "opd:read", "invoices:read"],
       },
     ],
   },

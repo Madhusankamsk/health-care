@@ -121,6 +121,13 @@ import {
 import { requireAnyPermission } from "../middleware/permissions";
 import prisma from "../prisma/client";
 import { getDashboardSummaryHandler } from "../controllers/dashboardController";
+import {
+  getReportsActivityHandler,
+  getReportsClinicalHandler,
+  getReportsFinancialHandler,
+  getReportsOperationsHandler,
+  getReportsOverviewHandler,
+} from "../controllers/reportsController";
 
 const router = Router();
 
@@ -129,6 +136,11 @@ router.use(requireAuth);
 
 // Dashboard (tile visibility is enforced in buildDashboardSummary from role permissions)
 router.get("/dashboard/summary", getDashboardSummaryHandler);
+router.get("/reports/overview", requireAnyPermission(["patients:read", "bookings:read", "invoices:read"]), getReportsOverviewHandler);
+router.get("/reports/financial", requireAnyPermission(["invoices:read"]), getReportsFinancialHandler);
+router.get("/reports/operations", requireAnyPermission(["bookings:read", "dispatch:read", "opd:read"]), getReportsOperationsHandler);
+router.get("/reports/clinical", requireAnyPermission(["bookings:read", "patients:read"]), getReportsClinicalHandler);
+router.get("/reports/activity", requireAnyPermission(["bookings:read", "dispatch:read", "opd:read", "invoices:read"]), getReportsActivityHandler);
 
 // Current user + permissions (for frontend privilege checks)
 router.get("/me", async (req, res) => {
