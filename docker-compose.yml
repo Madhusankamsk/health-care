@@ -25,6 +25,15 @@ services:
     environment:
       DATABASE_URL: postgresql://health:health@db:5432/health
       AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-dev-change-me-use-long-random-string}
+      CLOUDINARY_CLOUD_NAME: dpnjpska6
+      CLOUDINARY_API_KEY: 587241693994949
+      CLOUDINARY_API_SECRET: mEZlunU--X7_DLcFmGgoMIYaOco
+      EMAIL_ENABLED: true
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_USER: madhusankaugc97@gmail.com
+      SMTP_PASS: jzogfymswhoqppaj
+      EMAIL_FROM: "Health Scan <noreply@healthscan.com>"
       PORT: "4000"
       NODE_ENV: production
     depends_on:
