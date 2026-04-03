@@ -1,6 +1,7 @@
 "use client";
 
 import type { UpcomingBookingRow } from "@/components/dispatch/types";
+import type { IssuedMedicineSampleRow } from "@/components/clients/patient-bookings/types";
 
 type DispatchRecordRow = UpcomingBookingRow["dispatchRecords"][number];
 
@@ -26,4 +27,21 @@ export function preferredDispatchForInventory(b: UpcomingBookingRow): DispatchRe
   return (
     arrivedDispatchForBooking(b) ?? inTransitDispatchForBooking(b) ?? b.dispatchRecords[0] ?? null
   );
+}
+
+/** Maps persisted visit dispensed medicines to the same row shape as the medicines tab / visit report. */
+export function issuedMedicineRowsFromVisit(b: UpcomingBookingRow): IssuedMedicineSampleRow[] {
+  const meds = b.visitRecord?.medicines;
+  if (!meds?.length) return [];
+  const collectedAt = b.visitRecord?.completedAt ?? b.scheduledDate ?? "";
+  return meds.map((m) => {
+    const batchNo = m.batch.batchNo?.trim() || "—";
+    return {
+      id: m.id,
+      sampleType: m.medicine.name?.trim() || "Medicine",
+      collectedAt,
+      labName: `Issued qty ${m.quantity} from batch ${batchNo}`,
+      statusLabel: "Issued",
+    };
+  });
 }

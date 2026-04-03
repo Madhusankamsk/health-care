@@ -11,6 +11,7 @@ import { PatientBookingCard } from "@/components/clients/patient-bookings/Patien
 import type { DiagnosticTabId, LabSampleTypeLookup, PendingConfirm } from "@/components/clients/patient-bookings/types";
 import { useInventoryIssue } from "@/components/clients/patient-bookings/useInventoryIssue";
 import { usePatientBookingActions } from "@/components/clients/patient-bookings/usePatientBookingActions";
+import { issuedMedicineRowsFromVisit } from "@/components/clients/patient-bookings/utils";
 
 export type { LabSampleTypeLookup } from "@/components/clients/patient-bookings/types";
 
@@ -61,7 +62,7 @@ export function PatientBookingsHistory({
       {bookings.map((b) => {
         const activeDiagnosticTab = diagnosticTabByBookingId[b.id] ?? "remark";
         const sampleForm = bookingActions.sampleFormForBooking(b);
-        const issuedMedicineSamples = inventory.issuedMedicineSamplesByBookingId[b.id] ?? [];
+        const issuedMedicineSamples = issuedMedicineRowsFromVisit(b);
         const options = inventory.teamLeaderBatchesForBooking(b);
         const selectedBatchId = inventory.selectedBatchByBookingId[b.id] ?? "";
         const qtyText = inventory.issueQtyByBookingId[b.id] ?? "1";

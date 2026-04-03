@@ -87,6 +87,15 @@ const bookingWithDispatchInclude = {
           statusLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
         },
       },
+      medicines: {
+        orderBy: { id: "desc" as const },
+        select: {
+          id: true,
+          quantity: true,
+          medicine: { select: { name: true } },
+          batch: { select: { batchNo: true } },
+        },
+      },
     },
   },
   dispatchRecords: {

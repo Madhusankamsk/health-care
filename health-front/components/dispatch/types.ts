@@ -38,6 +38,13 @@ export type UpcomingBookingRow = {
       resultReportUrl: string | null;
       statusLookup: { id: string; lookupKey: string; lookupValue: string } | null;
     }>;
+    /** Dispensed to patient during visit (from `DispensedMedicine`). */
+    medicines?: Array<{
+      id: string;
+      quantity: number;
+      medicine: { name: string };
+      batch: { batchNo: string };
+    }>;
   } | null;
   dispatchRecords: Array<{
     id: string;

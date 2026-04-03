@@ -1,22 +1,21 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import type { UpcomingBookingRow } from "@/components/dispatch/types";
-import type { InventoryBatchRow, IssuedMedicineSampleRow } from "@/components/clients/patient-bookings/types";
+import type { InventoryBatchRow } from "@/components/clients/patient-bookings/types";
 import { preferredDispatchForInventory } from "@/components/clients/patient-bookings/utils";
 import { issueMedicineToPatientApi, listInventoryBatchesApi } from "@/lib/patientBookingsApi";
 import { toast } from "@/lib/toast";
 
 export function useInventoryIssue() {
+  const router = useRouter();
   const [inventoryBatches, setInventoryBatches] = useState<InventoryBatchRow[] | null>(null);
   const [inventoryError, setInventoryError] = useState<string | null>(null);
   const [selectedBatchByBookingId, setSelectedBatchByBookingId] = useState<Record<string, string>>({});
   const [issueQtyByBookingId, setIssueQtyByBookingId] = useState<Record<string, string>>({});
   const [issuingBookingId, setIssuingBookingId] = useState<string | null>(null);
-  const [issuedMedicineSamplesByBookingId, setIssuedMedicineSamplesByBookingId] = useState<
-    Record<string, IssuedMedicineSampleRow[]>
-  >({});
 
   async function ensureInventoryLoaded() {
     if (inventoryBatches !== null || inventoryError) return;
@@ -62,7 +61,7 @@ export function useInventoryIssue() {
 
     setIssuingBookingId(b.id);
     try {
-      const data = await issueMedicineToPatientApi({
+      await issueMedicineToPatientApi({
         batchId,
         quantity,
         patientId: b.patient.id,
@@ -70,25 +69,11 @@ export function useInventoryIssue() {
       });
 
       toast.success("Medicine issued to patient.");
-      const medicineName = data.medicine?.name?.trim() || "Medicine";
-      const batchNo = data.batch?.batchNo?.trim() || "—";
-      const statusLabel = data.statusLookup?.lookupValue ?? data.statusLookup?.lookupKey ?? "Issued";
-      const qtyLabel = Number.isInteger(data.quantity) ? String(data.quantity) : String(quantity);
-      const issuedRow: IssuedMedicineSampleRow = {
-        id: data.id || `issued-${crypto.randomUUID()}`,
-        sampleType: medicineName,
-        collectedAt: data.createdAt || new Date().toISOString(),
-        labName: `Issued qty ${qtyLabel} from batch ${batchNo}`,
-        statusLabel,
-      };
-      setIssuedMedicineSamplesByBookingId((prev) => ({
-        ...prev,
-        [b.id]: [issuedRow, ...(prev[b.id] ?? [])],
-      }));
       setIssueQtyByBookingId((prev) => ({ ...prev, [b.id]: "1" }));
       setSelectedBatchByBookingId((prev) => ({ ...prev, [b.id]: "" }));
       setInventoryBatches(null);
       setInventoryError(null);
+      router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not issue medicine");
     } finally {
@@ -102,7 +87,6 @@ export function useInventoryIssue() {
     selectedBatchByBookingId,
     issueQtyByBookingId,
     issuingBookingId,
-    issuedMedicineSamplesByBookingId,
     ensureInventoryLoaded,
     teamLeaderBatchesForBooking,
     issueMedicineToPatient,
