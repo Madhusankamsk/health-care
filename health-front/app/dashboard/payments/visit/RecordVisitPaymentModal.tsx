@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { ModalShell } from "@/components/ui/ModalShell";
 import { uploadFileApi } from "@/lib/patientBookingsApi";
 import { toast } from "@/lib/toast";
+import { randomUuid } from "@/lib/utils";
 
 import type { OutstandingVisitInvoiceRow } from "./visitInvoiceTypes";
 
@@ -72,7 +73,7 @@ export function RecordVisitPaymentModal({
     try {
       let paySlipUrl: string | undefined;
       if (paySlipFile) {
-        const key = `payment-slips/visit-invoices/${invoice.id}/${crypto.randomUUID()}-${safeFileKeySegment(paySlipFile.name)}`;
+        const key = `payment-slips/visit-invoices/${invoice.id}/${randomUuid()}-${safeFileKeySegment(paySlipFile.name)}`;
         paySlipUrl = await uploadFileApi(paySlipFile, key);
       }
       const res = await fetch(`/api/visit-invoices/${encodeURIComponent(invoice.id)}/payments`, {

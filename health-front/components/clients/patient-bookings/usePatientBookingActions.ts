@@ -14,6 +14,7 @@ import {
   uploadFileApi,
 } from "@/lib/patientBookingsApi";
 import { toast } from "@/lib/toast";
+import { randomUuid } from "@/lib/utils";
 
 export function usePatientBookingActions(onAfterSuccess: () => void) {
   const [busyDispatchId, setBusyDispatchId] = useState<string | null>(null);
@@ -97,7 +98,7 @@ export function usePatientBookingActions(onAfterSuccess: () => void) {
     setUploadingReportBookingId(b.id);
     try {
       for (const file of Array.from(files)) {
-        const key = `diagnostic-reports/${b.id}/${crypto.randomUUID()}-${safeFileKeySegment(file.name)}`;
+        const key = `diagnostic-reports/${b.id}/${randomUuid()}-${safeFileKeySegment(file.name)}`;
         const url = await uploadFileApi(file, key);
         await createDiagnosticReportApi(b.id, { reportName: file.name, fileUrl: url });
       }
