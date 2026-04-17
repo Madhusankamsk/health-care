@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { CompanyBrandingSync } from "@/components/layout/CompanyBrandingSync";
+import { NavigationScrollToTop } from "@/components/layout/NavigationScrollToTop";
 import { AppToaster } from "@/components/ui/AppToaster";
 
 const appSans = Plus_Jakarta_Sans({
@@ -56,6 +57,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <CompanyBrandingSync />
+        <NavigationScrollToTop />
         {children}
         <AppToaster />
       </body>
