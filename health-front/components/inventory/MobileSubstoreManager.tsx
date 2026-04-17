@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { Fragment, useCallback, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { CrudToolbar } from "@/components/ui/CrudToolbar";
@@ -8,14 +9,44 @@ import { Input } from "@/components/ui/Input";
 import { SelectBase } from "@/components/ui/select-base";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TablePaginationBar } from "@/components/ui/TablePaginationBar";
+import { cn } from "@/lib/utils";
 import { pageQueryString, type PaginatedResult } from "@/lib/pagination";
 import { toast } from "@/lib/toast";
+
+type SubstoreBatchLine = {
+  id: string;
+  batchNo: string;
+  quantity: number;
+  buyingPrice: number | string;
+  medicine: { name: string };
+};
 
 type SubstoreRow = {
   user: { id: string; fullName: string; email: string };
   totalQuantity: number;
-  batches: Array<{ id: string; quantity: number; medicine: { name: string } }>;
+  batches: SubstoreBatchLine[];
 };
+
+function num(v: unknown): number {
+  const n = typeof v === "string" ? Number.parseFloat(v) : Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function lineValue(b: SubstoreBatchLine): number {
+  return num(b.buyingPrice) * b.quantity;
+}
+
+function substoreTotalValue(batches: SubstoreBatchLine[]): number {
+  return batches.reduce((sum, b) => sum + lineValue(b), 0);
+}
+
+function formatMoney(amount: number) {
+  return new Intl.NumberFormat("en-LK", {
+    style: "currency",
+    currency: "LKR",
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
 
 type BatchOption = { id: string; batchNo: string; medicine: { name: string } };
 type UserOption = { id: string; fullName: string };
@@ -44,6 +75,16 @@ export function MobileSubstoreManager({
     batchId: batches[0]?.id ?? "",
     quantity: "1",
   });
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const toggleExpand = useCallback((userId: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId);
+      else next.add(userId);
+      return next;
+    });
+  }, []);
 
   const loadPage = useCallback(
     async (nextPage: number) => {
@@ -86,7 +127,10 @@ export function MobileSubstoreManager({
 
   return (
     <div className="flex flex-col gap-4">
-      <CrudToolbar title="Mobile Substores" description="Assign stock to mobile users and track totals." />
+      <CrudToolbar
+        title="Mobile Substores"
+        description="Assign stock to mobile users. Expand a row to see items, quantities, and value at cost."
+      />
       <form
         className="grid gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4 sm:grid-cols-4"
         onSubmit={async (e) => {
@@ -129,21 +173,91 @@ export function MobileSubstoreManager({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10" />
               <TableHead>User</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Total Qty</TableHead>
-              <TableHead>Batch Lines</TableHead>
+              <TableHead className="text-right">Substore value (at cost)</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((row) => (
-              <TableRow key={row.user.id}>
-                <TableCell className="font-medium">{row.user.fullName}</TableCell>
-                <TableCell>{row.user.email}</TableCell>
-                <TableCell>{row.totalQuantity}</TableCell>
-                <TableCell>{row.batches.length}</TableCell>
-              </TableRow>
-            ))}
+            {rows.map((row) => {
+              const isOpen = expanded.has(row.user.id);
+              const totalVal = substoreTotalValue(row.batches);
+              return (
+                <Fragment key={row.user.id}>
+                  <TableRow className={cn(isOpen && "bg-[var(--surface-2)]")}>
+                    <TableCell className="align-middle">
+                      <button
+                        type="button"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--text-secondary)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]"
+                        aria-expanded={isOpen}
+                        aria-label={isOpen ? "Collapse items" : "Expand items"}
+                        onClick={() => toggleExpand(row.user.id)}
+                      >
+                        {isOpen ? (
+                          <ChevronDown className="h-4 w-4 shrink-0" aria-hidden />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+                        )}
+                      </button>
+                    </TableCell>
+                    <TableCell className="font-medium">{row.user.fullName}</TableCell>
+                    <TableCell>{row.user.email}</TableCell>
+                    <TableCell className="text-right tabular-nums font-medium">
+                      {formatMoney(totalVal)}
+                    </TableCell>
+                  </TableRow>
+                  {isOpen ? (
+                    <TableRow className="bg-[var(--surface-2)] hover:bg-[var(--surface-2)]">
+                      <TableCell colSpan={4} className="p-0">
+                        <div className="border-t border-[var(--border)] px-4 py-3">
+                          {row.batches.length === 0 ? (
+                            <p className="text-sm text-[var(--text-secondary)]">No batch lines.</p>
+                          ) : (
+                            <div className="overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+                              <table className="w-full min-w-[520px] text-left text-sm">
+                                <thead className="text-xs uppercase text-[var(--text-muted)]">
+                                  <tr>
+                                    <th className="px-3 py-2">Item</th>
+                                    <th className="px-3 py-2">Batch</th>
+                                    <th className="px-3 py-2 text-right">Qty</th>
+                                    <th className="px-3 py-2 text-right">Unit cost</th>
+                                    <th className="px-3 py-2 text-right">Line value</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {row.batches.map((b) => {
+                                    const lv = lineValue(b);
+                                    return (
+                                      <tr
+                                        key={b.id}
+                                        className="border-t border-[var(--border)]/80 text-[var(--text-primary)]"
+                                      >
+                                        <td className="px-3 py-2">{b.medicine?.name ?? "—"}</td>
+                                        <td className="px-3 py-2 font-mono text-xs text-[var(--text-secondary)]">
+                                          {b.batchNo ?? "—"}
+                                        </td>
+                                        <td className="px-3 py-2 text-right tabular-nums">{b.quantity}</td>
+                                        <td className="px-3 py-2 text-right tabular-nums">
+                                          {formatMoney(num(b.buyingPrice))}
+                                        </td>
+                                        <td className="px-3 py-2 text-right tabular-nums font-medium">
+                                          {formatMoney(lv)}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
+                </Fragment>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

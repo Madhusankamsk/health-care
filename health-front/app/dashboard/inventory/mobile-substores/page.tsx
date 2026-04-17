@@ -10,7 +10,13 @@ import { hasAnyPermission } from "@/lib/rbac";
 type SubstoreRow = {
   user: { id: string; fullName: string; email: string };
   totalQuantity: number;
-  batches: Array<{ id: string; quantity: number; medicine: { name: string } }>;
+  batches: Array<{
+    id: string;
+    batchNo: string;
+    quantity: number;
+    buyingPrice: number | string;
+    medicine: { name: string };
+  }>;
 };
 type UserOption = { id: string; fullName: string; isActive: boolean };
 type BatchOption = { id: string; batchNo: string; medicine: { name: string } };
