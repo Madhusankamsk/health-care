@@ -1,287 +1,396 @@
 // =========================================================
-// MOBILE HEALTHCARE - ENTERPRISE MASTER SCHEMA (v4.0)
-// FEATURES: FINANCIALS, OUTSTANDING BALANCES, DYNAMIC DISPATCH, R2
+// HEALTH BACKEND — DATABASE SCHEMA (from prisma/schema.prisma)
+// PostgreSQL via Prisma. Table/column names follow Prisma defaults.
 // =========================================================
 
-// 1. SYSTEM & COMPANY CONFIGURATION
-Table company_settings {
+// 0. COMPANY CONFIGURATION
+Table CompanySettings {
   id uuid [pk]
-  company_name text [not null]
-  company_email text
-  company_phone text
-  company_address text
-  logo_url text               
-  primary_color varchar       
-  secondary_color varchar     
-  currency_code varchar       [default: "LKR"]
-  travel_cost_per_km decimal [default: 0]
-  tax_percentage decimal      [default: 0]
-  invoice_prefix varchar      [default: "INV-"]
-  is_setup_completed boolean [default: false]
-  updated_at timestamptz [default: `now()`]
+  companyName text [not null]
+  companyEmail text
+  companyPhone text
+  companyAddress text
+  logoUrl text
+  primaryColor text
+  secondaryColor text
+  currencyCode text
+  travelCostPerKm decimal [default: 0]
+  taxPercentage decimal [default: 0]
+  invoicePrefix text [default: "INV-"]
+  isSetupCompleted boolean [default: false]
+  updatedAt timestamptz [default: `now()`]
 }
 
-// 2. DYNAMIC LOOKUP SYSTEM
-Table lookup_categories {
+// 0. DYNAMIC LOOKUPS
+Table LookupCategory {
   id uuid [pk]
-  category_name varchar [unique]
+  categoryName text [unique, not null]
 }
 
-Table lookups {
+Table Lookup {
   id uuid [pk]
-  category_id uuid [ref: > lookup_categories.id]
-  lookup_key varchar 
-  lookup_value text 
-  is_active boolean [default: true]
+  categoryId uuid [ref: > LookupCategory.id, not null]
+  lookupKey text [not null]
+  lookupValue text [not null]
+  isActive boolean [default: true]
+  Indexes {
+    (categoryId, lookupKey) [unique]
+  }
 }
 
-// 3. AUTH & ROLE MANAGEMENT
-Table roles {
+// 1. ACCESS CONTROL
+Table Role {
   id uuid [pk]
-  role_name varchar [unique]
+  roleName text [unique, not null]
   description text
 }
 
-Table permissions {
+Table Permission {
   id uuid [pk]
-  permission_key varchar [unique]
+  permissionKey text [unique, not null]
 }
 
-Table role_permissions {
-  role_id uuid [ref: > roles.id]
-  permission_id uuid [ref: > permissions.id]
-  indexes { (role_id, permission_id) [pk] }
+Table RolePermission {
+  roleId uuid [ref: > Role.id, not null]
+  permissionId uuid [ref: > Permission.id, not null]
+  Indexes {
+    (roleId, permissionId) [pk]
+  }
 }
 
-// 4. USER MANAGEMENT (Staff)
-Table users {
+// 2. USERS (manual auth)
+Table User {
   id uuid [pk]
-  full_name text [not null]
+  fullName text [not null]
   email text [unique, not null]
   password text [not null]
-  role_id uuid [ref: > roles.id]
-  phone_number text
-  base_consultation_fee decimal [default: 0]
-  is_active boolean [default: true]
-  created_at timestamptz [default: `now()`]
+  phoneNumber text
+  baseConsultationFee decimal [default: 0]
+  roleId uuid [ref: > Role.id, not null]
+  isActive boolean [default: true]
+  createdAt timestamptz [default: `now()`]
 }
 
-// 5. SUBSCRIPTION MODULE (v4.0 Updated for Financials)
-Table subscription_plans {
+Table PasswordResetToken {
   id uuid [pk]
-  plan_name varchar [not null]
-  plan_type_id uuid [ref: > lookups.id] 
-  price decimal [not null]
-  max_members int [default: 1]
-  duration_days int [not null]
-  is_active boolean [default: true]
+  userId uuid [ref: > User.id, not null]
+  tokenHash text [unique, not null]
+  expiresAt timestamptz [not null]
+  createdAt timestamptz [default: `now()`]
+  Indexes {
+    userId
+  }
 }
 
-Table subscription_accounts {
+// 3. FLEET & MEDICAL TEAMS
+Table Vehicle {
   id uuid [pk]
-  account_name text [not null]
-  registration_no text
-  plan_id uuid [ref: > subscription_plans.id]
-  billing_address text
-  contact_email text
-  contact_phone text
-  whatsapp_no text
-  
-  // FINANCIALS
-  outstanding_balance decimal [default: 0] // Total unpaid amount for the group
-  credit_limit decimal [default: 0]
-  
-  start_date date
-  end_date date
-  status_id uuid [ref: > lookups.id]
-}
-
-Table subscription_members {
-  id uuid [pk]
-  subscription_account_id uuid [ref: > subscription_accounts.id]
-  patient_id uuid [ref: > patients.id]
-  joined_at timestamptz [default: `now()`]
-}
-
-// 6. FLEET & MEDICAL TEAMS (Templates)
-Table vehicles {
-  id uuid [pk]
-  vehicle_no text [unique, not null]
+  vehicleNo text [unique, not null]
   model text
   status text [default: "Available"]
-  status_id uuid [ref: > lookups.id]
-  current_driver_id uuid [ref: > users.id]
+  statusId uuid [ref: > Lookup.id]
+  currentDriverId uuid [ref: > User.id]
 }
 
-Table medical_teams {
+Table MedicalTeam {
   id uuid [pk]
-  team_name text
-  vehicle_id uuid [ref: > vehicles.id]
+  teamName text
+  vehicleId uuid [ref: > Vehicle.id, not null]
 }
 
-Table team_members {
+Table TeamMember {
   id uuid [pk]
-  team_id uuid [ref: > medical_teams.id]
-  user_id uuid [ref: > users.id]
-  is_lead boolean [default: false]
+  teamId uuid [ref: > MedicalTeam.id, not null]
+  userId uuid [ref: > User.id, not null]
+  isLead boolean [default: false]
+  Indexes {
+    (teamId, userId) [unique]
+  }
 }
 
-// 7. PATIENT MODULE
-Table patients {
+// 4. PATIENTS
+Table Patient {
   id uuid [pk]
-  nic_or_passport text [unique]
-  full_name text [not null]
-  short_name text
+  nicOrPassport text [unique]
+  fullName text [not null]
+  shortName text
   dob timestamptz
-  contact_no text
-  whatsapp_no text
-  gender_id uuid [ref: > lookups.id]
+  contactNo text
+  whatsappNo text
+  email text
+  gender text
+  genderId uuid [ref: > Lookup.id]
   address text
-  
-  // FINANCIALS
-  outstanding_balance decimal [default: 0] // For individual walk-in patients
-  
-  has_insurance boolean [default: false]
-  has_guardian boolean [default: false]
-  guardian_name text
-  guardian_email text
-  guardian_whatsapp_no text
-  guardian_contact_no text
-  guardian_relationship text
-  billing_recipient_id uuid [ref: > lookups.id]
+  hasInsurance boolean [default: false]
+  hasGuardian boolean [default: false]
+  guardianName text
+  guardianEmail text
+  guardianWhatsappNo text
+  guardianContactNo text
+  guardianRelationship text
+  billingRecipientId uuid [ref: > Lookup.id]
+  outstandingBalance decimal [default: 0]
 }
 
-// 8. BOOKINGS (Selective Doctor & Acceptance)
-Table bookings {
+// 5. BOOKINGS & DISPATCH
+Table Booking {
   id uuid [pk]
-  patient_id uuid [ref: > patients.id]
-  requested_doctor_id uuid [ref: > users.id, null]
-  doctor_status_id uuid [ref: > lookups.id] 
-  scheduled_date timestamptz
-  status_id uuid [ref: > lookups.id]
-  booking_remark text 
+  patientId uuid [ref: > Patient.id, not null]
+  scheduledDate timestamptz
+  status text [default: "Pending"]
+  statusId uuid [ref: > Lookup.id]
+  bookingRemark text
+  requestedDoctorId uuid [ref: > User.id]
+  doctorStatusId uuid [ref: > Lookup.id]
+  Indexes {
+    requestedDoctorId
+    doctorStatusId
+  }
 }
 
-// 9. DYNAMIC DISPATCH (Real-time Team Assignment)
-Table dispatch_records {
+Table DispatchRecord {
   id uuid [pk]
-  booking_id uuid [ref: > bookings.id]
-  vehicle_id uuid [ref: > vehicles.id]
-  dispatched_at timestamptz [default: `now()`]
-  status_id uuid [ref: > lookups.id] 
+  bookingId uuid [ref: > Booking.id, not null]
+  vehicleId uuid [ref: > Vehicle.id, not null]
+  dispatchedAt timestamptz [default: `now()`]
+  statusId uuid [ref: > Lookup.id]
 }
 
-Table dispatch_assignments {
+Table DispatchAssignment {
   id uuid [pk]
-  dispatch_id uuid [ref: > dispatch_records.id]
-  user_id uuid [ref: > users.id] 
-  is_team_leader boolean [default: false]
-  assigned_at timestamptz [default: `now()`]
+  dispatchId uuid [ref: > DispatchRecord.id, not null]
+  userId uuid [ref: > User.id, not null]
+  isTeamLeader boolean [default: false]
+  assignedAt timestamptz [default: `now()`]
+  Indexes {
+    dispatchId
+    userId
+  }
 }
 
-// 10. OPD & CLINICAL VISITS
-Table opd_queue {
+// 6. VISITS (one VisitRecord per Booking)
+Table VisitRecord {
   id uuid [pk]
-  patient_id uuid [ref: > patients.id]
-  token_no serial
-  status_id uuid [ref: > lookups.id]
-  visit_date timestamptz [default: `now()`]
+  bookingId uuid [ref: - Booking.id, unique, not null]
+  patientId uuid [ref: > Patient.id, not null]
+  remark text
+  completedAt timestamptz
 }
 
-Table visit_records {
+// 7. SUBSCRIPTION
+Table SubscriptionPlan {
   id uuid [pk]
-  booking_id uuid [ref: - bookings.id]
-  patient_id uuid [ref: > patients.id]
-  diagnosis text
-  clinical_notes text
-  vitals jsonb 
-  completed_at timestamptz
+  planName text [not null]
+  planTypeId uuid [ref: > Lookup.id, not null]
+  price decimal [not null]
+  maxMembers int [default: 1]
+  durationDays int [not null]
+  isActive boolean [default: true]
 }
 
-// 11. DIAGNOSTICS & LABS
-Table diagnostic_reports {
+Table SubscriptionAccount {
   id uuid [pk]
-  patient_id uuid [ref: > patients.id]
-  visit_id uuid [ref: > visit_records.id, null]
-  report_name text [not null]
-  report_type_id uuid [ref: > lookups.id]
-  file_url text [not null] 
-  uploaded_by uuid [ref: > users.id]
-  uploaded_at timestamptz [default: `now()`]
+  accountName text
+  registrationNo text
+  billingAddress text
+  contactEmail text
+  contactPhone text
+  whatsappNo text
+  primaryContactId uuid [ref: > Patient.id]
+  planId uuid [ref: > SubscriptionPlan.id, not null]
+  startDate timestamptz
+  endDate timestamptz
+  statusId uuid [ref: > Lookup.id]
+  outstandingBalance decimal [default: 0]
+  creditLimit decimal [default: 0]
+  Indexes {
+    primaryContactId
+  }
 }
 
-Table lab_samples {
+Table SubscriptionMember {
   id uuid [pk]
-  patient_id uuid [ref: > patients.id]
-  visit_id uuid [ref: > visit_records.id, null]
-  sample_type text [not null]
-  collected_at timestamptz [default: `now()`]
-  collected_by uuid [ref: > users.id]
-  status_id uuid [ref: > lookups.id] 
-  result_report_url text 
+  subscriptionAccountId uuid [ref: > SubscriptionAccount.id, not null]
+  patientId uuid [ref: > Patient.id, not null]
+  joinedAt timestamptz [default: `now()`]
+  Indexes {
+    (subscriptionAccountId, patientId) [unique]
+  }
 }
 
-// 12. INVENTORY
-Table medicines {
+// 8. DIAGNOSTICS & LABS
+Table DiagnosticReport {
+  id uuid [pk]
+  patientId uuid [ref: > Patient.id, not null]
+  visitId uuid [ref: > VisitRecord.id]
+  reportName text [not null]
+  reportTypeId uuid [ref: > Lookup.id]
+  fileUrl text [not null]
+  uploadedById uuid [ref: > User.id, not null]
+  uploadedAt timestamptz [default: `now()`]
+}
+
+Table LabSample {
+  id uuid [pk]
+  patientId uuid [ref: > Patient.id, not null]
+  visitId uuid [ref: > VisitRecord.id]
+  sampleType text [not null]
+  collectedAt timestamptz [default: `now()`]
+  collectedById uuid [ref: > User.id, not null]
+  statusId uuid [ref: > Lookup.id]
+  labName text
+  resultReportUrl text
+  resultReceivedAt timestamptz
+}
+
+// 9. INVENTORY & TRANSFERS
+Table Medicine {
   id uuid [pk]
   name text [not null]
-  selling_price decimal [not null]
-  uom_id uuid [ref: > lookups.id]
+  genericName text
+  sellingPrice decimal [not null]
+  uom text
+  uomId uuid [ref: > Lookup.id]
+  minStockLevel int
 }
 
-Table inventory_batches {
+Table InventoryBatch {
   id uuid [pk]
-  medicine_id uuid [ref: > medicines.id]
-  batch_no text [not null]
-  expiry_date timestamptz [not null]
+  medicineId uuid [ref: > Medicine.id, not null]
+  batchNo text [not null]
+  expiryDate timestamptz [not null]
   quantity int [not null]
-  buying_price decimal [not null]
-  location_type_id uuid [ref: > lookups.id] 
-  location_id uuid 
+  buyingPrice decimal [not null]
+  locationType text [not null]
+  locationTypeId uuid [ref: > Lookup.id]
+  locationId uuid
 }
 
-// 13. FINANCIAL MODULE (New v4.0 Logic)
-Table invoices {
+Table StockTransfer {
   id uuid [pk]
-  booking_id uuid [ref: > bookings.id, null]
-  patient_id uuid [ref: > patients.id]
-  subscription_account_id uuid [ref: > subscription_accounts.id, null] // Linked for group billing
-  
-  total_amount decimal [not null]
-  paid_amount decimal [default: 0]
-  balance_due decimal [note: "Remaining amount for this invoice"]
-  
-  payment_status_id uuid [ref: > lookups.id] // UNPAID, PARTIAL, PAID
-  created_at timestamptz [default: `now()`]
+  medicineId uuid [ref: > Medicine.id, not null]
+  batchId uuid [ref: > InventoryBatch.id, not null]
+  fromLocationId uuid [not null]
+  toLocationId uuid [not null]
+  quantity int [not null]
+  status text [default: "Pending"]
+  statusId uuid [ref: > Lookup.id]
+  transferredById uuid [ref: > User.id, not null]
+  createdAt timestamptz [default: `now()`]
 }
 
-Table payments {
+Table DispensedMedicine {
   id uuid [pk]
-  invoice_id uuid [ref: > invoices.id]
-  amount_paid decimal [not null]
-  payment_method_id uuid [ref: > lookups.id] // CASH, CARD, ONLINE, CREDIT
-  transaction_ref text // Bank ref or receipt number
-  paid_at timestamptz [default: `now()`]
-  collected_by uuid [ref: > users.id]
+  visitId uuid [ref: > VisitRecord.id, not null]
+  medicineId uuid [ref: > Medicine.id, not null]
+  batchId uuid [ref: > InventoryBatch.id, not null]
+  quantity int [not null]
+  dispensedById uuid [ref: > User.id, not null]
+  unitPriceAtTime decimal [not null]
 }
 
-Table account_transactions {
+// 10. INVOICING & PAYMENTS
+Table Invoice {
   id uuid [pk]
-  patient_id uuid [ref: > patients.id, null]
-  subscription_account_id uuid [ref: > subscription_accounts.id, null]
-  
-  transaction_type_id uuid [ref: > lookups.id] // DEBIT (Charge), CREDIT (Payment)
+  invoiceTypeId uuid [ref: > Lookup.id, not null]
+  bookingId uuid [ref: > Booking.id]
+  patientId uuid [ref: > Patient.id]
+  subscriptionAccountId uuid [ref: > SubscriptionAccount.id]
+  totalAmount decimal [not null]
+  consultationTotal decimal [not null]
+  medicineTotal decimal [not null]
+  travelCost decimal [not null]
+  paidAmount decimal [default: 0]
+  balanceDue decimal [not null]
+  paymentStatus text [default: "Unpaid"]
+  paymentStatusId uuid [ref: > Lookup.id]
+  createdAt timestamptz [default: `now()`]
+  Indexes {
+    invoiceTypeId
+    subscriptionAccountId
+  }
+}
+
+Table MembershipInvoice {
+  invoiceId uuid [pk, ref: - Invoice.id]
+  subscriptionAccountId uuid [ref: > SubscriptionAccount.id, not null]
+  patientId uuid [ref: > Patient.id]
+  createdAt timestamptz [default: `now()`]
+  Indexes {
+    subscriptionAccountId
+    patientId
+  }
+}
+
+Table VisitInvoice {
+  invoiceId uuid [pk, ref: - Invoice.id]
+  bookingId uuid [ref: - Booking.id, unique, not null]
+  patientId uuid [ref: > Patient.id]
+  createdAt timestamptz [default: `now()`]
+  Indexes {
+    patientId
+  }
+}
+
+Table Payment {
+  id uuid [pk]
+  invoiceId uuid [ref: > Invoice.id, not null]
+  amountPaid decimal [not null]
+  paymentMethodId uuid [ref: > Lookup.id, not null]
+  paymentPurposeId uuid [ref: > Lookup.id]
+  transactionRef text
+  paySlipUrl text
+  paidAt timestamptz [default: `now()`]
+  collectedById uuid [ref: > User.id, not null]
+  Indexes {
+    invoiceId
+    paymentPurposeId
+  }
+}
+
+Table PaymentCollectorSettlement {
+  id uuid [pk]
+  collectorId uuid [ref: > User.id, not null]
+  settledDate timestamptz [not null]
+  paymentMethodKey text [not null]
+  totalAmountAtSettle decimal [not null]
+  settledAt timestamptz [default: `now()`]
+  settledById uuid [ref: > User.id]
+  Indexes {
+    (collectorId, settledDate, paymentMethodKey) [unique]
+    settledDate
+    paymentMethodKey
+  }
+}
+
+Table AccountTransaction {
+  id uuid [pk]
+  patientId uuid [ref: > Patient.id]
+  subscriptionAccountId uuid [ref: > SubscriptionAccount.id]
+  transactionTypeId uuid [ref: > Lookup.id, not null]
   amount decimal [not null]
   description text
-  created_at timestamptz [default: `now()`]
+  createdAt timestamptz [default: `now()`]
+  Indexes {
+    subscriptionAccountId
+    patientId
+  }
 }
 
-Table dispensed_medicines {
+// 11. OPD QUEUE
+Table OpdQueue {
   id uuid [pk]
-  visit_id uuid [ref: > visit_records.id]
-  medicine_id uuid [ref: > medicines.id]
-  batch_id uuid [ref: > inventory_batches.id]
-  quantity int
-  dispensed_by uuid [ref: > users.id]
-  unit_price_at_time decimal
+  patientId uuid [ref: > Patient.id, not null]
+  tokenNo serial
+  status text [default: "Waiting"]
+  statusId uuid [ref: > Lookup.id]
+  visitDate timestamptz [default: `now()`]
 }
+
+// --- Lookup usage (Lookup rows referenced by FKs above) ---
+// Vehicle.statusId, Patient.genderId, Booking.statusId / doctorStatusId,
+// DispatchRecord.statusId, Medicine.uomId, InventoryBatch.locationTypeId,
+// StockTransfer.statusId, Invoice.invoiceTypeId / paymentStatusId,
+// OpdQueue.statusId, SubscriptionPlan.planTypeId, SubscriptionAccount.statusId,
+// DiagnosticReport.reportTypeId, LabSample.statusId,
+// Payment.paymentMethodId / paymentPurposeId, AccountTransaction.transactionTypeId
