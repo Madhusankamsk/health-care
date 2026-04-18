@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { OpdSubnav } from "@/components/opd/OpdSubnav";
 import { SectionIntro } from "@/components/ui/SectionIntro";
 import { getIsAuthenticated } from "@/lib/auth";
 import { backendJson, type BackendMeResponse } from "@/lib/backend";
@@ -17,9 +18,13 @@ export default async function OpdLayout({ children }: Readonly<{ children: React
   const canView = hasAnyPermission(me.permissions, [...OPD_VIEW_PERMS]);
   if (!canView) redirect("/dashboard");
 
+  const canManageDoctors = hasAnyPermission(me.permissions, ["opd:manage_doctors"]);
+  const canPick = hasAnyPermission(me.permissions, ["opd:pick"]);
+
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
       <SectionIntro title="OPD" tag="Outpatient" tagTone="info" />
+      <OpdSubnav canManageDoctors={canManageDoctors} canPick={canPick} />
       {children}
     </div>
   );

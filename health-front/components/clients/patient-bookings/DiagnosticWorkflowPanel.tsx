@@ -18,6 +18,7 @@ type Props = {
   canUpdateDispatch: boolean;
   canSaveVisitDraft: boolean;
   busyDispatchId: string | null;
+  opdCompleting?: boolean;
   activeDiagnosticTab: DiagnosticTabId;
   setActiveDiagnosticTab: (tab: DiagnosticTabId) => void;
   diagnosisRemark: string;
@@ -56,6 +57,7 @@ export function DiagnosticWorkflowPanel(props: Props) {
     canUpdateDispatch,
     canSaveVisitDraft,
     busyDispatchId,
+    opdCompleting = false,
     activeDiagnosticTab,
     setActiveDiagnosticTab,
     diagnosisRemark,
@@ -93,7 +95,9 @@ export function DiagnosticWorkflowPanel(props: Props) {
   const visitDone = Boolean(b.visitRecord?.completedAt);
   const completedDispatch = b.dispatchRecords.some((dr) => dr.statusLookup?.lookupKey === "COMPLETED");
   const isCompleted = visitDone || completedDispatch;
-  const inWorkflowPhase = Boolean(arrived) && !visitDone;
+  const isOpd = Boolean(b.isOpd);
+  const opdInProgress = isOpd && Boolean(b.visitRecord) && !visitDone;
+  const inWorkflowPhase = !visitDone && (Boolean(arrived) || opdInProgress);
   if (!inWorkflowPhase && !isCompleted) return null;
   if (!canUpdateDispatch && !canSaveVisitDraft && !isCompleted) return null;
 
@@ -222,12 +226,12 @@ export function DiagnosticWorkflowPanel(props: Props) {
             {savingBookingId === b.id ? "Saving…" : "Save draft"}
           </Button>
         ) : null}
-        {canUpdateDispatch ? (
+        {canUpdateDispatch || (isOpd && b.opdQueueEntry?.id) ? (
           <Button
             type="button"
             variant="primary"
             className="h-9 px-4 text-xs font-medium"
-            disabled={busyDispatchId !== null}
+            disabled={busyDispatchId !== null || opdCompleting}
             onClick={() => setBillModalOpen(true)}
           >
             Generate bill
@@ -240,7 +244,7 @@ export function DiagnosticWorkflowPanel(props: Props) {
         onClose={() => setBillModalOpen(false)}
         bookingId={b.id}
         patientDisplayName={b.patient?.fullName?.trim() || "Patient"}
-        completeDisabled={busyDispatchId !== null}
+        completeDisabled={busyDispatchId !== null || opdCompleting}
         onComplete={onConfirmComplete}
       />
     </>

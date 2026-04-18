@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { Card } from "@/components/ui/Card";
 import { CrudToolbar } from "@/components/ui/CrudToolbar";
-import { TablePaginationBar } from "@/components/ui/TablePaginationBar";
+import { TablePaginationBarFromSearch } from "@/components/ui/TablePaginationBarFromSearch";
 import { TableSearchBarUrlSync } from "@/components/ui/TableSearchBarUrlSync";
 import { CreateRoleModal } from "@/components/forms/CreateRoleModal";
 import { RolesTable } from "@/components/admin/RolesTable";
@@ -72,13 +72,12 @@ export default async function SuperAdminRolesPage({
             <div className="overflow-x-auto">
               <RolesTable roles={roles} />
             </div>
-            <TablePaginationBar
+            <TablePaginationBarFromSearch
               page={result.page}
               pageSize={result.pageSize ?? DEFAULT_PAGE_SIZE}
               total={result.total}
-              hrefForPage={(p) =>
-                `/dashboard/super-admin/roles?${pageQueryString(p, result.pageSize ?? DEFAULT_PAGE_SIZE, q)}`
-              }
+              pathname="/dashboard/super-admin/roles"
+              q={q}
             />
           </>
         )}

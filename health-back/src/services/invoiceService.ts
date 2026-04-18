@@ -4,7 +4,7 @@ import { invoiceOutstandingTextSearchWhere } from "../lib/searchWhere";
 
 export type OutstandingInvoiceRow = {
   id: string;
-  invoiceType: "MEMBERSHIP" | "VISIT";
+  invoiceType: "MEMBERSHIP" | "VISIT" | "OPD";
   createdAt: string;
   balanceDue: string;
   totalAmount: string;
@@ -41,25 +41,38 @@ function mapOutstandingInvoiceRow(
       bookingId: string | null;
       booking: { scheduledDate: Date | null } | null;
     } | null;
+    opdInvoice: {
+      patientId: string | null;
+      patient: { fullName: string } | null;
+      bookingId: string | null;
+      booking: { scheduledDate: Date | null } | null;
+    } | null;
   },
 ): OutstandingInvoiceRow {
   const member = row.membershipInvoice;
   const visit = row.visitInvoice;
-  const patient = member?.patient ?? visit?.patient ?? null;
+  const opd = row.opdInvoice;
+  const patient = member?.patient ?? visit?.patient ?? opd?.patient ?? null;
+  const key = row.invoiceTypeLookup.lookupKey;
+  const invoiceType: OutstandingInvoiceRow["invoiceType"] =
+    key === "MEMBERSHIP" ? "MEMBERSHIP" : key === "OPD" ? "OPD" : "VISIT";
+  const bookingId = visit?.bookingId ?? opd?.bookingId ?? null;
+  const bookingScheduledDate =
+    visit?.booking?.scheduledDate?.toISOString() ?? opd?.booking?.scheduledDate?.toISOString() ?? null;
   return {
     id: row.id,
-    invoiceType: row.invoiceTypeLookup.lookupKey === "MEMBERSHIP" ? "MEMBERSHIP" : "VISIT",
+    invoiceType,
     createdAt: row.createdAt.toISOString(),
     balanceDue: String(row.balanceDue),
     totalAmount: String(row.totalAmount),
     paidAmount: String(row.paidAmount),
-    patientId: member?.patientId ?? visit?.patientId ?? null,
+    patientId: member?.patientId ?? visit?.patientId ?? opd?.patientId ?? null,
     patientName: patient?.fullName ?? null,
     subscriptionAccountId: member?.subscriptionAccountId ?? null,
     accountName: member?.subscriptionAccount?.accountName ?? null,
     planName: member?.subscriptionAccount?.plan?.planName ?? null,
-    bookingId: visit?.bookingId ?? null,
-    bookingScheduledDate: visit?.booking?.scheduledDate?.toISOString() ?? null,
+    bookingId,
+    bookingScheduledDate,
   };
 }
 
@@ -101,6 +114,14 @@ export async function listOutstandingInvoices(params: {
         },
       },
       visitInvoice: {
+        select: {
+          patientId: true,
+          patient: { select: { fullName: true } },
+          bookingId: true,
+          booking: { select: { scheduledDate: true } },
+        },
+      },
+      opdInvoice: {
         select: {
           patientId: true,
           patient: { select: { fullName: true } },

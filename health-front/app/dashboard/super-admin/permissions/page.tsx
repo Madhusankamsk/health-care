@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { Card } from "@/components/ui/Card";
 import { CrudToolbar } from "@/components/ui/CrudToolbar";
-import { TablePaginationBar } from "@/components/ui/TablePaginationBar";
+import { TablePaginationBarFromSearch } from "@/components/ui/TablePaginationBarFromSearch";
 import { TableSearchBarUrlSync } from "@/components/ui/TableSearchBarUrlSync";
 import { RolePermissionMatrix } from "@/components/admin/RolePermissionMatrix";
 import { CreatePermissionModal } from "@/components/forms/CreatePermissionModal";
@@ -98,13 +98,12 @@ export default async function SuperAdminPermissionsPage({
             placeholder="Permission key…"
           />
           <RolePermissionMatrix roles={matrixRoles} permissions={permResult.items} />
-          <TablePaginationBar
+          <TablePaginationBarFromSearch
             page={permResult.page}
             pageSize={permResult.pageSize ?? DEFAULT_PAGE_SIZE}
             total={permResult.total}
-            hrefForPage={(p) =>
-              `/dashboard/super-admin/permissions?${pageQueryString(p, permResult.pageSize ?? DEFAULT_PAGE_SIZE, q)}`
-            }
+            pathname="/dashboard/super-admin/permissions"
+            q={q}
           />
         </Card>
       )}

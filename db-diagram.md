@@ -142,9 +142,11 @@ Table Booking {
   bookingRemark text
   requestedDoctorId uuid [ref: > User.id]
   doctorStatusId uuid [ref: > Lookup.id]
+  isOpd boolean [default: false]
   Indexes {
     requestedDoctorId
     doctorStatusId
+    isOpd
   }
 }
 
@@ -385,6 +387,29 @@ Table OpdQueue {
   status text [default: "Waiting"]
   statusId uuid [ref: > Lookup.id]
   visitDate timestamptz [default: `now()`]
+  bookingId uuid [ref: - Booking.id, unique]
+  pickedByUserId uuid [ref: > User.id]
+  pickedAt timestamptz
+  Indexes {
+    pickedByUserId
+  }
+}
+
+Table OpdInvoice {
+  invoiceId uuid [pk, ref: - Invoice.id]
+  opdQueueId uuid [ref: - OpdQueue.id, unique, not null]
+  bookingId uuid [ref: - Booking.id, unique, not null]
+  patientId uuid [ref: > Patient.id]
+  createdAt timestamptz [default: `now()`]
+  Indexes {
+    patientId
+  }
+}
+
+Table OpdEligibleDoctor {
+  userId uuid [pk, ref: - User.id]
+  isActive boolean [default: true]
+  createdAt timestamptz [default: `now()`]
 }
 
 // --- Lookup usage (Lookup rows referenced by FKs above) ---

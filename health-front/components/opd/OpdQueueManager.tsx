@@ -126,7 +126,7 @@ export function OpdQueueManager({
   }
 
   function goToPage(nextPage: number) {
-    router.push(`/dashboard/opd?${pageQueryString(nextPage, pageSize, searchInput)}`);
+    router.push(`/dashboard/opd/queue?${pageQueryString(nextPage, pageSize, searchInput)}`);
   }
 
   async function removeFromQueue(id: string) {

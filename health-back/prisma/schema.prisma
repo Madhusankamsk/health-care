@@ -58,6 +58,8 @@ model User {
   collectorSettlements      PaymentCollectorSettlement[] @relation("CollectorSettlementCollector")
   settlementsRecorded       PaymentCollectorSettlement[] @relation("CollectorSettlementRecordedBy")
   passwordResetTokens       PasswordResetToken[]
+  opdEligibleDoctor         OpdEligibleDoctor?
+  opdPickedQueues           OpdQueue[]           @relation("OpdQueuePickedBy")
 }
 
 model PasswordResetToken {
@@ -135,6 +137,7 @@ model Patient {
   invoices                       Invoice[]
   membershipInvoices             MembershipInvoice[]
   visitInvoices                  VisitInvoice[]
+  opdInvoices                    OpdInvoice[]
   subscriptionMemberships        SubscriptionMember[]
   primaryContactForSubscriptionAccounts SubscriptionAccount[] @relation("SubscriptionAccountPrimaryContact")
   accountTransactions            AccountTransaction[]
@@ -152,16 +155,21 @@ model Booking {
   bookingRemark       String?
   requestedDoctorId   String?
   doctorStatusId      String?
+  /** Walk-in OPD encounter; excluded from ambulance dispatch queues when false is required. */
+  isOpd               Boolean   @default(false)
   patient             Patient      @relation(fields: [patientId], references: [id])
   requestedDoctor     User?        @relation("BookingRequestedDoctor", fields: [requestedDoctorId], references: [id])
   doctorStatusLookup  Lookup?      @relation("BookingDoctorStatus", fields: [doctorStatusId], references: [id])
   visitRecord         VisitRecord?
   invoices            Invoice[]
   visitInvoices       VisitInvoice[]
+  opdInvoiceRow       OpdInvoice?
+  opdQueueEntry       OpdQueue?
   dispatchRecords     DispatchRecord[]
 
   @@index([requestedDoctorId])
   @@index([doctorStatusId])
+  @@index([isOpd])
 }
 
 model DispatchRecord {
@@ -374,6 +382,7 @@ model Invoice {
   payments              Payment[]
   membershipInvoice     MembershipInvoice?
   visitInvoice          VisitInvoice?
+  opdInvoice            OpdInvoice?
   createdAt             DateTime @default(now())
 
   @@index([invoiceTypeId])
@@ -404,6 +413,27 @@ model VisitInvoice {
   patient      Patient? @relation(fields: [patientId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([patientId])
+}
+
+model OpdInvoice {
+  invoiceId  String   @id
+  opdQueueId String   @unique
+  bookingId  String   @unique
+  patientId  String?
+  createdAt  DateTime @default(now())
+  invoice    Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  opdQueue   OpdQueue @relation(fields: [opdQueueId], references: [id], onDelete: Restrict)
+  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  patient    Patient? @relation(fields: [patientId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([patientId])
+}
+
+model OpdEligibleDoctor {
+  userId    String   @id
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Payment {
@@ -461,14 +491,22 @@ model AccountTransaction {
 }
 
 model OpdQueue {
-  id           String   @id @default(uuid())
-  patientId    String
-  tokenNo      Int      @default(autoincrement())
-  status       String   @default("Waiting")
-  statusId     String?
-  statusLookup Lookup?  @relation("OpdStatus", fields: [statusId], references: [id])
-  patient      Patient  @relation(fields: [patientId], references: [id])
-  visitDate    DateTime @default(now())
+  id              String    @id @default(uuid())
+  patientId       String
+  tokenNo         Int       @default(autoincrement())
+  status          String    @default("Waiting")
+  statusId        String?
+  statusLookup    Lookup?   @relation("OpdStatus", fields: [statusId], references: [id])
+  patient         Patient   @relation(fields: [patientId], references: [id])
+  visitDate       DateTime  @default(now())
+  bookingId       String?   @unique
+  booking         Booking?  @relation(fields: [bookingId], references: [id])
+  pickedByUserId  String?
+  pickedBy        User?     @relation("OpdQueuePickedBy", fields: [pickedByUserId], references: [id])
+  pickedAt        DateTime?
+  opdInvoice      OpdInvoice?
+
+  @@index([pickedByUserId])
 }
 
 // 0. COMPANY CONFIGURATION (White-label)

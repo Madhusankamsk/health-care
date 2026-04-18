@@ -103,8 +103,12 @@ export async function getReportsFinancial() {
 export async function getReportsOperations() {
   const [bookingsPending, bookingsAccepted, dispatchUpcoming, dispatchOngoing, opdWaiting, labPending] =
     await Promise.all([
-      prisma.booking.count({ where: { doctorStatusLookup: { lookupKey: "PENDING" } } }),
-      prisma.booking.count({ where: { doctorStatusLookup: { lookupKey: "ACCEPTED" } } }),
+      prisma.booking.count({
+        where: { isOpd: false, doctorStatusLookup: { lookupKey: "PENDING" } },
+      }),
+      prisma.booking.count({
+        where: { isOpd: false, doctorStatusLookup: { lookupKey: "ACCEPTED" } },
+      }),
       prisma.dispatchRecord.count({
         where: { statusLookup: { lookupKey: { in: ["PENDING", "ASSIGNED", "UPCOMING"] } } },
       }),

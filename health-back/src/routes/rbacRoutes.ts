@@ -67,11 +67,19 @@ import {
   patchDispatchStatusHandler,
 } from "../controllers/dispatchController";
 import {
+  completeOpdQueueHandler,
   createOpdQueueHandler,
   deleteOpdQueueHandler,
+  listOpdDoctorQueueHandler,
   listOpdQueueHandler,
   patchOpdQueueHandler,
+  pickOpdQueueHandler,
 } from "../controllers/opdController";
+import {
+  deleteOpdEligibleDoctorHandler,
+  listOpdEligibleDoctorsHandler,
+  putOpdEligibleDoctorHandler,
+} from "../controllers/opdEligibleDoctorController";
 import {
   createSubscriptionPlanHandler,
   deleteSubscriptionPlanHandler,
@@ -107,6 +115,10 @@ import {
   listOutstandingVisitInvoicesHandler,
   recordVisitInvoicePaymentHandler,
 } from "../controllers/visitInvoicePaymentController";
+import {
+  listOutstandingOpdInvoicesHandler,
+  recordOpdInvoicePaymentHandler,
+} from "../controllers/opdInvoicePaymentController";
 import {
   assignMobileSubstoreHandler,
   createInventoryBatchHandler,
@@ -370,7 +382,29 @@ router.patch(
   patchDispatchStatusHandler,
 );
 
-// OPD queue
+// OPD queue & doctor workflow
+router.get(
+  "/opd/eligible-doctors",
+  requireAnyPermission(["opd:manage_doctors"]),
+  listOpdEligibleDoctorsHandler,
+);
+router.put(
+  "/opd/eligible-doctors/:userId",
+  requireAnyPermission(["opd:manage_doctors"]),
+  putOpdEligibleDoctorHandler,
+);
+router.delete(
+  "/opd/eligible-doctors/:userId",
+  requireAnyPermission(["opd:manage_doctors"]),
+  deleteOpdEligibleDoctorHandler,
+);
+router.get(
+  "/opd/doctor-queue",
+  requireAnyPermission(["opd:pick"]),
+  listOpdDoctorQueueHandler,
+);
+router.post("/opd/:id/pick", requireAnyPermission(["opd:pick"]), pickOpdQueueHandler);
+router.post("/opd/:id/complete", requireAnyPermission(["opd:pick"]), completeOpdQueueHandler);
 router.get("/opd", requireAnyPermission(["opd:list", "opd:read"]), listOpdQueueHandler);
 router.post("/opd", requireAnyPermission(["opd:create"]), createOpdQueueHandler);
 router.patch("/opd/:id", requireAnyPermission(["opd:update"]), patchOpdQueueHandler);
@@ -430,6 +464,17 @@ router.post(
   "/visit-invoices/:id/payments",
   requireAnyPermission(["invoices:read", "patients:read", "profiles:read"]),
   recordVisitInvoicePaymentHandler,
+);
+
+router.get(
+  "/opd-invoices/outstanding",
+  requireAnyPermission(["invoices:read", "patients:read", "profiles:read"]),
+  listOutstandingOpdInvoicesHandler,
+);
+router.post(
+  "/opd-invoices/:id/payments",
+  requireAnyPermission(["invoices:read", "patients:read", "profiles:read"]),
+  recordOpdInvoicePaymentHandler,
 );
 
 // Subscription plans

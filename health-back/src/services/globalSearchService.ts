@@ -1,7 +1,9 @@
+import type { Prisma } from "@prisma/client";
+
 import prisma from "../prisma/client";
 
 import { andBookingSearch, andPatientSearch } from "../lib/searchWhere";
-import { resolveBookingListScope, type BookingListScope } from "./bookingService";
+import { resolveBookingListScope } from "./bookingService";
 
 export type GlobalSearchHit = {
   id: string;
@@ -16,16 +18,6 @@ export type DashboardGlobalSearchResult = {
 };
 
 const LIMIT = 8;
-
-function bookingBaseWhere(
-  scope: BookingListScope,
-  userId: string | undefined,
-): Parameters<typeof andBookingSearch>[0] {
-  if (scope === "own" && userId) {
-    return { requestedDoctorId: userId };
-  }
-  return undefined;
-}
 
 /**
  * MVP global search (patients + bookings). Caller must enforce `dashboard:global_search`;
@@ -47,6 +39,11 @@ export async function dashboardGlobalSearch(params: {
   const canBooking = params.permissionKeys.includes("bookings:list");
   const scope = resolveBookingListScope(params.permissionKeys);
 
+  const bookingSearchBase: Prisma.BookingWhereInput = {
+    isOpd: false,
+    ...(scope === "own" && params.userId ? { requestedDoctorId: params.userId } : {}),
+  };
+
   const [patientRows, bookingRows] = await Promise.all([
     canPatient
       ? prisma.patient.findMany({
@@ -63,7 +60,7 @@ export async function dashboardGlobalSearch(params: {
       : Promise.resolve([]),
     canBooking
       ? prisma.booking.findMany({
-          where: andBookingSearch(bookingBaseWhere(scope, params.userId), q),
+          where: andBookingSearch(bookingSearchBase, q) ?? bookingSearchBase,
           take: LIMIT,
           orderBy: { scheduledDate: "desc" },
           select: {

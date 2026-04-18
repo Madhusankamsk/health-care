@@ -15,6 +15,7 @@ import {
   HandCoins,
   KeyRound,
   Layers,
+  ListOrdered,
   LayoutDashboard,
   PanelLeftClose,
   PanelLeftOpen,
@@ -27,6 +28,8 @@ import {
   Stethoscope,
   Syringe,
   Truck,
+  UserCircle,
+  UserCog,
   Users,
   Wallet,
 } from "lucide-react";
@@ -99,6 +102,26 @@ const navItems: NavItem[] = [
     label: "OPD",
     icon: <Stethoscope className="h-4 w-4" aria-hidden />,
     requiresAnyPermissions: ["opd:list", "opd:read"],
+    children: [
+      {
+        href: "/dashboard/opd/doctor",
+        label: "Doctor",
+        icon: <UserCircle className="h-4 w-4" aria-hidden />,
+        requiresAnyPermissions: ["opd:pick"],
+      },
+      {
+        href: "/dashboard/opd/queue",
+        label: "Queue",
+        icon: <ListOrdered className="h-4 w-4" aria-hidden />,
+        requiresAnyPermissions: ["opd:list", "opd:read"],
+      },
+      {
+        href: "/dashboard/opd/manager",
+        label: "Manager",
+        icon: <UserCog className="h-4 w-4" aria-hidden />,
+        requiresAnyPermissions: ["opd:manage_doctors"],
+      },
+    ],
   },
   {
     href: "/dashboard/dispatching",
@@ -224,6 +247,12 @@ const navItems: NavItem[] = [
         href: "/dashboard/payments/visit-invoices",
         label: "Visit invoices",
         icon: <CalendarCheck2 className="h-4 w-4" aria-hidden />,
+        requiresAnyPermissions: ["invoices:read", "patients:read", "profiles:read"],
+      },
+      {
+        href: "/dashboard/payments/opd-invoices",
+        label: "OPD invoices",
+        icon: <Stethoscope className="h-4 w-4" aria-hidden />,
         requiresAnyPermissions: ["invoices:read", "patients:read", "profiles:read"],
       },
       {

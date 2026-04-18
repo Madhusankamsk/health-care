@@ -101,6 +101,7 @@ const bookingWithDispatchInclude = {
       },
     },
   },
+  opdQueueEntry: { select: { id: true } },
   dispatchRecords: {
     orderBy: { dispatchedAt: "desc" as const },
     include: {

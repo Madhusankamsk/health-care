@@ -77,10 +77,11 @@ export async function getInvoicePdfHandler(req: Request, res: Response) {
       return res.status(200).send(pdf);
     }
 
-    if (invoice.invoiceTypeLookup.lookupKey === "VISIT") {
+    if (invoice.invoiceTypeLookup.lookupKey === "VISIT" || invoice.invoiceTypeLookup.lookupKey === "OPD") {
       const pdf = await buildVisitInvoicePdfBuffer(company, invoice);
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename="visit-invoice-${invoice.id}.pdf"`);
+      const prefix = invoice.invoiceTypeLookup.lookupKey === "OPD" ? "opd-invoice" : "visit-invoice";
+      res.setHeader("Content-Disposition", `attachment; filename="${prefix}-${invoice.id}.pdf"`);
       return res.status(200).send(pdf);
     }
 
@@ -149,7 +150,10 @@ export async function postSendInvoiceEmailHandler(req: Request, res: Response) {
         invoice.membershipInvoice?.subscriptionAccount?.contactEmail?.trim() ||
         invoice.subscriptionAccount?.contactEmail?.trim() ||
         null;
-    } else if (invoice.invoiceTypeLookup.lookupKey === "VISIT" && invoice.patient) {
+    } else if (
+      (invoice.invoiceTypeLookup.lookupKey === "VISIT" || invoice.invoiceTypeLookup.lookupKey === "OPD") &&
+      invoice.patient
+    ) {
       const p = invoice.patient;
       to = p.email?.trim() || null;
       if (!to && p.hasGuardian && p.guardianEmail?.trim()) {
@@ -161,7 +165,7 @@ export async function postSendInvoiceEmailHandler(req: Request, res: Response) {
   if (!to) {
     return res.status(400).json({
       message:
-        "No invoice email on file. Add a contact email on the subscription account, or patient email / guardian email for visit invoices.",
+        "No invoice email on file. Add a contact email on the subscription account, or patient email / guardian email for visit and OPD invoices.",
     });
   }
 
@@ -183,6 +187,10 @@ export async function postSendInvoiceEmailHandler(req: Request, res: Response) {
       pdf = await buildVisitInvoicePdfBuffer(company, invoice);
       filename = `visit-invoice-${invoice.id}.pdf`;
       subject = `Visit invoice — ${invoice.patient?.fullName ?? "Patient"}`;
+    } else if (invoice.invoiceTypeLookup.lookupKey === "OPD") {
+      pdf = await buildVisitInvoicePdfBuffer(company, invoice);
+      filename = `opd-invoice-${invoice.id}.pdf`;
+      subject = `OPD invoice — ${invoice.patient?.fullName ?? "Patient"}`;
     } else {
       return res.status(400).json({ message: "PDF is not available for this invoice type" });
     }
@@ -203,7 +211,9 @@ export async function postSendInvoiceEmailHandler(req: Request, res: Response) {
       ? planName
         ? `Subscription (${planName})`
         : "Subscription"
-      : "Visit";
+      : invoice.invoiceTypeLookup.lookupKey === "OPD"
+        ? "OPD"
+        : "Visit";
 
   const totalAmount = invoice.totalAmount?.toString?.() ?? "—";
   const balanceDue = invoice.balanceDue?.toString?.() ?? "—";

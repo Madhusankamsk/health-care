@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { Card } from "@/components/ui/Card";
 import { CrudToolbar } from "@/components/ui/CrudToolbar";
-import { TablePaginationBar } from "@/components/ui/TablePaginationBar";
+import { TablePaginationBarFromSearch } from "@/components/ui/TablePaginationBarFromSearch";
 import { TableSearchBarUrlSync } from "@/components/ui/TableSearchBarUrlSync";
 import { backendJson, backendJsonPaginated, type BackendMeResponse } from "@/lib/backend";
 import { getIsAuthenticated } from "@/lib/auth";
@@ -103,13 +103,12 @@ export default async function MembershipInvoicesPage({
                 </tbody>
               </table>
             </div>
-            <TablePaginationBar
+            <TablePaginationBarFromSearch
               page={result.page}
               pageSize={result.pageSize}
               total={result.total}
-              hrefForPage={(p) =>
-                `/dashboard/payments/membership-invoices?${pageQueryString(p, result.pageSize, q)}`
-              }
+              pathname="/dashboard/payments/membership-invoices"
+              q={q}
             />
           </>
         )}

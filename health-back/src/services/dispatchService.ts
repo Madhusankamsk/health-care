@@ -56,6 +56,7 @@ function upcomingAcceptedForDispatchWhere(params: {
       ? { requestedDoctorId: params.userId }
       : {};
   return {
+    isOpd: false,
     doctorStatusLookup: { lookupKey: "ACCEPTED" as const },
     OR: [{ scheduledDate: null }, { scheduledDate: { gte: startOfToday } }],
     dispatchRecords: { none: {} },
@@ -117,6 +118,7 @@ function ongoingForDispatchWhere(params: { userId: string | undefined; scope: Bo
 
   if (params.scope === "own" && params.userId) {
     return {
+      isOpd: false,
       doctorStatusLookup: { lookupKey: "ACCEPTED" as const },
       visitRecord: null,
       OR: [
@@ -139,6 +141,7 @@ function ongoingForDispatchWhere(params: { userId: string | undefined; scope: Bo
   }
 
   return {
+    isOpd: false,
     doctorStatusLookup: { lookupKey: "ACCEPTED" as const },
     visitRecord: null,
     OR: [...dispatchActiveOr],

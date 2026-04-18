@@ -44,6 +44,9 @@ type Props = {
   onChangeQty: (qty: string) => void;
   issuingBookingId: string | null;
   onIssueMedicine: () => void;
+  /** When set, OPD walk-in completions use POST /api/opd/:queueId/complete instead of dispatch complete. */
+  onCompleteOpdConsultation?: (queueId: string) => void;
+  opdCompleting?: boolean;
 };
 
 export function PatientBookingCard(props: Props) {
@@ -84,6 +87,8 @@ export function PatientBookingCard(props: Props) {
     onChangeQty,
     issuingBookingId,
     onIssueMedicine,
+    onCompleteOpdConsultation,
+    opdCompleting = false,
   } = props;
 
   const inTransit = inTransitDispatchForBooking(b);
@@ -132,6 +137,7 @@ export function PatientBookingCard(props: Props) {
         canUpdateDispatch={canUpdateDispatch}
         canSaveVisitDraft={canSaveVisitDraft}
         busyDispatchId={busyDispatchId}
+        opdCompleting={opdCompleting}
         activeDiagnosticTab={activeDiagnosticTab}
         setActiveDiagnosticTab={setActiveDiagnosticTab}
         diagnosisRemark={diagnosisRemark}
@@ -162,6 +168,10 @@ export function PatientBookingCard(props: Props) {
         issuingBookingId={issuingBookingId}
         onIssueMedicine={onIssueMedicine}
         onConfirmComplete={() => {
+          if (b.isOpd && b.opdQueueEntry?.id && onCompleteOpdConsultation) {
+            onCompleteOpdConsultation(b.opdQueueEntry.id);
+            return;
+          }
           if (arrived) onSetPendingComplete(arrived.id);
         }}
       />

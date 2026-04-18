@@ -52,6 +52,12 @@ const opdQueueInclude = {
   statusLookup: {
     select: { id: true, lookupKey: true, lookupValue: true },
   },
+  pickedBy: {
+    select: { id: true, fullName: true, email: true },
+  },
+  booking: {
+    select: { id: true, isOpd: true, patientId: true, requestedDoctorId: true },
+  },
 } as const;
 
 export async function listTodayOpdQueue(params: { skip: number; take: number; q?: string }) {
@@ -69,6 +75,47 @@ export async function listTodayOpdQueue(params: { skip: number; take: number; q?
         ],
       }
     : dateWhere;
+  const [total, items] = await prisma.$transaction([
+    prisma.opdQueue.count({ where }),
+    prisma.opdQueue.findMany({
+      where,
+      orderBy: [{ tokenNo: "asc" }, { visitDate: "asc" }],
+      skip: params.skip,
+      take: params.take,
+      include: opdQueueInclude,
+    }),
+  ]);
+  return { items, total };
+}
+
+/** Today's queue for OPD doctors: waiting tokens plus this doctor's in-consultation row. */
+export async function listTodayOpdDoctorQueue(params: {
+  doctorUserId: string;
+  skip: number;
+  take: number;
+}) {
+  const dateWhere = {
+    visitDate: {
+      gte: startOfToday(),
+      lt: startOfTomorrow(),
+    },
+  };
+  const where = {
+    AND: [
+      dateWhere,
+      {
+        OR: [
+          { statusLookup: { lookupKey: "WAITING" } },
+          {
+            AND: [
+              { statusLookup: { lookupKey: "IN_CONSULTATION" } },
+              { pickedByUserId: params.doctorUserId },
+            ],
+          },
+        ],
+      },
+    ],
+  };
   const [total, items] = await prisma.$transaction([
     prisma.opdQueue.count({ where }),
     prisma.opdQueue.findMany({

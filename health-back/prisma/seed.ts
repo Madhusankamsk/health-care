@@ -79,6 +79,8 @@ async function main() {
     "opd:create",
     "opd:update",
     "opd:delete",
+    "opd:manage_doctors",
+    "opd:pick",
 
     "dispatch:list",
     "dispatch:read",
@@ -360,6 +362,7 @@ async function main() {
   for (const item of [
     { lookupKey: "MEMBERSHIP", lookupValue: "Membership" },
     { lookupKey: "VISIT", lookupValue: "Visit" },
+    { lookupKey: "OPD", lookupValue: "OPD" },
   ] as const) {
     await prisma.lookup.upsert({
       where: {
@@ -554,6 +557,8 @@ async function main() {
             "opd:create",
             "opd:update",
             "opd:delete",
+            "opd:manage_doctors",
+            "opd:pick",
             "lab:list",
             "lab:read",
             "dashboard:tile_bookings_pending",

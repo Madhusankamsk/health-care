@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { ModalShell } from "@/components/ui/ModalShell";
@@ -38,6 +39,7 @@ export function PatientBookingsHistory({
   const [diagnosticTabByBookingId, setDiagnosticTabByBookingId] = useState<
     Record<string, DiagnosticTabId>
   >({});
+  const [busyOpdQueueId, setBusyOpdQueueId] = useState<string | null>(null);
 
   const inventoryFeatureEnabled = canUpdateDispatch;
   const bookingActions = usePatientBookingActions(() => {
@@ -49,6 +51,31 @@ export function PatientBookingsHistory({
   const detailBooking = detailBookingId
     ? list.find((x) => x.id === detailBookingId)
     : null;
+
+  async function completeOpdConsultation(queueId: string) {
+    const activeBooking = list.find((row) => row.opdQueueEntry?.id === queueId);
+    const remarkText = activeBooking
+      ? bookingActions.diagnosisRemarkDraftForBooking(activeBooking).trim()
+      : "";
+    setBusyOpdQueueId(queueId);
+    try {
+      const res = await fetch(`/api/opd/${encodeURIComponent(queueId)}/complete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(remarkText ? { remark: remarkText } : {}),
+      });
+      const data = (await res.json().catch(() => ({}))) as { message?: string };
+      if (!res.ok) {
+        throw new Error(data.message || "Unable to complete OPD visit");
+      }
+      toast.success("OPD consultation completed.");
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Unable to complete OPD visit");
+    } finally {
+      setBusyOpdQueueId(null);
+    }
+  }
 
   if (list.length === 0) {
     return (
@@ -92,7 +119,8 @@ export function PatientBookingsHistory({
               bookingActions.savingBookingId !== null ||
               bookingActions.uploadingReportBookingId !== null ||
               bookingActions.addingSampleBookingId !== null ||
-              bookingActions.removingSampleId !== null
+              bookingActions.removingSampleId !== null ||
+              (b.opdQueueEntry?.id != null && busyOpdQueueId === b.opdQueueEntry.id)
             }
             savingBookingId={bookingActions.savingBookingId}
             onSaveVisitDraft={() => void bookingActions.saveVisitDraftForBooking(b)}
@@ -121,6 +149,10 @@ export function PatientBookingsHistory({
             }
             issuingBookingId={inventory.issuingBookingId}
             onIssueMedicine={() => void inventory.issueMedicineToPatient(b)}
+            onCompleteOpdConsultation={(queueId) => void completeOpdConsultation(queueId)}
+            opdCompleting={
+              b.opdQueueEntry?.id != null && busyOpdQueueId === b.opdQueueEntry.id
+            }
           />
         );
       })}

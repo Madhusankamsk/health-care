@@ -170,6 +170,7 @@ export async function notifyVisitPaymentRecorded(invoiceId: string): Promise<voi
     const data = await prisma.invoice.findUnique({
       where: { id: invoiceId },
       select: {
+        invoiceTypeLookup: { select: { lookupKey: true } },
         balanceDue: true,
         paidAmount: true,
         totalAmount: true,
@@ -208,8 +209,12 @@ export async function notifyVisitPaymentRecorded(invoiceId: string): Promise<voi
     const total = data.totalAmount?.toString() ?? "—";
     const paidTotal = data.paidAmount?.toString() ?? "—";
 
+    const kind =
+      data.invoiceTypeLookup?.lookupKey === "OPD"
+        ? "OPD invoice"
+        : "visit invoice";
     const text = [
-      `We recorded a payment on a visit invoice.`,
+      `We recorded a payment on a ${kind}.`,
       ``,
       `Patient: ${name}`,
       `Invoice total: ${total}`,
@@ -220,9 +225,11 @@ export async function notifyVisitPaymentRecorded(invoiceId: string): Promise<voi
       `Thank you.`,
     ].join("\n");
 
+    const subjectPrefix =
+      data.invoiceTypeLookup?.lookupKey === "OPD" ? "OPD payment recorded" : "Visit payment recorded";
     const result = await sendEmail({
       to,
-      subject: `Visit payment recorded — ${name}`,
+      subject: `${subjectPrefix} — ${name}`,
       text,
     });
 

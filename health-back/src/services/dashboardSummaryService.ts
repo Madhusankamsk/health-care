@@ -14,7 +14,7 @@ const HREF = {
   bookings: "/dashboard/bookings/manage-bookings",
   dispatchUpcoming: "/dashboard/dispatching/upcoming-jobs",
   dispatchOngoing: "/dashboard/dispatching/ongoing-jobs",
-  opd: "/dashboard/opd",
+  opd: "/dashboard/opd/queue",
   /** Lab samples are managed from patient booking workflow. */
   lab: "/dashboard/bookings/manage-bookings",
   patients: "/dashboard/clients/patient",
@@ -149,6 +149,7 @@ export async function buildDashboardSummary(params: {
     bookingModuleOk(keys)
   ) {
     const where = {
+      isOpd: false,
       doctorStatusLookup: { lookupKey: "PENDING" },
       ...scopeWhere,
     };
@@ -182,6 +183,7 @@ export async function buildDashboardSummary(params: {
     bookingModuleOk(keys)
   ) {
     const where = {
+      isOpd: false,
       doctorStatusLookup: { lookupKey: "ACCEPTED" },
       ...scopeWhere,
     };

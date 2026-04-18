@@ -219,6 +219,9 @@ export function paymentListTextSearchWhere(term: string): Prisma.PaymentWhereInp
             {
               visitInvoice: { is: { patient: { is: patientTextSearchWhere(q) } } },
             },
+            {
+              opdInvoice: { is: { patient: { is: patientTextSearchWhere(q) } } },
+            },
           ],
         },
       },
@@ -237,6 +240,7 @@ export function invoiceOutstandingTextSearchWhere(term: string): Prisma.InvoiceW
   const or: Prisma.InvoiceWhereInput[] = [
     { membershipInvoice: { is: { patient: { is: patientTextSearchWhere(q) } } } },
     { visitInvoice: { is: { patient: { is: patientTextSearchWhere(q) } } } },
+    { opdInvoice: { is: { patient: { is: patientTextSearchWhere(q) } } } },
     {
       membershipInvoice: {
         is: {
@@ -267,6 +271,19 @@ export function visitOutstandingInvoiceTextSearchWhere(term: string): Prisma.Inv
   if (UUID_RE.test(q)) {
     or.unshift({ id: q });
     or.push({ visitInvoice: { is: { bookingId: q } } });
+  }
+  return { OR: or };
+}
+
+export function opdOutstandingInvoiceTextSearchWhere(term: string): Prisma.InvoiceWhereInput {
+  const q = term.trim();
+  if (!q) return {};
+  const or: Prisma.InvoiceWhereInput[] = [
+    { opdInvoice: { is: { patient: { is: patientTextSearchWhere(q) } } } },
+  ];
+  if (UUID_RE.test(q)) {
+    or.unshift({ id: q });
+    or.push({ opdInvoice: { is: { bookingId: q } } });
   }
   return { OR: or };
 }

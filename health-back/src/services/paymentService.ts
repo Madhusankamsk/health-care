@@ -19,7 +19,7 @@ export type PaymentListRow = {
   planName: string | null;
   collectedById: string;
   collectedByName: string;
-  invoiceType: "MEMBERSHIP" | "VISIT";
+  invoiceType: "MEMBERSHIP" | "VISIT" | "OPD";
 };
 
 const COLLECTOR_METHOD_KEYS = new Set(["CASH", "CHEQUE"]);
@@ -62,6 +62,11 @@ export async function listPayments(params: {
               patient: { select: { id: true, fullName: true } },
             },
           },
+          opdInvoice: {
+            select: {
+              patient: { select: { id: true, fullName: true } },
+            },
+          },
         },
       },
     },
@@ -71,7 +76,8 @@ export async function listPayments(params: {
   const items = rows.map((p) => {
     const member = p.invoice.membershipInvoice;
     const visit = p.invoice.visitInvoice;
-    const patient = member?.patient ?? visit?.patient ?? null;
+    const opd = p.invoice.opdInvoice;
+    const patient = member?.patient ?? visit?.patient ?? opd?.patient ?? null;
     const accName = member?.subscriptionAccount?.accountName ?? null;
     return {
       id: p.id,
@@ -89,7 +95,12 @@ export async function listPayments(params: {
       planName: member?.subscriptionAccount?.plan?.planName ?? null,
       collectedById: p.collectedBy.id,
       collectedByName: p.collectedBy.fullName || p.collectedBy.email,
-      invoiceType: (p.invoice.invoiceTypeLookup.lookupKey === "MEMBERSHIP" ? "MEMBERSHIP" : "VISIT") as PaymentListRow["invoiceType"],
+      invoiceType: ((): PaymentListRow["invoiceType"] => {
+        const k = p.invoice.invoiceTypeLookup.lookupKey;
+        if (k === "MEMBERSHIP") return "MEMBERSHIP";
+        if (k === "OPD") return "OPD";
+        return "VISIT";
+      })(),
     };
   });
 
