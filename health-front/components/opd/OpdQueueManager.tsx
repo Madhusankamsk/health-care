@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 
 import { SearchablePatientSelect } from "@/components/forms/SearchablePatientSelect";
 import { Button } from "@/components/ui/Button";
-import { SelectBase } from "@/components/ui/select-base";
 import { TablePaginationBar } from "@/components/ui/TablePaginationBar";
 import { pageQueryString } from "@/lib/pagination";
 import { toast } from "@/lib/toast";
@@ -41,7 +40,6 @@ type OpdQueueManagerProps = {
   pageSize: number;
   statuses: OpdStatusOption[];
   canCreate: boolean;
-  canUpdate: boolean;
   canDelete: boolean;
 };
 
@@ -58,13 +56,11 @@ export function OpdQueueManager({
   pageSize,
   statuses,
   canCreate,
-  canUpdate,
   canDelete,
 }: OpdQueueManagerProps) {
   const router = useRouter();
   const [patientId, setPatientId] = useState("");
   const [creating, setCreating] = useState(false);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const waitingStatusId = useMemo(
@@ -96,26 +92,6 @@ export function OpdQueueManager({
       toast.error(e instanceof Error ? e.message : "Unable to add to queue");
     } finally {
       setCreating(false);
-    }
-  }
-
-  async function changeStatus(id: string, statusLookupId: string) {
-    if (!statusLookupId.trim()) return;
-    setUpdatingId(id);
-    try {
-      const res = await fetch(`/api/opd/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ statusLookupId }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { message?: string };
-      if (!res.ok) throw new Error(data.message || "Unable to update status");
-      toast.success("Queue status updated.");
-      router.refresh();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Unable to update status");
-    } finally {
-      setUpdatingId(null);
     }
   }
 
@@ -187,20 +163,9 @@ export function OpdQueueManager({
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <SelectBase
-                      value={row.statusLookup?.id ?? ""}
-                      disabled={!canUpdate || updatingId === row.id}
-                      onChange={(e) => {
-                        void changeStatus(row.id, e.target.value);
-                      }}
-                      className="h-9 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2 text-xs text-[var(--text-primary)] sm:min-w-[10rem]"
-                    >
-                      {statuses.map((status) => (
-                        <option key={status.id} value={status.id}>
-                          {status.lookupValue}
-                        </option>
-                      ))}
-                    </SelectBase>
+                    <span className="inline-flex h-9 items-center rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 text-xs font-medium text-[var(--text-primary)] sm:min-w-[10rem] sm:justify-center">
+                      {row.statusLookup?.lookupValue ?? row.status}
+                    </span>
                     {canDelete ? (
                       <Button
                         type="button"

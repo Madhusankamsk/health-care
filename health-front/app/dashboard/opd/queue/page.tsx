@@ -24,7 +24,6 @@ type OpdQueueRow = {
 const OPD_PERMS = {
   view: ["opd:list", "opd:read"],
   create: ["opd:create"],
-  edit: ["opd:update"],
   delete: ["opd:delete"],
 } as const;
 
@@ -49,7 +48,6 @@ export default async function OpdQueuePage({
   if (!canView) redirect("/dashboard");
 
   const canCreate = hasAnyPermission(me.permissions, [...OPD_PERMS.create]);
-  const canEdit = hasAnyPermission(me.permissions, [...OPD_PERMS.edit]);
   const canDelete = hasAnyPermission(me.permissions, [...OPD_PERMS.delete]);
 
   const params = (await searchParams) ?? {};
@@ -79,7 +77,6 @@ export default async function OpdQueuePage({
             pageSize={queueResult.pageSize ?? DEFAULT_PAGE_SIZE}
             statuses={statuses}
             canCreate={canCreate}
-            canUpdate={canEdit}
             canDelete={canDelete}
           />
         )}
