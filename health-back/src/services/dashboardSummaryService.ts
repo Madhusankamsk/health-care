@@ -149,7 +149,7 @@ export async function buildDashboardSummary(params: {
     bookingModuleOk(keys)
   ) {
     const where = {
-      isOpd: false,
+      bookingTypeLookup: { lookupKey: "VISIT" },
       doctorStatusLookup: { lookupKey: "PENDING" },
       ...scopeWhere,
     };
@@ -183,7 +183,7 @@ export async function buildDashboardSummary(params: {
     bookingModuleOk(keys)
   ) {
     const where = {
-      isOpd: false,
+      bookingTypeLookup: { lookupKey: "VISIT" },
       doctorStatusLookup: { lookupKey: "ACCEPTED" },
       ...scopeWhere,
     };

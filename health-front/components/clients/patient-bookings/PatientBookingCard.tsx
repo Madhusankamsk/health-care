@@ -95,12 +95,22 @@ export function PatientBookingCard(props: Props) {
   const arrived = arrivedDispatchForBooking(b);
   const sourceDispatch = preferredDispatchForInventory(b);
   const lead = sourceDispatch?.assignments.find((a) => a.isTeamLeader)?.user ?? null;
+  const bookingTypeKey = b.bookingTypeLookup?.lookupKey ?? "VISIT";
+  const isOpdBooking = bookingTypeKey === "OPD";
+  const bookingTypeLabel =
+    b.bookingTypeLookup?.lookupValue ??
+    (bookingTypeKey === "OPD" ? "OPD" : "Visit");
 
   return (
     <article className="flex flex-col rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--border)] pb-3">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-[var(--text-primary)]">{formatScheduled(b.scheduledDate)}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-medium text-[var(--text-primary)]">{formatScheduled(b.scheduledDate)}</p>
+            <span className={isOpdBooking ? "pill pill-info" : "pill pill-success"}>
+              {bookingTypeLabel}
+            </span>
+          </div>
           <p className="mt-1 text-sm text-[var(--text-secondary)]">
             {b.bookingRemark?.trim() ? b.bookingRemark.trim() : "No booking remark"}
           </p>
@@ -168,7 +178,7 @@ export function PatientBookingCard(props: Props) {
         issuingBookingId={issuingBookingId}
         onIssueMedicine={onIssueMedicine}
         onConfirmComplete={() => {
-          if (b.isOpd && b.opdQueueEntry?.id && onCompleteOpdConsultation) {
+          if (isOpdBooking && b.opdQueueEntry?.id && onCompleteOpdConsultation) {
             onCompleteOpdConsultation(b.opdQueueEntry.id);
             return;
           }

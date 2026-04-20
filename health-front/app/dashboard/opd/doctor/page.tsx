@@ -15,7 +15,10 @@ type OpdQueueRow = {
   patient: { id: string; fullName: string; shortName?: string | null };
   statusLookup: { lookupKey: string; lookupValue: string } | null;
   pickedBy?: { id: string; fullName: string } | null;
-  booking?: { id: string; isOpd: boolean } | null;
+  booking?: {
+    id: string;
+    bookingTypeLookup?: { id: string; lookupKey: string; lookupValue: string } | null;
+  } | null;
 };
 
 export default async function OpdDoctorPage({

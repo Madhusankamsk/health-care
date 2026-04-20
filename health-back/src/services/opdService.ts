@@ -56,7 +56,12 @@ export const opdQueueInclude = {
     select: { id: true, fullName: true, email: true },
   },
   booking: {
-    select: { id: true, isOpd: true, patientId: true, requestedDoctorId: true },
+    select: {
+      id: true,
+      patientId: true,
+      requestedDoctorId: true,
+      bookingTypeLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
+    },
   },
 } as const;
 

@@ -152,11 +152,11 @@ model Booking {
   status              String    @default("Pending")
   statusId            String?
   statusLookup        Lookup?   @relation("BookingStatus", fields: [statusId], references: [id])
+  bookingTypeId       String
+  bookingTypeLookup   Lookup    @relation("BookingType", fields: [bookingTypeId], references: [id])
   bookingRemark       String?
   requestedDoctorId   String?
   doctorStatusId      String?
-  /** Walk-in OPD encounter; excluded from ambulance dispatch queues when false is required. */
-  isOpd               Boolean   @default(false)
   patient             Patient      @relation(fields: [patientId], references: [id])
   requestedDoctor     User?        @relation("BookingRequestedDoctor", fields: [requestedDoctorId], references: [id])
   doctorStatusLookup  Lookup?      @relation("BookingDoctorStatus", fields: [doctorStatusId], references: [id])
@@ -169,7 +169,7 @@ model Booking {
 
   @@index([requestedDoctorId])
   @@index([doctorStatusId])
-  @@index([isOpd])
+  @@index([bookingTypeId])
 }
 
 model DispatchRecord {
@@ -545,6 +545,7 @@ model Lookup {
   vehicleStatuses             Vehicle[]             @relation("VehicleStatus")
   patientGenders              Patient[]             @relation("PatientGender")
   bookingStatuses             Booking[]             @relation("BookingStatus")
+  bookingTypes               Booking[]             @relation("BookingType")
   medicineUoms                Medicine[]            @relation("MedicineUom")
   inventoryLocationTypes      InventoryBatch[]      @relation("InventoryLocationType")
   transferStatuses            StockTransfer[]       @relation("TransferStatus")

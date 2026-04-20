@@ -42,10 +42,30 @@ async function getDoctorStatusLookupId(
   return row?.id ?? null;
 }
 
+async function getBookingTypeLookupId(
+  lookupKey: "VISIT" | "OPD",
+): Promise<string> {
+  const row = await prisma.lookup.findFirst({
+    where: {
+      lookupKey,
+      isActive: true,
+      category: { categoryName: "BOOKING_TYPE" },
+    },
+    select: { id: true },
+  });
+  if (!row) {
+    throw new Error(`Missing BOOKING_TYPE/${lookupKey}`);
+  }
+  return row.id;
+}
+
 const bookingInclude = {
   patient: { select: { id: true, fullName: true, nicOrPassport: true, contactNo: true } },
   requestedDoctor: { select: { id: true, fullName: true, email: true } },
   doctorStatusLookup: {
+    select: { id: true, lookupKey: true, lookupValue: true },
+  },
+  bookingTypeLookup: {
     select: { id: true, lookupKey: true, lookupValue: true },
   },
 } as const;
@@ -62,6 +82,9 @@ const bookingWithDispatchInclude = {
   patient: { select: { id: true, fullName: true, nicOrPassport: true, contactNo: true } },
   requestedDoctor: { select: { id: true, fullName: true, email: true } },
   doctorStatusLookup: {
+    select: { id: true, lookupKey: true, lookupValue: true },
+  },
+  bookingTypeLookup: {
     select: { id: true, lookupKey: true, lookupValue: true },
   },
   visitRecord: {
@@ -193,6 +216,7 @@ export async function createBooking(data: BookingPayload) {
   // No requested doctor → nothing to wait on; treat as accepted for scheduling / dispatch.
   const doctorStatusKey = requestedDoctorId ? "PENDING" : "ACCEPTED";
   const doctorStatusId = await getDoctorStatusLookupId(doctorStatusKey);
+  const bookingTypeId = await getBookingTypeLookupId("VISIT");
 
   return prisma.booking.create({
     data: {
@@ -203,6 +227,7 @@ export async function createBooking(data: BookingPayload) {
         : null,
       requestedDoctorId,
       doctorStatusId,
+      bookingTypeId,
     },
     include: bookingInclude,
   });

@@ -7,6 +7,7 @@ import { opdQueueInclude } from "./opdService";
 
 const OPD_STATUS_CATEGORY = "OPD_STATUS";
 const DOCTOR_BOOKING_STATUS = "DOCTOR_BOOKING_STATUS";
+const BOOKING_TYPE_CATEGORY = "BOOKING_TYPE";
 
 function startOfToday() {
   const now = new Date();
@@ -42,6 +43,22 @@ async function getDoctorStatusAcceptedId(tx: Prisma.TransactionClient): Promise<
     select: { id: true },
   });
   if (!row) throw new Error("Missing DOCTOR_BOOKING_STATUS/ACCEPTED");
+  return row.id;
+}
+
+async function getBookingTypeId(
+  tx: Prisma.TransactionClient,
+  lookupKey: "VISIT" | "OPD",
+): Promise<string> {
+  const row = await tx.lookup.findFirst({
+    where: {
+      lookupKey,
+      isActive: true,
+      category: { categoryName: BOOKING_TYPE_CATEGORY },
+    },
+    select: { id: true },
+  });
+  if (!row) throw new Error(`Missing ${BOOKING_TYPE_CATEGORY}/${lookupKey}`);
   return row.id;
 }
 
@@ -82,13 +99,14 @@ export async function pickOpdPatient(params: { queueId: string; doctorUserId: st
 
       const inConsultationId = await getOpdStatusId(tx, "IN_CONSULTATION");
       const acceptedDoctorId = await getDoctorStatusAcceptedId(tx);
+      const bookingTypeOpdId = await getBookingTypeId(tx, "OPD");
       const now = new Date();
 
       const booking = await tx.booking.create({
         data: {
           patientId: queue.patientId,
           scheduledDate: now,
-          isOpd: true,
+          bookingTypeId: bookingTypeOpdId,
           requestedDoctorId: params.doctorUserId,
           doctorStatusId: acceptedDoctorId,
           bookingRemark: "OPD walk-in",
@@ -130,7 +148,13 @@ export async function pickOpdPatient(params: { queueId: string; doctorUserId: st
           },
           statusLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
           pickedBy: { select: { id: true, fullName: true, email: true } },
-          booking: { select: { id: true, isOpd: true, patientId: true } },
+          booking: {
+            select: {
+              id: true,
+              patientId: true,
+              bookingTypeLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
+            },
+          },
         },
       });
 
@@ -225,7 +249,13 @@ export async function completeOpdConsultation(params: {
         },
         statusLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
         pickedBy: { select: { id: true, fullName: true, email: true } },
-        booking: { select: { id: true, isOpd: true, patientId: true } },
+        booking: {
+          select: {
+            id: true,
+            patientId: true,
+            bookingTypeLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
+          },
+        },
       },
     });
 

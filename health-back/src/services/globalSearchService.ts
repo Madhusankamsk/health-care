@@ -40,7 +40,7 @@ export async function dashboardGlobalSearch(params: {
   const scope = resolveBookingListScope(params.permissionKeys);
 
   const bookingSearchBase: Prisma.BookingWhereInput = {
-    isOpd: false,
+    bookingTypeLookup: { lookupKey: "VISIT" },
     ...(scope === "own" && params.userId ? { requestedDoctorId: params.userId } : {}),
   };
 
