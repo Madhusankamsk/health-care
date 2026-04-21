@@ -27,6 +27,9 @@ const upcomingInclude = {
   doctorStatusLookup: {
     select: { id: true, lookupKey: true, lookupValue: true },
   },
+  bookingTypeLookup: {
+    select: { id: true, lookupKey: true, lookupValue: true },
+  },
   dispatchRecords: {
     orderBy: { dispatchedAt: "desc" as const },
     take: 1,
@@ -56,7 +59,7 @@ function upcomingAcceptedForDispatchWhere(params: {
       ? { requestedDoctorId: params.userId }
       : {};
   return {
-    isOpd: false,
+    bookingTypeLookup: { lookupKey: "VISIT" as const },
     doctorStatusLookup: { lookupKey: "ACCEPTED" as const },
     OR: [{ scheduledDate: null }, { scheduledDate: { gte: startOfToday } }],
     dispatchRecords: { none: {} },
@@ -118,7 +121,7 @@ function ongoingForDispatchWhere(params: { userId: string | undefined; scope: Bo
 
   if (params.scope === "own" && params.userId) {
     return {
-      isOpd: false,
+      bookingTypeLookup: { lookupKey: "VISIT" as const },
       doctorStatusLookup: { lookupKey: "ACCEPTED" as const },
       visitRecord: null,
       OR: [
@@ -141,7 +144,7 @@ function ongoingForDispatchWhere(params: { userId: string | undefined; scope: Bo
   }
 
   return {
-    isOpd: false,
+    bookingTypeLookup: { lookupKey: "VISIT" as const },
     doctorStatusLookup: { lookupKey: "ACCEPTED" as const },
     visitRecord: null,
     OR: [...dispatchActiveOr],
@@ -466,6 +469,7 @@ export async function updateDispatchStatus(
       await createVisitInvoiceIfAbsent(tx, {
         bookingId: dispatch.booking.id,
         patientId: dispatch.booking.patientId,
+        createdByUserId: access?.userId,
       });
       return tx.dispatchRecord.update({
         where: { id: dispatchId },

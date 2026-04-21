@@ -26,6 +26,7 @@ export type PatientCreateInput = {
   billingRecipientId?: string | null;
   subscriptionPlanId?: string | null;
   subscriptionStatusId?: string | null;
+  createdByUserId?: string | null;
 };
 
 async function resolveSubscriptionStatusId(
@@ -43,6 +44,40 @@ async function resolveSubscriptionStatusId(
   });
   if (!status) throw new Error("Invalid subscription status");
   return status.id;
+}
+
+const PATIENT_PICKER_LIMIT = 25;
+
+export type PatientPickerRow = {
+  id: string;
+  fullName: string;
+  shortName: string | null;
+  nicOrPassport: string | null;
+  contactNo: string | null;
+  whatsappNo: string | null;
+};
+
+/** Server-side patient search for booking / OPD pickers (same text fields as dashboard global search patients). */
+export async function searchPatientsForPicker(q: string): Promise<{ items: PatientPickerRow[] }> {
+  const trimmed = q.trim();
+  if (trimmed.length < 2) {
+    return { items: [] };
+  }
+  const where = andPatientSearch({}, trimmed);
+  const items = await prisma.patient.findMany({
+    where,
+    take: PATIENT_PICKER_LIMIT,
+    orderBy: { fullName: "asc" },
+    select: {
+      id: true,
+      fullName: true,
+      shortName: true,
+      nicOrPassport: true,
+      contactNo: true,
+      whatsappNo: true,
+    },
+  });
+  return { items };
 }
 
 export async function listPatients(params: { skip: number; take: number; q?: string }) {
@@ -244,6 +279,7 @@ export async function createPatient(data: PatientCreateInput) {
           planId: plan.id,
           payments: [],
           collectedByUserId: "",
+          createdByUserId: data.createdByUserId,
         });
         invoiceId = billing.invoiceId;
         subscriptionAccountId = account.id;

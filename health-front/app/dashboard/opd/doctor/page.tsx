@@ -15,7 +15,10 @@ type OpdQueueRow = {
   patient: { id: string; fullName: string; shortName?: string | null };
   statusLookup: { lookupKey: string; lookupValue: string } | null;
   pickedBy?: { id: string; fullName: string } | null;
-  booking?: { id: string; isOpd: boolean } | null;
+  booking?: {
+    id: string;
+    bookingTypeLookup?: { id: string; lookupKey: string; lookupValue: string } | null;
+  } | null;
 };
 
 export default async function OpdDoctorPage({
@@ -50,6 +53,7 @@ export default async function OpdDoctorPage({
         <p className="text-sm text-red-700 dark:text-red-300">Failed to load doctor queue.</p>
       ) : (
         <OpdDoctorConsole
+          currentUserId={me.user.id}
           rows={rows}
           total={queueResult.total}
           page={queueResult.page}

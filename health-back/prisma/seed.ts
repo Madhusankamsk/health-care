@@ -90,6 +90,8 @@ async function main() {
     "files:delete",
 
     "invoices:read",
+    "invoices:scope_own",
+    "invoices:scope_all",
 
     "inventory:list",
     "inventory:read",
@@ -381,6 +383,32 @@ async function main() {
     });
   }
 
+  const bookingTypeCategory = await prisma.lookupCategory.upsert({
+    where: { categoryName: "BOOKING_TYPE" },
+    update: {},
+    create: { categoryName: "BOOKING_TYPE" },
+  });
+  for (const item of [
+    { lookupKey: "VISIT", lookupValue: "Visit" },
+    { lookupKey: "OPD", lookupValue: "OPD" },
+  ] as const) {
+    await prisma.lookup.upsert({
+      where: {
+        categoryId_lookupKey: {
+          categoryId: bookingTypeCategory.id,
+          lookupKey: item.lookupKey,
+        },
+      },
+      update: { lookupValue: item.lookupValue, isActive: true },
+      create: {
+        categoryId: bookingTypeCategory.id,
+        lookupKey: item.lookupKey,
+        lookupValue: item.lookupValue,
+        isActive: true,
+      },
+    });
+  }
+
   const paymentMethodCategory = await prisma.lookupCategory.upsert({
     where: { categoryName: "PAYMENT_METHOD" },
     update: {},
@@ -552,6 +580,7 @@ async function main() {
             "bookings:scope_own",
             "bookings:scope_all",
             "invoices:read",
+            "invoices:scope_all",
             "opd:list",
             "opd:read",
             "opd:create",
@@ -820,6 +849,13 @@ async function main() {
     where: { categoryId: doctorBookingStatusCategory.id, lookupKey: "ACCEPTED" },
     select: { id: true },
   });
+  const bookingTypeVisit = await prisma.lookup.findFirst({
+    where: { categoryId: bookingTypeCategory.id, lookupKey: "VISIT" },
+    select: { id: true },
+  });
+  if (!bookingTypeVisit?.id) {
+    throw new Error("BOOKING_TYPE/VISIT lookup missing");
+  }
 
   // 2 demo bookings (requested doctor = super admin for dashboard preview)
   await prisma.booking.upsert({
@@ -829,6 +865,7 @@ async function main() {
       bookingRemark: "Demo accepted visit",
       requestedDoctorId: superAdminUser.id,
       doctorStatusId: doctorStatusAccepted?.id ?? null,
+      bookingTypeId: bookingTypeVisit.id,
       scheduledDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
     },
     create: {
@@ -837,6 +874,7 @@ async function main() {
       bookingRemark: "Demo accepted visit",
       requestedDoctorId: superAdminUser.id,
       doctorStatusId: doctorStatusAccepted?.id ?? null,
+      bookingTypeId: bookingTypeVisit.id,
       scheduledDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
     },
   });
@@ -848,6 +886,7 @@ async function main() {
       bookingRemark: "Awaiting doctor response",
       requestedDoctorId: superAdminUser.id,
       doctorStatusId: doctorStatusPending?.id ?? null,
+      bookingTypeId: bookingTypeVisit.id,
       scheduledDate: new Date(Date.now() + 48 * 60 * 60 * 1000),
     },
     create: {
@@ -856,6 +895,7 @@ async function main() {
       bookingRemark: "Awaiting doctor response",
       requestedDoctorId: superAdminUser.id,
       doctorStatusId: doctorStatusPending?.id ?? null,
+      bookingTypeId: bookingTypeVisit.id,
       scheduledDate: new Date(Date.now() + 48 * 60 * 60 * 1000),
     },
   });

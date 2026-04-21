@@ -95,8 +95,8 @@ export function DiagnosticWorkflowPanel(props: Props) {
   const visitDone = Boolean(b.visitRecord?.completedAt);
   const completedDispatch = b.dispatchRecords.some((dr) => dr.statusLookup?.lookupKey === "COMPLETED");
   const isCompleted = visitDone || completedDispatch;
-  const isOpd = Boolean(b.isOpd);
-  const opdInProgress = isOpd && Boolean(b.visitRecord) && !visitDone;
+  const isOpdBooking = b.bookingTypeLookup?.lookupKey === "OPD";
+  const opdInProgress = isOpdBooking && Boolean(b.visitRecord) && !visitDone;
   const inWorkflowPhase = !visitDone && (Boolean(arrived) || opdInProgress);
   if (!inWorkflowPhase && !isCompleted) return null;
   if (!canUpdateDispatch && !canSaveVisitDraft && !isCompleted) return null;
@@ -226,7 +226,7 @@ export function DiagnosticWorkflowPanel(props: Props) {
             {savingBookingId === b.id ? "Saving…" : "Save draft"}
           </Button>
         ) : null}
-        {canUpdateDispatch || (isOpd && b.opdQueueEntry?.id) ? (
+        {canUpdateDispatch || (isOpdBooking && b.opdQueueEntry?.id) ? (
           <Button
             type="button"
             variant="primary"

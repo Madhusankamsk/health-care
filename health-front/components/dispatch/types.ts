@@ -14,8 +14,7 @@ export type DispatchVehicleOption = {
 export type UpcomingBookingRow = {
   id: string;
   scheduledDate: string | null;
-  /** Walk-in OPD encounter (no ambulance dispatch). */
-  isOpd?: boolean;
+  bookingTypeLookup?: { id: string; lookupKey: string; lookupValue: string } | null;
   /** Present when this booking was created from an OPD queue pick. */
   opdQueueEntry?: { id: string } | null;
   bookingRemark?: string | null;

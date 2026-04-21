@@ -5,9 +5,19 @@ import {
   deletePatient,
   getPatientById,
   listPatients,
+  searchPatientsForPicker,
   updatePatient,
 } from "../services/patientService";
 import { okPaginated, parseOptionalQueryString, parsePaginationQuery } from "../lib/pagination";
+
+export async function searchPatientsPickerHandler(req: Request, res: Response) {
+  const q = parseOptionalQueryString(req);
+  if (!q) {
+    return res.json({ items: [] });
+  }
+  const result = await searchPatientsForPicker(q);
+  return res.json(result);
+}
 
 export async function listPatientsHandler(req: Request, res: Response) {
   const { page, pageSize, skip, take } = parsePaginationQuery(req);
@@ -94,6 +104,7 @@ export async function createPatientHandler(req: Request, res: Response) {
       billingRecipientId: billingRecipientId ?? undefined,
       subscriptionPlanId: subscriptionPlanId ?? undefined,
       subscriptionStatusId: subscriptionStatusId ?? undefined,
+      createdByUserId: req.authUser?.sub,
     });
 
     return res.status(201).json({ ...created.patient, invoiceId: created.invoiceId });
