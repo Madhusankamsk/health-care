@@ -119,6 +119,11 @@ async function main() {
     "dashboard:tile_stat_outstanding",
 
     "dashboard:global_search",
+
+    "nursing:list",
+    "nursing:read",
+    "nursing:manage",
+    "nursing:discharge",
   ] as const;
 
   for (const permissionKey of permissionKeys) {
@@ -391,6 +396,7 @@ async function main() {
   for (const item of [
     { lookupKey: "VISIT", lookupValue: "Visit" },
     { lookupKey: "OPD", lookupValue: "OPD" },
+    { lookupKey: "NURSING_ENCOUNTER", lookupValue: "In-house nursing encounter" },
   ] as const) {
     await prisma.lookup.upsert({
       where: {
@@ -402,6 +408,58 @@ async function main() {
       update: { lookupValue: item.lookupValue, isActive: true },
       create: {
         categoryId: bookingTypeCategory.id,
+        lookupKey: item.lookupKey,
+        lookupValue: item.lookupValue,
+        isActive: true,
+      },
+    });
+  }
+
+  const nursingAdmissionStatusCategory = await prisma.lookupCategory.upsert({
+    where: { categoryName: "NURSING_ADMISSION_STATUS" },
+    update: {},
+    create: { categoryName: "NURSING_ADMISSION_STATUS" },
+  });
+  for (const item of [
+    { lookupKey: "ADMITTED", lookupValue: "Admitted" },
+    { lookupKey: "DISCHARGED", lookupValue: "Discharged" },
+  ] as const) {
+    await prisma.lookup.upsert({
+      where: {
+        categoryId_lookupKey: {
+          categoryId: nursingAdmissionStatusCategory.id,
+          lookupKey: item.lookupKey,
+        },
+      },
+      update: { lookupValue: item.lookupValue, isActive: true },
+      create: {
+        categoryId: nursingAdmissionStatusCategory.id,
+        lookupKey: item.lookupKey,
+        lookupValue: item.lookupValue,
+        isActive: true,
+      },
+    });
+  }
+
+  const nursingCarePathwayCategory = await prisma.lookupCategory.upsert({
+    where: { categoryName: "NURSING_CARE_PATHWAY" },
+    update: {},
+    create: { categoryName: "NURSING_CARE_PATHWAY" },
+  });
+  for (const item of [
+    { lookupKey: "OBSERVATION", lookupValue: "Observation / caring" },
+    { lookupKey: "TREATMENT", lookupValue: "Treatment pathway" },
+  ] as const) {
+    await prisma.lookup.upsert({
+      where: {
+        categoryId_lookupKey: {
+          categoryId: nursingCarePathwayCategory.id,
+          lookupKey: item.lookupKey,
+        },
+      },
+      update: { lookupValue: item.lookupValue, isActive: true },
+      create: {
+        categoryId: nursingCarePathwayCategory.id,
         lookupKey: item.lookupKey,
         lookupValue: item.lookupValue,
         isActive: true,
@@ -604,6 +662,10 @@ async function main() {
             "dashboard:global_search",
             "patients:list",
             "patients:read",
+            "nursing:list",
+            "nursing:read",
+            "nursing:manage",
+            "nursing:discharge",
           ],
         },
       },

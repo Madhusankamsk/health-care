@@ -16,7 +16,23 @@ export type UpcomingBookingRow = {
   scheduledDate: string | null;
   bookingTypeLookup?: { id: string; lookupKey: string; lookupValue: string } | null;
   /** Present when this booking was created from an OPD queue pick. */
-  opdQueueEntry?: { id: string } | null;
+  opdQueueEntry?: {
+    id: string;
+    tokenNo?: number;
+    visitDate?: string;
+    pickedAt?: string | null;
+    statusLookup?: { id: string; lookupKey: string; lookupValue: string } | null;
+    pickedBy?: { id: string; fullName: string; email: string } | null;
+  } | null;
+  nursingAdmissionId?: string | null;
+  nursingAdmission?: {
+    id: string;
+    admittedAt: string;
+    dischargedAt: string | null;
+    siteLabel: string | null;
+    statusLookup: { id: string; lookupKey: string; lookupValue: string };
+    carePathwayLookup: { id: string; lookupKey: string; lookupValue: string };
+  } | null;
   bookingRemark?: string | null;
   patient?: { id: string; fullName: string; contactNo?: string | null };
   requestedDoctor?: { id: string; fullName: string; email: string } | null;

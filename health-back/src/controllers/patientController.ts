@@ -8,6 +8,7 @@ import {
   searchPatientsForPicker,
   updatePatient,
 } from "../services/patientService";
+import { listNursingAdmissionsForPatient } from "../services/nursingAdmissionService";
 import { okPaginated, parseOptionalQueryString, parsePaginationQuery } from "../lib/pagination";
 
 export async function searchPatientsPickerHandler(req: Request, res: Response) {
@@ -193,6 +194,22 @@ export async function updatePatientHandler(req: Request, res: Response) {
     const message = error instanceof Error ? error.message : "Unable to update patient";
     return res.status(409).json({ message });
   }
+}
+
+export async function listPatientNursingAdmissionsHandler(req: Request, res: Response) {
+  const { id } = req.params;
+  const cleaned = id?.trim() ?? "";
+  if (!cleaned) {
+    return res.status(400).json({ message: "Patient id is required" });
+  }
+
+  const patient = await getPatientById(cleaned);
+  if (!patient) {
+    return res.status(404).json({ message: "Patient not found" });
+  }
+
+  const items = await listNursingAdmissionsForPatient(cleaned);
+  return res.json({ items });
 }
 
 export async function deletePatientHandler(req: Request, res: Response) {

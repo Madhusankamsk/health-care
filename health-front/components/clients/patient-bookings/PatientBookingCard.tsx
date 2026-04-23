@@ -56,6 +56,9 @@ type Props = {
   /** When set, OPD walk-in completions use POST /api/opd/:queueId/complete instead of dispatch complete. */
   onCompleteOpdConsultation?: (queueId: string) => void;
   opdCompleting?: boolean;
+  /** In-house nursing encounters complete via POST /api/bookings/:id/complete-nursing-visit */
+  onCompleteNursingEncounter?: (bookingId: string) => void;
+  nursingCompleting?: boolean;
 };
 
 export function PatientBookingCard(props: Props) {
@@ -100,6 +103,8 @@ export function PatientBookingCard(props: Props) {
     onRemoveQueuedMedicine,
     onCompleteOpdConsultation,
     opdCompleting = false,
+    onCompleteNursingEncounter,
+    nursingCompleting = false,
   } = props;
 
   const inTransit = inTransitDispatchForBooking(b);
@@ -108,9 +113,10 @@ export function PatientBookingCard(props: Props) {
   const lead = sourceDispatch?.assignments.find((a) => a.isTeamLeader)?.user ?? null;
   const bookingTypeKey = b.bookingTypeLookup?.lookupKey ?? "VISIT";
   const isOpdBooking = bookingTypeKey === "OPD";
+  const isNursingEncounter = bookingTypeKey === "NURSING_ENCOUNTER";
   const bookingTypeLabel =
     b.bookingTypeLookup?.lookupValue ??
-    (bookingTypeKey === "OPD" ? "OPD" : "Visit");
+    (bookingTypeKey === "OPD" ? "OPD" : bookingTypeKey === "NURSING_ENCOUNTER" ? "Nursing" : "Visit");
 
   return (
     <article className="flex flex-col rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-5">
@@ -118,7 +124,11 @@ export function PatientBookingCard(props: Props) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-medium text-[var(--text-primary)]">{formatScheduled(b.scheduledDate)}</p>
-            <span className={isOpdBooking ? "pill pill-info" : "pill pill-success"}>
+            <span
+              className={
+                isOpdBooking ? "pill pill-info" : isNursingEncounter ? "pill pill-warning" : "pill pill-success"
+              }
+            >
               {bookingTypeLabel}
             </span>
           </div>
@@ -159,6 +169,7 @@ export function PatientBookingCard(props: Props) {
         canSaveVisitDraft={canSaveVisitDraft}
         busyDispatchId={busyDispatchId}
         opdCompleting={opdCompleting}
+        nursingCompleting={nursingCompleting}
         activeDiagnosticTab={activeDiagnosticTab}
         setActiveDiagnosticTab={setActiveDiagnosticTab}
         diagnosisRemark={diagnosisRemark}
@@ -193,6 +204,10 @@ export function PatientBookingCard(props: Props) {
         onConfirmComplete={() => {
           if (isOpdBooking && b.opdQueueEntry?.id && onCompleteOpdConsultation) {
             onCompleteOpdConsultation(b.opdQueueEntry.id);
+            return;
+          }
+          if (isNursingEncounter && onCompleteNursingEncounter) {
+            onCompleteNursingEncounter(b.id);
             return;
           }
           if (arrived) onSetPendingComplete(arrived.id);

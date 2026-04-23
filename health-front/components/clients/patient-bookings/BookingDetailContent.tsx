@@ -66,6 +66,66 @@ export function BookingDetailContent({
         </section>
       </div>
 
+      {b.opdQueueEntry?.id ? (
+        <section className="preview-section mt-4">
+          <h3 className="preview-section-title">OPD queue</h3>
+          <dl className="preview-list">
+            <div className="preview-row">
+              <dt className="preview-label">Token</dt>
+              <dd className="preview-value">
+                {b.opdQueueEntry.tokenNo != null ? `#${b.opdQueueEntry.tokenNo}` : "—"}
+              </dd>
+            </div>
+            <div className="preview-row">
+              <dt className="preview-label">Queue date</dt>
+              <dd className="preview-value">
+                {b.opdQueueEntry.visitDate ? formatScheduled(b.opdQueueEntry.visitDate) : "—"}
+              </dd>
+            </div>
+            <div className="preview-row">
+              <dt className="preview-label">Queue status</dt>
+              <dd className="preview-value">
+                {b.opdQueueEntry.statusLookup?.lookupValue ??
+                  b.opdQueueEntry.statusLookup?.lookupKey ??
+                  "—"}
+              </dd>
+            </div>
+            <div className="preview-row">
+              <dt className="preview-label">Picked by</dt>
+              <dd className="preview-value">{b.opdQueueEntry.pickedBy?.fullName ?? "—"}</dd>
+            </div>
+            <div className="preview-row">
+              <dt className="preview-label">Picked at</dt>
+              <dd className="preview-value">
+                {b.opdQueueEntry.pickedAt ? formatScheduled(b.opdQueueEntry.pickedAt) : "—"}
+              </dd>
+            </div>
+          </dl>
+        </section>
+      ) : null}
+
+      {b.nursingAdmission ? (
+        <section className="preview-section mt-4">
+          <h3 className="preview-section-title">In-house admission</h3>
+          <dl className="preview-list">
+            <div className="preview-row">
+              <dt className="preview-label">Admitted</dt>
+              <dd className="preview-value">{formatScheduled(b.nursingAdmission.admittedAt)}</dd>
+            </div>
+            <div className="preview-row">
+              <dt className="preview-label">Site / room</dt>
+              <dd className="preview-value">{b.nursingAdmission.siteLabel?.trim() || "—"}</dd>
+            </div>
+            <div className="preview-row">
+              <dt className="preview-label">Admission status</dt>
+              <dd className="preview-value">
+                {b.nursingAdmission.statusLookup?.lookupValue ?? "—"}
+              </dd>
+            </div>
+          </dl>
+        </section>
+      ) : null}
+
       <div className="mt-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
           Dispatching

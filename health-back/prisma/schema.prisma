@@ -61,6 +61,7 @@ model User {
   passwordResetTokens       PasswordResetToken[]
   opdEligibleDoctor         OpdEligibleDoctor?
   opdPickedQueues           OpdQueue[]           @relation("OpdQueuePickedBy")
+  nursingDailyNotes         NursingDailyNote[]
 }
 
 model PasswordResetToken {
@@ -144,6 +145,7 @@ model Patient {
   accountTransactions            AccountTransaction[]
   diagnosticReports              DiagnosticReport[]
   labSamples                     LabSample[]
+  nursingAdmissions              NursingAdmission[]
 }
 
 model Booking {
@@ -167,10 +169,43 @@ model Booking {
   opdInvoiceRow       OpdInvoice?
   opdQueueEntry       OpdQueue?
   dispatchRecords     DispatchRecord[]
+  nursingAdmissionId  String?
+  nursingAdmission    NursingAdmission? @relation(fields: [nursingAdmissionId], references: [id], onDelete: SetNull)
 
   @@index([requestedDoctorId])
   @@index([doctorStatusId])
   @@index([bookingTypeId])
+  @@index([nursingAdmissionId])
+}
+
+model NursingAdmission {
+  id                  String             @id @default(uuid())
+  patientId           String
+  siteLabel           String?
+  admittedAt          DateTime           @default(now())
+  dischargedAt        DateTime?
+  statusId            String
+  carePathwayId       String
+  patient             Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  statusLookup        Lookup             @relation("NursingAdmissionStatus", fields: [statusId], references: [id])
+  carePathwayLookup   Lookup             @relation("NursingCarePathway", fields: [carePathwayId], references: [id])
+  dailyNotes          NursingDailyNote[]
+  bookings            Booking[]
+
+  @@index([patientId])
+  @@index([statusId])
+}
+
+model NursingDailyNote {
+  id                 String           @id @default(uuid())
+  nursingAdmissionId String
+  recordedAt         DateTime         @default(now())
+  recordedByUserId   String
+  note               String
+  nursingAdmission   NursingAdmission @relation(fields: [nursingAdmissionId], references: [id], onDelete: Cascade)
+  recordedBy         User             @relation(fields: [recordedByUserId], references: [id])
+
+  @@index([nursingAdmissionId])
 }
 
 model DispatchRecord {
@@ -566,6 +601,8 @@ model Lookup {
   paymentMethods              Payment[]             @relation("PaymentMethod")
   paymentPurposes             Payment[]             @relation("PaymentPurpose")
   accountTransactionTypes     AccountTransaction[]  @relation("AccountTransactionType")
+  nursingAdmissionStatuses      NursingAdmission[]    @relation("NursingAdmissionStatus")
+  nursingCarePathways           NursingAdmission[]    @relation("NursingCarePathway")
 
   @@unique([categoryId, lookupKey])
   @@index([categoryId])

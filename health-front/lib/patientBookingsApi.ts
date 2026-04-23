@@ -56,6 +56,26 @@ export async function completeOpdConsultationApi(
   if (!res.ok) throw new Error(data.message || "Unable to complete OPD visit");
 }
 
+export async function completeNursingEncounterVisitApi(
+  bookingId: string,
+  payload?: {
+    remark?: string | null;
+    medicines?: CompletionMedicinePayload[];
+  },
+): Promise<PatchDispatchStatusResponse> {
+  const res = await fetch(`/api/bookings/${encodeURIComponent(bookingId)}/complete-nursing-visit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...(payload?.remark !== undefined ? { remark: payload.remark } : {}),
+      ...(payload?.medicines !== undefined ? { medicines: payload.medicines } : {}),
+    }),
+  });
+  const data = await readJson<MessageResponse & PatchDispatchStatusResponse>(res, {});
+  if (!res.ok) throw new Error(data.message || "Unable to complete visit");
+  return { visitInvoiceId: data.visitInvoiceId };
+}
+
 export async function saveVisitDraftApi(bookingId: string, remark: string | null) {
   const res = await fetch(`/api/bookings/${bookingId}/visit-draft`, {
     method: "PATCH",

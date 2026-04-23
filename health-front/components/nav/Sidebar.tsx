@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Crown,
   HandCoins,
+  HeartPulse,
   KeyRound,
   Layers,
   ListOrdered,
@@ -119,6 +120,20 @@ const navItems: NavItem[] = [
         label: "Manager",
         icon: <UserCog className="h-4 w-4" aria-hidden />,
         requiresAnyPermissions: ["opd:manage_doctors"],
+      },
+    ],
+  },
+  {
+    href: "/dashboard/nursing",
+    label: "In-house nursing",
+    icon: <HeartPulse className="h-4 w-4" aria-hidden />,
+    requiresAnyPermissions: ["nursing:list", "nursing:read"],
+    children: [
+      {
+        href: "/dashboard/nursing/board",
+        label: "Admissions board",
+        icon: <HeartPulse className="h-4 w-4" aria-hidden />,
+        requiresAnyPermissions: ["nursing:list", "nursing:read"],
       },
     ],
   },

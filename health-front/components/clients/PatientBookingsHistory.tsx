@@ -13,7 +13,11 @@ import type { DiagnosticTabId, LabSampleTypeLookup, PendingConfirm } from "@/com
 import { useInventoryIssue } from "@/components/clients/patient-bookings/useInventoryIssue";
 import { usePatientBookingActions } from "@/components/clients/patient-bookings/usePatientBookingActions";
 import { issuedMedicineRowsFromVisit } from "@/components/clients/patient-bookings/utils";
-import { completeOpdConsultationApi, type CompletionMedicinePayload } from "@/lib/patientBookingsApi";
+import {
+  completeNursingEncounterVisitApi,
+  completeOpdConsultationApi,
+  type CompletionMedicinePayload,
+} from "@/lib/patientBookingsApi";
 
 export type { LabSampleTypeLookup } from "@/components/clients/patient-bookings/types";
 
@@ -41,8 +45,17 @@ export function PatientBookingsHistory({
     Record<string, DiagnosticTabId>
   >({});
   const [busyOpdQueueId, setBusyOpdQueueId] = useState<string | null>(null);
+  const [busyNursingBookingId, setBusyNursingBookingId] = useState<string | null>(null);
 
-  const inventoryFeatureEnabled = canUpdateDispatch;
+  /** OPD / in-house nursing have no dispatch — still allow issuing from nurse stock when user can update bookings. */
+  const inventoryFeatureEnabled =
+    canUpdateDispatch ||
+    (canSaveVisitDraft &&
+      list.some(
+        (row) =>
+          row.bookingTypeLookup?.lookupKey === "OPD" ||
+          row.bookingTypeLookup?.lookupKey === "NURSING_ENCOUNTER",
+      ));
   const bookingActions = usePatientBookingActions(() => {
       setPendingConfirm(null);
       router.refresh();
@@ -60,6 +73,38 @@ export function PatientBookingsHistory({
       bookingId: row.bookingId,
       patientId: row.patientId,
     }));
+  }
+
+  async function completeNursingEncounter(bookingId: string) {
+    const activeBooking = list.find((row) => row.id === bookingId);
+    const remarkText = activeBooking
+      ? bookingActions.diagnosisRemarkDraftForBooking(activeBooking).trim()
+      : "";
+    setBusyNursingBookingId(bookingId);
+    try {
+      const medicines =
+        activeBooking != null ? queuedMedicinePayload(activeBooking.id) : [];
+      const result = await completeNursingEncounterVisitApi(bookingId, {
+        ...(remarkText ? { remark: remarkText } : {}),
+        medicines,
+      });
+      if (activeBooking) {
+        inventory.clearQueuedMedicinesForBooking(activeBooking.id);
+      }
+      if (result.visitInvoiceId) {
+        window.open(
+          `/api/invoices/${encodeURIComponent(result.visitInvoiceId)}/pdf`,
+          "_blank",
+          "noopener,noreferrer",
+        );
+      }
+      toast.success("Visit completed.");
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Unable to complete visit");
+    } finally {
+      setBusyNursingBookingId(null);
+    }
   }
 
   async function completeOpdConsultation(queueId: string) {
@@ -131,7 +176,8 @@ export function PatientBookingsHistory({
               bookingActions.uploadingReportBookingId !== null ||
               bookingActions.addingSampleBookingId !== null ||
               bookingActions.removingSampleId !== null ||
-              (b.opdQueueEntry?.id != null && busyOpdQueueId === b.opdQueueEntry.id)
+              (b.opdQueueEntry?.id != null && busyOpdQueueId === b.opdQueueEntry.id) ||
+              busyNursingBookingId === b.id
             }
             savingBookingId={bookingActions.savingBookingId}
             onSaveVisitDraft={() => void bookingActions.saveVisitDraftForBooking(b)}
@@ -166,6 +212,8 @@ export function PatientBookingsHistory({
             opdCompleting={
               b.opdQueueEntry?.id != null && busyOpdQueueId === b.opdQueueEntry.id
             }
+            onCompleteNursingEncounter={(bid) => void completeNursingEncounter(bid)}
+            nursingCompleting={busyNursingBookingId === b.id}
           />
         );
       })}

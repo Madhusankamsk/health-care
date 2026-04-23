@@ -32,7 +32,19 @@ export function useInventoryIssue() {
     if (!inventoryBatches) return [];
     const sourceDispatch = preferredDispatchForInventory(b);
     const leadUserId = sourceDispatch?.assignments.find((a) => a.isTeamLeader)?.user.id;
-    if (!leadUserId) return [];
+    if (!leadUserId) {
+      const key = b.bookingTypeLookup?.lookupKey;
+      if (key === "OPD" || key === "NURSING_ENCOUNTER") {
+        return inventoryBatches
+          .filter(
+            (batch) =>
+              batch.quantity > 0 &&
+              (batch.locationType === "NURSE" || batch.locationType === "USER"),
+          )
+          .sort((a, z) => new Date(a.expiryDate).getTime() - new Date(z.expiryDate).getTime());
+      }
+      return [];
+    }
     return inventoryBatches
       .filter(
         (batch) =>

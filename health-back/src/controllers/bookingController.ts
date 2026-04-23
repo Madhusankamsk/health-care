@@ -19,6 +19,8 @@ import {
   deleteLabSampleForBooking,
 } from "../services/visitClinicalService";
 import { saveVisitDraft } from "../services/visitService";
+import { completeNursingEncounterVisit } from "../services/bookingVisitCompletionService";
+import prisma from "../prisma/client";
 
 async function getScope(req: Request) {
   const keys = await loadPermissionKeys(req);
@@ -358,6 +360,90 @@ export async function deleteBookingHandler(req: Request, res: Response) {
     return res.status(204).send();
   } catch {
     return res.status(409).json({ message: "Unable to delete booking. Remove linked records first." });
+  }
+}
+
+export async function completeNursingEncounterVisitHandler(req: Request, res: Response) {
+  const { id: bookingId } = req.params;
+  const { remark, medicines } = req.body as Partial<{
+    remark: string | null;
+    medicines: Array<{
+      batchId: string;
+      quantity: number;
+      bookingId: string;
+      patientId: string;
+    }>;
+  }>;
+
+  const cleanedId = bookingId?.trim() ?? "";
+  const userId = req.authUser?.sub?.trim();
+  if (!cleanedId) {
+    return res.status(400).json({ message: "Booking id is required" });
+  }
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  let normalizedMedicines:
+    | Array<{ batchId: string; quantity: number; bookingId: string; patientId: string }>
+    | undefined;
+  if (medicines !== undefined) {
+    if (!Array.isArray(medicines)) {
+      return res.status(400).json({ message: "medicines must be an array" });
+    }
+    normalizedMedicines = medicines.map((row) => ({
+      batchId: String(row.batchId ?? "").trim(),
+      quantity: Number(row.quantity),
+      bookingId: String(row.bookingId ?? "").trim(),
+      patientId: String(row.patientId ?? "").trim(),
+    }));
+    const hasInvalid = normalizedMedicines.some(
+      (row) =>
+        !row.batchId ||
+        !row.bookingId ||
+        !row.patientId ||
+        !Number.isInteger(row.quantity) ||
+        row.quantity <= 0,
+    );
+    if (hasInvalid) {
+      return res.status(400).json({
+        message: "Each medicine must include batchId, bookingId, patientId and positive quantity",
+      });
+    }
+  }
+
+  try {
+    await completeNursingEncounterVisit({
+      bookingId: cleanedId,
+      actorUserId: userId,
+      remark: remark === undefined ? undefined : remark,
+      medicines: normalizedMedicines,
+    });
+
+    const visitInvoice = await prisma.invoice.findFirst({
+      where: { bookingId: cleanedId, subscriptionAccountId: null },
+      select: { id: true },
+    });
+
+    return res.json({ visitInvoiceId: visitInvoice?.id ?? null });
+  } catch (e) {
+    const err = e as { code?: string; message?: string };
+    if (err.code === "BOOKING_NOT_FOUND") {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+    if (err.code === "NOT_NURSING_ENCOUNTER") {
+      return res.status(400).json({ message: "This endpoint is only for in-house nursing encounters" });
+    }
+    if (err.code === "VISIT_NOT_FOUND") {
+      return res.status(404).json({ message: "Visit not found" });
+    }
+    if (err.code === "ALREADY_COMPLETED") {
+      return res.status(409).json({ message: "Visit already completed" });
+    }
+    if (err.code === "INVALID_MEDICINE_CONTEXT") {
+      return res.status(400).json({ message: "Medicine rows do not match this booking" });
+    }
+    return res.status(500).json({ message: err.message ?? "Unable to complete visit" });
   }
 }
 

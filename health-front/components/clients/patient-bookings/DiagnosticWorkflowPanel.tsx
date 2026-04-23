@@ -27,6 +27,7 @@ type Props = {
   canSaveVisitDraft: boolean;
   busyDispatchId: string | null;
   opdCompleting?: boolean;
+  nursingCompleting?: boolean;
   activeDiagnosticTab: DiagnosticTabId;
   setActiveDiagnosticTab: (tab: DiagnosticTabId) => void;
   diagnosisRemark: string;
@@ -68,6 +69,7 @@ export function DiagnosticWorkflowPanel(props: Props) {
     canSaveVisitDraft,
     busyDispatchId,
     opdCompleting = false,
+    nursingCompleting = false,
     activeDiagnosticTab,
     setActiveDiagnosticTab,
     diagnosisRemark,
@@ -108,8 +110,11 @@ export function DiagnosticWorkflowPanel(props: Props) {
   const completedDispatch = b.dispatchRecords.some((dr) => dr.statusLookup?.lookupKey === "COMPLETED");
   const isCompleted = visitDone || completedDispatch;
   const isOpdBooking = b.bookingTypeLookup?.lookupKey === "OPD";
+  const isNursingEncounter = b.bookingTypeLookup?.lookupKey === "NURSING_ENCOUNTER";
   const opdInProgress = isOpdBooking && Boolean(b.visitRecord) && !visitDone;
-  const inWorkflowPhase = !visitDone && (Boolean(arrived) || opdInProgress);
+  const nursingInProgress = isNursingEncounter && Boolean(b.visitRecord) && !visitDone;
+  const inWorkflowPhase =
+    !visitDone && (Boolean(arrived) || opdInProgress || nursingInProgress);
   if (!inWorkflowPhase && !isCompleted) return null;
   if (!canUpdateDispatch && !canSaveVisitDraft && !isCompleted) return null;
 
@@ -240,12 +245,12 @@ export function DiagnosticWorkflowPanel(props: Props) {
             {savingBookingId === b.id ? "Saving…" : "Save draft"}
           </Button>
         ) : null}
-        {canUpdateDispatch || (isOpdBooking && b.opdQueueEntry?.id) ? (
+        {canUpdateDispatch || (isOpdBooking && b.opdQueueEntry?.id) || isNursingEncounter ? (
           <Button
             type="button"
             variant="primary"
             className="h-9 px-4 text-xs font-medium"
-            disabled={busyDispatchId !== null || opdCompleting}
+            disabled={busyDispatchId !== null || opdCompleting || nursingCompleting}
             onClick={() => setBillModalOpen(true)}
           >
             Generate bill
@@ -259,7 +264,7 @@ export function DiagnosticWorkflowPanel(props: Props) {
         bookingId={b.id}
         patientDisplayName={b.patient?.fullName?.trim() || "Patient"}
         queuedMedicines={queuedMedicines}
-        completeDisabled={busyDispatchId !== null || opdCompleting}
+        completeDisabled={busyDispatchId !== null || opdCompleting || nursingCompleting}
         onComplete={onConfirmComplete}
       />
     </>

@@ -43,7 +43,7 @@ async function getDoctorStatusLookupId(
 }
 
 async function getBookingTypeLookupId(
-  lookupKey: "VISIT" | "OPD",
+  lookupKey: "VISIT" | "OPD" | "NURSING_ENCOUNTER",
 ): Promise<string> {
   const row = await prisma.lookup.findFirst({
     where: {
@@ -78,7 +78,7 @@ const dispatchAssignmentUserSelect = {
 } as const;
 
 /** Bookings for a patient profile: full dispatch history per booking. */
-const bookingWithDispatchInclude = {
+export const bookingWithDispatchInclude = {
   patient: { select: { id: true, fullName: true, nicOrPassport: true, contactNo: true } },
   requestedDoctor: { select: { id: true, fullName: true, email: true } },
   doctorStatusLookup: {
@@ -124,7 +124,26 @@ const bookingWithDispatchInclude = {
       },
     },
   },
-  opdQueueEntry: { select: { id: true } },
+  opdQueueEntry: {
+    select: {
+      id: true,
+      tokenNo: true,
+      visitDate: true,
+      pickedAt: true,
+      statusLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
+      pickedBy: { select: { id: true, fullName: true, email: true } },
+    },
+  },
+  nursingAdmission: {
+    select: {
+      id: true,
+      admittedAt: true,
+      dischargedAt: true,
+      siteLabel: true,
+      statusLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
+      carePathwayLookup: { select: { id: true, lookupKey: true, lookupValue: true } },
+    },
+  },
   dispatchRecords: {
     orderBy: { dispatchedAt: "desc" as const },
     include: {

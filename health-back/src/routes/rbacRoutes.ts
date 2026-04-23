@@ -46,6 +46,7 @@ import {
   listPatientsHandler,
   searchPatientsPickerHandler,
   updatePatientHandler,
+  listPatientNursingAdmissionsHandler,
 } from "../controllers/patientController";
 import { listLookupsHandler } from "../controllers/lookupController";
 import {
@@ -59,6 +60,7 @@ import {
   postDiagnosticReportHandler,
   postLabSampleHandler,
   updateBookingHandler,
+  completeNursingEncounterVisitHandler,
 } from "../controllers/bookingController";
 import {
   createDispatchHandler,
@@ -67,6 +69,14 @@ import {
   listUpcomingDispatchHandler,
   patchDispatchStatusHandler,
 } from "../controllers/dispatchController";
+import {
+  admitNursingPatientHandler,
+  appendNursingDailyNoteHandler,
+  dischargeNursingAdmissionHandler,
+  listActiveNursingAdmissionsHandler,
+  patchNursingCarePathwayHandler,
+  startNursingEncounterHandler,
+} from "../controllers/nursingAdmissionController";
 import {
   completeOpdQueueHandler,
   createOpdQueueHandler,
@@ -326,6 +336,11 @@ router.get(
 router.get("/patients", requireAnyPermission(["patients:list"]), listPatientsHandler);
 router.post("/patients", requireAnyPermission(["patients:create"]), createPatientHandler);
 router.get("/patients/:id/bookings", requireAnyPermission(["patients:read"]), listBookingsForPatientHandler);
+router.get(
+  "/patients/:id/nursing-admissions",
+  requireAnyPermission(["patients:read", "nursing:read"]),
+  listPatientNursingAdmissionsHandler,
+);
 router.get("/patients/:id", requireAnyPermission(["patients:read"]), getPatientHandler);
 router.put("/patients/:id", requireAnyPermission(["patients:update"]), updatePatientHandler);
 router.delete(
@@ -362,6 +377,11 @@ router.delete(
   requireAnyPermission(["bookings:update"]),
   deleteLabSampleHandler,
 );
+router.post(
+  "/bookings/:id/complete-nursing-visit",
+  requireAnyPermission(["bookings:update"]),
+  completeNursingEncounterVisitHandler,
+);
 router.get("/bookings/:id", requireAnyPermission(["bookings:read"]), getBookingHandler);
 router.put("/bookings/:id", requireAnyPermission(["bookings:update"]), updateBookingHandler);
 router.delete("/bookings/:id", requireAnyPermission(["bookings:delete"]), deleteBookingHandler);
@@ -387,6 +407,34 @@ router.patch(
   "/dispatch/:id/status",
   requireAnyPermission(["dispatch:update"]),
   patchDispatchStatusHandler,
+);
+
+// In-house nursing (company premises)
+router.get(
+  "/nursing/admissions/active",
+  requireAnyPermission(["nursing:list", "nursing:read"]),
+  listActiveNursingAdmissionsHandler,
+);
+router.post("/nursing/admissions", requireAnyPermission(["nursing:manage"]), admitNursingPatientHandler);
+router.post(
+  "/nursing/admissions/:id/notes",
+  requireAnyPermission(["nursing:manage"]),
+  appendNursingDailyNoteHandler,
+);
+router.patch(
+  "/nursing/admissions/:id/pathway",
+  requireAnyPermission(["nursing:manage"]),
+  patchNursingCarePathwayHandler,
+);
+router.post(
+  "/nursing/admissions/:id/discharge",
+  requireAnyPermission(["nursing:discharge"]),
+  dischargeNursingAdmissionHandler,
+);
+router.post(
+  "/nursing/admissions/:id/start-encounter",
+  requireAnyPermission(["nursing:manage"]),
+  startNursingEncounterHandler,
 );
 
 // OPD queue & doctor workflow

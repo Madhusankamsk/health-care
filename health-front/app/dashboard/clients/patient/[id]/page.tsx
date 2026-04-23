@@ -3,6 +3,10 @@ import Link from "next/link";
 
 import type { Patient } from "@/components/admin/PatientManager";
 import {
+  PatientClinicalTimeline,
+  type PatientNursingAdmissionTimeline,
+} from "@/components/clients/PatientClinicalTimeline";
+import {
   PatientBookingsHistory,
   type LabSampleTypeLookup,
 } from "@/components/clients/PatientBookingsHistory";
@@ -58,6 +62,16 @@ export default async function PatientFullPreviewPage({
           `/api/lookups?category=${encodeURIComponent("LAB_SAMPLE_TYPE")}`,
         )) ?? []
       : [];
+
+  const canSeeNursingTimeline =
+    hasAnyPermission(me.permissions, ["patients:read"]) &&
+    hasAnyPermission(me.permissions, ["nursing:read"]);
+
+  const nursingAdmissionsPayload = canSeeNursingTimeline
+    ? await backendJson<{ items: PatientNursingAdmissionTimeline[] }>(
+        `/api/patients/${id}/nursing-admissions`,
+      )
+    : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -141,6 +155,10 @@ export default async function PatientFullPreviewPage({
           </div>
         ) : null}
       </section>
+
+      {canSeeNursingTimeline ? (
+        <PatientClinicalTimeline admissions={nursingAdmissionsPayload?.items ?? []} />
+      ) : null}
 
       <Card
         title="Bookings and Dispatch"
