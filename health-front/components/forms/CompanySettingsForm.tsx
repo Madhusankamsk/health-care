@@ -19,6 +19,7 @@ export type CompanySettingsDto = {
   currencyCode: string | null;
   travelCostPerKm: string | number | null;
   taxPercentage: string | number | null;
+  serviceCharges: string | number | null;
   invoicePrefix: string | null;
   isSetupCompleted: boolean;
   updatedAt: string;
@@ -35,6 +36,7 @@ type FormState = {
   currencyCode: string;
   travelCostPerKm: string;
   taxPercentage: string;
+  serviceCharges: string;
   invoicePrefix: string;
   isSetupCompleted: boolean;
 };
@@ -51,6 +53,7 @@ function fromSettings(settings: CompanySettingsDto): FormState {
     currencyCode: settings?.currencyCode ?? "",
     travelCostPerKm: settings?.travelCostPerKm?.toString?.() ?? "",
     taxPercentage: settings?.taxPercentage?.toString?.() ?? "",
+    serviceCharges: settings?.serviceCharges?.toString?.() ?? "",
     invoicePrefix: settings?.invoicePrefix ?? "INV-",
     isSetupCompleted: settings?.isSetupCompleted ?? false,
   };
@@ -102,6 +105,7 @@ export function CompanySettingsForm({
         currencyCode: form.currencyCode.trim() || null,
         travelCostPerKm: form.travelCostPerKm.trim() || null,
         taxPercentage: form.taxPercentage.trim() || null,
+        serviceCharges: form.serviceCharges.trim() || null,
         invoicePrefix: form.invoicePrefix.trim() || null,
         isSetupCompleted: form.isSetupCompleted,
       };
@@ -265,6 +269,16 @@ export function CompanySettingsForm({
           value={form.taxPercentage}
           onChange={(e) =>
             setForm((p) => ({ ...p, taxPercentage: e.target.value }))
+          }
+        />
+        <Input
+          label="Service charges"
+          name="serviceCharges"
+          type="number"
+          step="0.01"
+          value={form.serviceCharges}
+          onChange={(e) =>
+            setForm((p) => ({ ...p, serviceCharges: e.target.value }))
           }
         />
         <Input

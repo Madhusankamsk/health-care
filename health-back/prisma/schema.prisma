@@ -407,6 +407,7 @@ model Invoice {
   consultationTotal     Decimal
   medicineTotal         Decimal
   travelCost            Decimal
+  serviceCharge         Decimal  @default(0)
   paidAmount            Decimal  @default(0)
   balanceDue            Decimal
   paymentStatus         String   @default("Unpaid")
@@ -561,6 +562,7 @@ model CompanySettings {
   currencyCode     String?
   travelCostPerKm  Decimal  @default(0)
   taxPercentage    Decimal  @default(0)
+  serviceCharges   Decimal  @default(0)
   invoicePrefix    String   @default("INV-")
   isSetupCompleted Boolean  @default(false)
   updatedAt        DateTime @default(now())

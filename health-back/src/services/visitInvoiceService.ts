@@ -10,7 +10,6 @@ export const DUMMY_VISIT_INVOICE_AMOUNTS = {
   consultationTotal: new Prisma.Decimal("1200"),
   medicineTotal: new Prisma.Decimal("420"),
   travelCost: new Prisma.Decimal("850"),
-  totalAmount: new Prisma.Decimal("2914.6"),
 } as const;
 
 async function requireInvoicePaymentStatusUnpaidId(tx: Tx): Promise<string> {
@@ -61,7 +60,13 @@ export async function createVisitInvoiceIfAbsent(
 
   const paymentStatusId = await requireInvoicePaymentStatusUnpaidId(tx);
   const invoiceTypeId = await requireInvoiceTypeVisitId(tx);
-  const { consultationTotal, medicineTotal, travelCost, totalAmount } = DUMMY_VISIT_INVOICE_AMOUNTS;
+  const { consultationTotal, medicineTotal, travelCost } = DUMMY_VISIT_INVOICE_AMOUNTS;
+  const latestSettings = await tx.companySettings.findFirst({
+    orderBy: { updatedAt: "desc" },
+    select: { serviceCharges: true },
+  });
+  const serviceCharge = latestSettings?.serviceCharges ?? new Prisma.Decimal(0);
+  const totalAmount = consultationTotal.add(medicineTotal).add(travelCost).add(serviceCharge);
   const balanceDue = totalAmount;
 
   const inv = await tx.invoice.create({
@@ -75,6 +80,7 @@ export async function createVisitInvoiceIfAbsent(
       consultationTotal,
       medicineTotal,
       travelCost,
+      serviceCharge,
       paidAmount: new Prisma.Decimal(0),
       balanceDue,
       paymentStatus: "Unpaid",

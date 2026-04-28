@@ -1,0 +1,5 @@
+ALTER TABLE "CompanySettings"
+ADD COLUMN "serviceCharges" DECIMAL(65,30) NOT NULL DEFAULT 0;
+
+ALTER TABLE "Invoice"
+ADD COLUMN "serviceCharge" DECIMAL(65,30) NOT NULL DEFAULT 0;

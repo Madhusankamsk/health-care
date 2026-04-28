@@ -234,6 +234,7 @@ router.put("/company-settings", requireSuperAdmin, async (req, res) => {
     currencyCode: string | null;
     travelCostPerKm: number | string | null;
     taxPercentage: number | string | null;
+    serviceCharges: number | string | null;
     invoicePrefix: string | null;
     isSetupCompleted: boolean | null;
   }>;
@@ -265,6 +266,7 @@ router.put("/company-settings", requireSuperAdmin, async (req, res) => {
     currencyCode: body.currencyCode ?? undefined,
     travelCostPerKm: toDecimal(body.travelCostPerKm),
     taxPercentage: toDecimal(body.taxPercentage),
+    serviceCharges: toDecimal(body.serviceCharges),
     invoicePrefix: body.invoicePrefix ?? undefined,
     isSetupCompleted:
       typeof body.isSetupCompleted === "boolean" ? body.isSetupCompleted : undefined,

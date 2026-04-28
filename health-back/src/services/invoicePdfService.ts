@@ -204,6 +204,7 @@ type VisitInvoicePdfRow = {
   consultationTotal: { toString(): string };
   medicineTotal: { toString(): string };
   travelCost: { toString(): string };
+  serviceCharge: { toString(): string };
   paymentStatus: string;
   patient: {
     fullName: string;
@@ -298,7 +299,7 @@ export function buildVisitInvoicePdfBuffer(
 
     doc.moveDown(0.4);
     const summaryTop = doc.y;
-    const summaryH = 168;
+    const summaryH = 186;
     doc.rect(48, summaryTop, pageW - 96, summaryH).fillAndStroke(COL.rowAlt, COL.border);
 
     const labelX = 58;
@@ -315,6 +316,7 @@ export function buildVisitInvoicePdfBuffer(
     row(`Consultation / visit fee (${currency})`, invoice.consultationTotal.toString());
     row(`Diagnostic & lab / travel (${currency})`, invoice.travelCost.toString());
     row(`Medicines dispensed (${currency})`, invoice.medicineTotal.toString());
+    row(`Service charges (${currency})`, invoice.serviceCharge.toString());
     row(`Total (${currency})`, invoice.totalAmount.toString(), true);
     row(`Paid (${currency})`, invoice.paidAmount.toString());
     row(`Balance due (${currency})`, invoice.balanceDue.toString(), true, true);
