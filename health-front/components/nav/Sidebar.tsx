@@ -386,7 +386,10 @@ export function Sidebar({
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   function toggleGroup(href: string) {
-    setOpenGroups((prev) => ({ ...prev, [href]: !prev[href] }));
+    setOpenGroups((prev) => {
+      const currentlyOpen = prev[href] ?? true;
+      return { ...prev, [href]: !currentlyOpen };
+    });
   }
 
   return (
@@ -439,14 +442,14 @@ export function Sidebar({
 
         <nav
           className={[
-            "flex flex-col gap-1",
+            "min-h-0 flex flex-1 flex-col gap-1 overflow-y-auto",
             isCollapsed ? "pt-2" : "",
           ].join(" ")}
         >
           {visibleItems.map((item) => {
             const hasChildren = Boolean(item.children?.length);
             const active = isActive(pathname, item.href);
-            const isOpen = openGroups[item.href] ?? pathname.startsWith(item.href);
+            const isOpen = openGroups[item.href] ?? true;
 
             if (!hasChildren) {
               return (
@@ -538,10 +541,6 @@ export function Sidebar({
           <div className="mt-auto flex flex-col gap-2 border-t border-[var(--border)] px-2 pt-4">
             <ThemeToggle />
             <LogoutButton />
-          </div>
-        ) : isDesktop ? (
-          <div className="mt-auto px-2 pb-2 text-xs text-[var(--text-muted)]">
-            Signed-in area
           </div>
         ) : null}
       </div>
