@@ -147,13 +147,22 @@ export async function listInventoryBatchesApi() {
     | MessageResponse
   >(res, []);
   if (!res.ok) {
-    if (typeof data === "object" && !Array.isArray(data) && data?.message) {
+    if (
+      data &&
+      typeof data === "object" &&
+      !Array.isArray(data) &&
+      "message" in data &&
+      typeof data.message === "string" &&
+      data.message
+    ) {
       throw new Error(data.message);
     }
     throw new Error("Could not load team inventory");
   }
   if (Array.isArray(data)) return data;
-  if (data && typeof data === "object" && Array.isArray(data.items)) return data.items;
+  if (data && typeof data === "object" && "items" in data && Array.isArray(data.items)) {
+    return data.items;
+  }
   return [];
 }
 
