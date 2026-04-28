@@ -131,7 +131,7 @@ export function PatientClinicalTimeline({
                 >
                   {startingEncounterAdmissionId === a.id
                     ? "Initiating…"
-                    : "Initiate In-house nursing encounter"}
+                    : "Diagnostic"}
                 </Button>
                 {canAddNotes ? (
                   <Button
