@@ -11,7 +11,6 @@ import {
 import type { UpcomingBookingRow } from "@/components/dispatch/types";
 import { formatScheduled } from "@/components/dispatch/dispatchDisplay";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { ModalShell } from "@/components/ui/ModalShell";
 
 export type PatientNursingAdmissionTimeline = {
@@ -100,33 +99,26 @@ export function PatientClinicalTimeline({
 
   if (!admissions.length) {
     return (
-      <Card
-        title="In-house nursing history"
-        description="Admissions, daily notes, and diagnostic encounters on company premises."
-      >
-        <p className="text-sm text-[var(--text-secondary)]">No in-house nursing admissions recorded.</p>
-      </Card>
+      <p className="text-sm text-[var(--text-secondary)]">No in-house nursing admissions recorded.</p>
     );
   }
 
   return (
-    <Card
-      title="In-house nursing history"
-      description="Admissions with one chronological activity timeline (daily notes + in-house nursing encounters). Nursing encounters are shown only in this section."
-    >
-      <div className="space-y-6">
+    <section className="space-y-4">
         {admissions.map((a) => (
           <div
             key={a.id}
-            className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4 sm:p-5"
+            className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3 sm:p-4"
           >
-            <div className="flex flex-wrap items-start justify-between gap-2 border-b border-[var(--border)] pb-3">
+            <div className="flex flex-wrap items-start justify-between gap-2 border-b border-[var(--border)] pb-2">
               <div>
-                <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Admission</p>
-                <p className="mt-1 text-sm font-semibold text-[var(--text-primary)]">
-                  {formatScheduled(a.admittedAt)}
-                  {a.dischargedAt ? ` → ${formatScheduled(a.dischargedAt)}` : " → Active"}
-                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-semibold text-[var(--text-primary)]">
+                    {formatScheduled(a.admittedAt)}
+                    {a.dischargedAt ? ` → ${formatScheduled(a.dischargedAt)}` : " → Active"}
+                    {a.siteLabel?.trim() ? ` ( Room: ${a.siteLabel.trim()} )` : ""}
+                  </p>
+                </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="pill pill-warning">{a.statusLookup.lookupValue}</span>
@@ -153,14 +145,7 @@ export function PatientClinicalTimeline({
                 ) : null}
               </div>
             </div>
-            {a.siteLabel?.trim() ? (
-              <p className="mt-3 text-sm text-[var(--text-secondary)]">
-                <span className="font-medium text-[var(--text-muted)]">Site / room: </span>
-                {a.siteLabel.trim()}
-              </p>
-            ) : null}
-
-            <div className="mt-4 border-t border-[var(--border)] pt-4">
+            <div className="mt-2 pt-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                 Admission activity timeline
               </p>
@@ -199,7 +184,7 @@ export function PatientClinicalTimeline({
                 }
 
                 return (
-                  <div className="mt-2 space-y-3">
+                  <div className="mt-2 space-y-2">
                     {timeline.map((item) =>
                       item.kind === "note" ? (
                         <div
@@ -217,13 +202,7 @@ export function PatientClinicalTimeline({
                           </p>
                         </div>
                       ) : (
-                        <div
-                          key={item.id}
-                          className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2"
-                        >
-                          <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                            Treatment encounter
-                          </p>
+                        <div key={item.id}>
                           <PatientBookingsHistory
                             bookings={[item.booking]}
                             canUpdateDispatch={canUpdateDispatch}
@@ -274,7 +253,6 @@ export function PatientClinicalTimeline({
             </ModalShell>
           </div>
         ))}
-      </div>
-    </Card>
+    </section>
   );
 }

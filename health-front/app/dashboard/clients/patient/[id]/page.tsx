@@ -6,12 +6,12 @@ import {
   PatientClinicalTimeline,
   type PatientNursingAdmissionTimeline,
 } from "@/components/clients/PatientClinicalTimeline";
+import { PatientPreviewTabs } from "@/components/clients/PatientPreviewTabs";
 import {
   PatientBookingsHistory,
   type LabSampleTypeLookup,
 } from "@/components/clients/PatientBookingsHistory";
 import type { UpcomingBookingRow } from "@/components/dispatch/types";
-import { Card } from "@/components/ui/Card";
 import { backendJson, backendJsonPaginated, type BackendMeResponse } from "@/lib/backend";
 import { withPaginationQuery } from "@/lib/pagination";
 import { getIsAuthenticated } from "@/lib/auth";
@@ -75,6 +75,35 @@ export default async function PatientFullPreviewPage({
         `/api/patients/${id}/nursing-admissions`,
       )
     : null;
+  const admissionsContent = canSeeNursingTimeline ? (
+    <PatientClinicalTimeline
+      admissions={nursingAdmissionsPayload?.items ?? []}
+      canAddNotes={canAddNursingNotes}
+      canUpdateDispatch={canUpdateDispatch}
+      canSaveVisitDraft={canSaveVisitDraft}
+      labSampleTypeLookups={labSampleTypeLookups}
+    />
+  ) : null;
+  const bookingsContent = canSeeBookings ? (
+    nonNursingBookings === null ? (
+      <p className="text-sm text-[var(--text-secondary)]">
+        Could not load booking history. Try again or check your network connection.
+      </p>
+    ) : (
+      <PatientBookingsHistory
+        bookings={nonNursingBookings}
+        canUpdateDispatch={canUpdateDispatch}
+        canSaveVisitDraft={canSaveVisitDraft}
+        labSampleTypeLookups={labSampleTypeLookups}
+      />
+    )
+  ) : (
+    <p className="text-sm text-[var(--text-secondary)]">
+      Booking and dispatch history requires{" "}
+      <span className="font-medium text-[var(--text-primary)]">bookings:list</span> or{" "}
+      <span className="font-medium text-[var(--text-primary)]">bookings:read</span> permission.
+    </p>
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -159,42 +188,12 @@ export default async function PatientFullPreviewPage({
         ) : null}
       </section>
 
-      {canSeeNursingTimeline ? (
-        <PatientClinicalTimeline
-          admissions={nursingAdmissionsPayload?.items ?? []}
-          canAddNotes={canAddNursingNotes}
-          canUpdateDispatch={canUpdateDispatch}
-          canSaveVisitDraft={canSaveVisitDraft}
-          labSampleTypeLookups={labSampleTypeLookups}
-        />
-      ) : null}
-
-      <Card
-        title="Bookings and Dispatch"
-        description="Non-nursing visit and OPD workflows, including dispatch and diagnostics."
-      >
-        {canSeeBookings ? (
-          nonNursingBookings === null ? (
-            <p className="text-sm text-[var(--text-secondary)]">
-              Could not load booking history. Try again or check your network connection.
-            </p>
-          ) : (
-            <PatientBookingsHistory
-              bookings={nonNursingBookings}
-              canUpdateDispatch={canUpdateDispatch}
-              canSaveVisitDraft={canSaveVisitDraft}
-              labSampleTypeLookups={labSampleTypeLookups}
-            />
-          )
-        ) : (
-          <p className="text-sm text-[var(--text-secondary)]">
-            Booking and dispatch history requires{" "}
-            <span className="font-medium text-[var(--text-primary)]">bookings:list</span> or{" "}
-            <span className="font-medium text-[var(--text-primary)]">bookings:read</span>{" "}
-            permission.
-          </p>
-        )}
-      </Card>
+      <PatientPreviewTabs
+        showBookings
+        showAdmissions={canSeeNursingTimeline}
+        bookingsContent={bookingsContent}
+        admissionsContent={admissionsContent}
+      />
     </div>
   );
 }

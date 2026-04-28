@@ -14,6 +14,7 @@ import { useEscapeKey } from "@/lib/useEscapeKey";
 export type ModalShellProps = {
   open: boolean;
   onClose: () => void;
+  /** Legacy prop kept for call-site compatibility; DialogTitle id is managed by Radix. */
   titleId: string;
   title: string;
   subtitle: string;
@@ -28,7 +29,7 @@ export type ModalShellProps = {
 export function ModalShell({
   open,
   onClose,
-  titleId,
+  titleId: _titleId,
   title,
   subtitle,
   children,
@@ -44,7 +45,7 @@ export function ModalShell({
         <Card>
           <div className="mb-4 flex items-start justify-between gap-3">
             <DialogHeader>
-              <DialogTitle id={titleId} className="text-[var(--text-primary)]">
+              <DialogTitle className="text-[var(--text-primary)]">
                 {title}
               </DialogTitle>
               <DialogDescription className="text-[var(--text-secondary)]">
