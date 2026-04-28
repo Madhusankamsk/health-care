@@ -23,6 +23,10 @@ const PERMS = {
   bookingsHistory: ["bookings:list", "bookings:read"],
 } as const;
 
+type CompanySettingsBillingConfig = {
+  serviceCharges?: string | number | null;
+};
+
 export default async function PatientFullPreviewPage({
   params,
 }: {
@@ -68,6 +72,9 @@ export default async function PatientFullPreviewPage({
           `/api/lookups?category=${encodeURIComponent("LAB_SAMPLE_TYPE")}`,
         )) ?? []
       : [];
+  const companySettings = await backendJson<CompanySettingsBillingConfig>("/api/company-settings");
+  const serviceChargeParsed = Number(companySettings?.serviceCharges ?? 0);
+  const serviceChargeAmount = Number.isFinite(serviceChargeParsed) ? serviceChargeParsed : 0;
 
   const canSeeNursingTimeline =
     hasAnyPermission(me.permissions, ["patients:read"]) &&
@@ -89,6 +96,7 @@ export default async function PatientFullPreviewPage({
       canSaveVisitDraft={canSaveVisitDraft}
       canUseInventory={canUseInventory}
       labSampleTypeLookups={labSampleTypeLookups}
+      serviceChargeAmount={serviceChargeAmount}
     />
   ) : null;
   const bookingsContent = canSeeBookings ? (
@@ -103,6 +111,7 @@ export default async function PatientFullPreviewPage({
         canSaveVisitDraft={canSaveVisitDraft}
         canUseInventory={canUseInventory}
         labSampleTypeLookups={labSampleTypeLookups}
+        serviceChargeAmount={serviceChargeAmount}
       />
     )
   ) : (

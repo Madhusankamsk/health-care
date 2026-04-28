@@ -252,7 +252,7 @@ export function CompanySettingsForm({
           </div>
         </div>
         <Input
-          label="Travel cost per km"
+          label="Cost per travel"
           name="travelCostPerKm"
           type="number"
           step="0.01"

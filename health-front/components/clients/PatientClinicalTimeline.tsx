@@ -36,6 +36,7 @@ export function PatientClinicalTimeline({
   canSaveVisitDraft = false,
   canUseInventory = false,
   labSampleTypeLookups = [],
+  serviceChargeAmount = 0,
 }: {
   admissions: PatientNursingAdmissionTimeline[];
   canStartEncounter?: boolean;
@@ -44,6 +45,7 @@ export function PatientClinicalTimeline({
   canSaveVisitDraft?: boolean;
   canUseInventory?: boolean;
   labSampleTypeLookups?: LabSampleTypeLookup[];
+  serviceChargeAmount?: number;
 }) {
   const router = useRouter();
   const [modalAdmissionId, setModalAdmissionId] = useState<string | null>(null);
@@ -215,6 +217,7 @@ export function PatientClinicalTimeline({
                             canSaveVisitDraft={canSaveVisitDraft}
                             canUseInventory={canUseInventory}
                             labSampleTypeLookups={labSampleTypeLookups}
+                            serviceChargeAmount={serviceChargeAmount}
                           />
                         </div>
                       ),

@@ -81,6 +81,7 @@ export async function completeNursingEncounterVisit(params: {
     const { invoiceId } = await createVisitInvoiceIfAbsent(tx, {
       bookingId: booking.id,
       patientId: booking.patientId,
+      medicines: params.medicines ?? [],
       createdByUserId: params.actorUserId,
     });
 

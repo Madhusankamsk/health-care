@@ -26,6 +26,7 @@ export type VisitBillModalProps = {
   bookingId: string;
   patientDisplayName: string;
   queuedMedicines: QueuedMedicineRow[];
+  serviceChargeAmount: number;
   completeDisabled: boolean;
   onComplete: () => void;
 };
@@ -36,6 +37,7 @@ export function VisitBillModal({
   bookingId,
   patientDisplayName,
   queuedMedicines,
+  serviceChargeAmount,
   completeDisabled,
   onComplete,
 }: VisitBillModalProps) {
@@ -47,7 +49,10 @@ export function VisitBillModal({
       })),
     [queuedMedicines],
   );
-  const billTotal = billLines.reduce((sum, row) => sum + row.amount, 0);
+  const medicineSubtotal = billLines.reduce((sum, row) => sum + row.amount, 0);
+  const normalizedServiceCharge = Number.isFinite(serviceChargeAmount) ? serviceChargeAmount : 0;
+  // Keep this formula aligned with backend invoice creation (medicineTotal + serviceCharge).
+  const billTotal = medicineSubtotal + normalizedServiceCharge;
   const [page, setPage] = useState(1);
   const linePages = totalPages(billLines.length, BILL_PAGE_SIZE);
   const lineSlice = useMemo(() => {
@@ -98,8 +103,16 @@ export function VisitBillModal({
           </tbody>
           <tfoot>
             <tr className="font-semibold text-[var(--text-primary)]">
-              <td className="pt-3">Total</td>
-              <td className="pt-3 text-right tabular-nums">{formatInr(billTotal)}</td>
+              <td className="pt-3">Medicines subtotal</td>
+              <td className="pt-3 text-right tabular-nums">{formatInr(medicineSubtotal)}</td>
+            </tr>
+            <tr className="font-medium text-[var(--text-secondary)]">
+              <td className="pt-2">Service charges</td>
+              <td className="pt-2 text-right tabular-nums">{formatInr(normalizedServiceCharge)}</td>
+            </tr>
+            <tr className="font-semibold text-[var(--text-primary)]">
+              <td className="pt-2">Total</td>
+              <td className="pt-2 text-right tabular-nums">{formatInr(billTotal)}</td>
             </tr>
           </tfoot>
         </table>

@@ -500,6 +500,7 @@ export async function updateDispatchStatus(
       await createVisitInvoiceIfAbsent(tx, {
         bookingId: dispatch.booking.id,
         patientId: dispatch.booking.patientId,
+        medicines: data?.medicines ?? [],
         createdByUserId: access?.userId,
       });
       return tx.dispatchRecord.update({

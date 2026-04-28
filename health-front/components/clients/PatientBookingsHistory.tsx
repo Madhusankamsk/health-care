@@ -31,6 +31,8 @@ type PatientBookingsHistoryProps = {
   canUseInventory?: boolean;
   /** From `/api/lookups?category=LAB_SAMPLE_TYPE` — sample type dropdown */
   labSampleTypeLookups?: LabSampleTypeLookup[];
+  /** Fixed service charge from company settings used in bill preview. */
+  serviceChargeAmount?: number;
 };
 
 export function PatientBookingsHistory({
@@ -39,6 +41,7 @@ export function PatientBookingsHistory({
   canSaveVisitDraft = false,
   canUseInventory = false,
   labSampleTypeLookups = [],
+  serviceChargeAmount = 0,
 }: PatientBookingsHistoryProps) {
   const list = Array.isArray(bookings) ? bookings : [];
   const router = useRouter();
@@ -210,6 +213,7 @@ export function PatientBookingsHistory({
             onIssueMedicine={() => void inventory.issueMedicineToPatient(b)}
             queuedMedicines={queuedMedicines}
             onRemoveQueuedMedicine={(queuedId) => inventory.removeQueuedMedicine(b.id, queuedId)}
+            serviceChargeAmount={serviceChargeAmount}
             onCompleteOpdConsultation={(queueId) => void completeOpdConsultation(queueId)}
             opdCompleting={
               b.opdQueueEntry?.id != null && busyOpdQueueId === b.opdQueueEntry.id

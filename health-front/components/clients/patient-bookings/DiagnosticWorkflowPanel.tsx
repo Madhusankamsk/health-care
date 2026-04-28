@@ -59,6 +59,7 @@ type Props = {
   onIssueMedicine: () => void;
   queuedMedicines: QueuedMedicineRow[];
   onRemoveQueuedMedicine: (queuedId: string) => void;
+  serviceChargeAmount: number;
   onConfirmComplete: () => void;
 };
 
@@ -101,6 +102,7 @@ export function DiagnosticWorkflowPanel(props: Props) {
     onIssueMedicine,
     queuedMedicines,
     onRemoveQueuedMedicine,
+    serviceChargeAmount,
     onConfirmComplete,
   } = props;
 
@@ -264,6 +266,7 @@ export function DiagnosticWorkflowPanel(props: Props) {
         bookingId={b.id}
         patientDisplayName={b.patient?.fullName?.trim() || "Patient"}
         queuedMedicines={queuedMedicines}
+        serviceChargeAmount={serviceChargeAmount}
         completeDisabled={busyDispatchId !== null || opdCompleting || nursingCompleting}
         onComplete={onConfirmComplete}
       />

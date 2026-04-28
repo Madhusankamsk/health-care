@@ -53,6 +53,7 @@ type Props = {
   onIssueMedicine: () => void;
   queuedMedicines: QueuedMedicineRow[];
   onRemoveQueuedMedicine: (queuedId: string) => void;
+  serviceChargeAmount: number;
   /** When set, OPD walk-in completions use POST /api/opd/:queueId/complete instead of dispatch complete. */
   onCompleteOpdConsultation?: (queueId: string) => void;
   opdCompleting?: boolean;
@@ -101,6 +102,7 @@ export function PatientBookingCard(props: Props) {
     onIssueMedicine,
     queuedMedicines,
     onRemoveQueuedMedicine,
+    serviceChargeAmount,
     onCompleteOpdConsultation,
     opdCompleting = false,
     onCompleteNursingEncounter,
@@ -201,6 +203,7 @@ export function PatientBookingCard(props: Props) {
         onIssueMedicine={onIssueMedicine}
         queuedMedicines={queuedMedicines}
         onRemoveQueuedMedicine={onRemoveQueuedMedicine}
+        serviceChargeAmount={serviceChargeAmount}
         onConfirmComplete={() => {
           if (isOpdBooking && b.opdQueueEntry?.id && onCompleteOpdConsultation) {
             onCompleteOpdConsultation(b.opdQueueEntry.id);

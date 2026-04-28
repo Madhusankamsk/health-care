@@ -253,6 +253,7 @@ export async function completeOpdConsultation(params: {
       opdQueueId: queue.id,
       bookingId: queue.bookingId,
       patientId: queue.booking.patientId,
+      medicines: params.medicines ?? [],
       createdByUserId: params.doctorUserId,
     });
 

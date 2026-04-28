@@ -2,12 +2,30 @@ import { Prisma } from "@prisma/client";
 
 type Tx = Prisma.TransactionClient;
 
-/** Placeholder OPD walk-in totals; travel is zero. */
-export const DUMMY_OPD_INVOICE_AMOUNTS = {
-  consultationTotal: new Prisma.Decimal("1200"),
-  medicineTotal: new Prisma.Decimal("420"),
-  travelCost: new Prisma.Decimal("0"),
-} as const;
+type OpdInvoiceMedicineInput = {
+  batchId: string;
+  quantity: number;
+};
+
+async function computeMedicineSubtotal(tx: Tx, medicines: OpdInvoiceMedicineInput[]): Promise<Prisma.Decimal> {
+  if (medicines.length === 0) {
+    return new Prisma.Decimal(0);
+  }
+  const uniqueBatchIds = [...new Set(medicines.map((m) => m.batchId.trim()).filter(Boolean))];
+  const batches = await tx.inventoryBatch.findMany({
+    where: { id: { in: uniqueBatchIds } },
+    select: { id: true, buyingPrice: true },
+  });
+  const priceByBatchId = new Map<string, Prisma.Decimal>(batches.map((row) => [row.id, row.buyingPrice]));
+  return medicines.reduce((sum, medicine) => {
+    const batchId = medicine.batchId.trim();
+    const batchPrice = priceByBatchId.get(batchId);
+    if (!batchPrice) {
+      throw new Error("MEDICINE_BATCH_NOT_FOUND");
+    }
+    return sum.add(batchPrice.mul(medicine.quantity));
+  }, new Prisma.Decimal(0));
+}
 
 async function requireInvoicePaymentStatusUnpaidId(tx: Tx): Promise<string> {
   const row = await tx.lookup.findFirst({
@@ -45,7 +63,13 @@ async function requireInvoiceTypeOpdId(tx: Tx): Promise<string> {
  */
 export async function createOpdInvoiceIfAbsent(
   tx: Tx,
-  params: { opdQueueId: string; bookingId: string; patientId: string; createdByUserId?: string | null },
+  params: {
+    opdQueueId: string;
+    bookingId: string;
+    patientId: string;
+    medicines?: OpdInvoiceMedicineInput[];
+    createdByUserId?: string | null;
+  },
 ): Promise<{ invoiceId: string; created: boolean }> {
   const existing = await tx.opdInvoice.findUnique({
     where: { bookingId: params.bookingId },
@@ -57,12 +81,15 @@ export async function createOpdInvoiceIfAbsent(
 
   const paymentStatusId = await requireInvoicePaymentStatusUnpaidId(tx);
   const invoiceTypeId = await requireInvoiceTypeOpdId(tx);
-  const { consultationTotal, medicineTotal, travelCost } = DUMMY_OPD_INVOICE_AMOUNTS;
+  const consultationTotal = new Prisma.Decimal(0);
+  const travelCost = new Prisma.Decimal(0);
+  const medicineTotal = await computeMedicineSubtotal(tx, params.medicines ?? []);
   const latestSettings = await tx.companySettings.findFirst({
     orderBy: { updatedAt: "desc" },
     select: { serviceCharges: true },
   });
   const serviceCharge = latestSettings?.serviceCharges ?? new Prisma.Decimal(0);
+  // Invariant: generated bill total must equal persisted invoice total for OPD completion.
   const totalAmount = consultationTotal.add(medicineTotal).add(travelCost).add(serviceCharge);
   const balanceDue = totalAmount;
 
