@@ -140,15 +140,21 @@ export async function deleteLabSampleApi(bookingId: string, sampleId: string) {
 }
 
 export async function listInventoryBatchesApi() {
-  const res = await fetch("/api/inventory/batches", { cache: "no-store" });
-  const data = await readJson<InventoryBatchRow[] | MessageResponse>(res, []);
+  const res = await fetch("/api/inventory/batches?page=1&pageSize=500", { cache: "no-store" });
+  const data = await readJson<
+    | InventoryBatchRow[]
+    | { items?: InventoryBatchRow[]; total?: number; page?: number; pageSize?: number }
+    | MessageResponse
+  >(res, []);
   if (!res.ok) {
     if (typeof data === "object" && !Array.isArray(data) && data?.message) {
       throw new Error(data.message);
     }
     throw new Error("Could not load team inventory");
   }
-  return Array.isArray(data) ? data : [];
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === "object" && Array.isArray(data.items)) return data.items;
+  return [];
 }
 
 export type IssueMedicineApiResponse = {

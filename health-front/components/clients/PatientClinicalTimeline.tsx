@@ -34,6 +34,7 @@ export function PatientClinicalTimeline({
   canAddNotes = false,
   canUpdateDispatch = false,
   canSaveVisitDraft = false,
+  canUseInventory = false,
   labSampleTypeLookups = [],
 }: {
   admissions: PatientNursingAdmissionTimeline[];
@@ -41,6 +42,7 @@ export function PatientClinicalTimeline({
   canAddNotes?: boolean;
   canUpdateDispatch?: boolean;
   canSaveVisitDraft?: boolean;
+  canUseInventory?: boolean;
   labSampleTypeLookups?: LabSampleTypeLookup[];
 }) {
   const router = useRouter();
@@ -211,6 +213,7 @@ export function PatientClinicalTimeline({
                             bookings={[item.booking]}
                             canUpdateDispatch={canUpdateDispatch}
                             canSaveVisitDraft={canSaveVisitDraft}
+                            canUseInventory={canUseInventory}
                             labSampleTypeLookups={labSampleTypeLookups}
                           />
                         </div>

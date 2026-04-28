@@ -27,6 +27,8 @@ type PatientBookingsHistoryProps = {
   canUpdateDispatch?: boolean;
   /** `bookings:update` — Save draft (diagnosis remark); booking remark is read-only here */
   canSaveVisitDraft?: boolean;
+  /** Inventory read/manage permissions for loading team leader batches. */
+  canUseInventory?: boolean;
   /** From `/api/lookups?category=LAB_SAMPLE_TYPE` — sample type dropdown */
   labSampleTypeLookups?: LabSampleTypeLookup[];
 };
@@ -35,6 +37,7 @@ export function PatientBookingsHistory({
   bookings,
   canUpdateDispatch = false,
   canSaveVisitDraft = false,
+  canUseInventory = false,
   labSampleTypeLookups = [],
 }: PatientBookingsHistoryProps) {
   const list = Array.isArray(bookings) ? bookings : [];
@@ -49,11 +52,12 @@ export function PatientBookingsHistory({
 
   /** OPD has no dispatch — still allow issuing from nurse stock when user can update bookings. */
   const inventoryFeatureEnabled =
-    canUpdateDispatch ||
-    (canSaveVisitDraft &&
-      list.some(
-        (row) => row.bookingTypeLookup?.lookupKey === "OPD",
-      ));
+    canUseInventory &&
+    (canUpdateDispatch ||
+      (canSaveVisitDraft &&
+        list.some(
+          (row) => row.bookingTypeLookup?.lookupKey === "OPD",
+        )));
   const bookingActions = usePatientBookingActions(() => {
       setPendingConfirm(null);
       router.refresh();

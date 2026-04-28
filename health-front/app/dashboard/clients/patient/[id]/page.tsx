@@ -49,6 +49,10 @@ export default async function PatientFullPreviewPage({
   const canSeeBookings = hasAnyPermission(me.permissions, [...PERMS.bookingsHistory]);
   const canUpdateDispatch = hasAnyPermission(me.permissions, ["dispatch:update"]);
   const canSaveVisitDraft = hasAnyPermission(me.permissions, ["bookings:update"]);
+  const canUseInventory = hasAnyPermission(me.permissions, [
+    "inventory:list",
+    "inventory:batches:manage",
+  ]);
   /** List endpoint returns `{ items, total, page, pageSize }`; request a large first page for preview. */
   const patientBookingsResult = canSeeBookings
     ? await backendJsonPaginated<UpcomingBookingRow>(
@@ -83,6 +87,7 @@ export default async function PatientFullPreviewPage({
       canAddNotes={canAddNursingNotes}
       canUpdateDispatch={canUpdateDispatch}
       canSaveVisitDraft={canSaveVisitDraft}
+      canUseInventory={canUseInventory}
       labSampleTypeLookups={labSampleTypeLookups}
     />
   ) : null;
@@ -96,6 +101,7 @@ export default async function PatientFullPreviewPage({
         bookings={nonNursingBookings}
         canUpdateDispatch={canUpdateDispatch}
         canSaveVisitDraft={canSaveVisitDraft}
+        canUseInventory={canUseInventory}
         labSampleTypeLookups={labSampleTypeLookups}
       />
     )

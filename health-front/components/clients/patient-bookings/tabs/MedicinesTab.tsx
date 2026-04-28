@@ -108,7 +108,7 @@ export function MedicinesTab({
 
         {!inventoryFeatureEnabled ? (
           <p className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-secondary)]">
-            Issuing medicines requires dispatch update access.
+            Issuing medicines requires inventory and visit completion access.
           </p>
         ) : inventoryError ? (
           <p className="rounded-lg border border-[var(--danger)]/30 bg-[var(--danger)]/10 px-3 py-2 text-sm text-[var(--danger)]">
