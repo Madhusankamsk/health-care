@@ -25,6 +25,18 @@ async function main() {
     },
   });
 
+  const doctorRole = await prisma.role.upsert({
+    where: { roleName: "Doctor" },
+    update: { description: "Clinical staff (OPD, patients, lab)" },
+    create: { roleName: "Doctor", description: "Clinical staff (OPD, patients, lab)" },
+  });
+
+  const teamLeaderRole = await prisma.role.upsert({
+    where: { roleName: "TeamLeader" },
+    update: { description: "Field lead (dispatch, teams, fleet)" },
+    create: { roleName: "TeamLeader", description: "Field lead (dispatch, teams, fleet)" },
+  });
+
   // Ensure a baseline permission list exists (extend as needed)
   const permissionKeys = [
     "admin:access",
@@ -558,6 +570,80 @@ async function main() {
     skipDuplicates: true,
   });
 
+  const doctorPermissionKeys = [
+    "patients:list",
+    "patients:read",
+    "patients:create",
+    "patients:update",
+    "bookings:list",
+    "bookings:read",
+    "bookings:create",
+    "bookings:update",
+    "bookings:scope_own",
+    "opd:list",
+    "opd:read",
+    "opd:create",
+    "opd:update",
+    "opd:pick",
+    "lab:list",
+    "lab:read",
+    "files:upload",
+    "invoices:read",
+    "invoices:scope_own",
+    "dashboard:tile_bookings_pending",
+    "dashboard:tile_bookings_accepted",
+    "dashboard:tile_opd_waiting",
+    "dashboard:tile_lab_pending",
+    "dashboard:tile_count_patients",
+    "dashboard:global_search",
+    "nursing:list",
+    "nursing:read",
+  ] as const;
+
+  const doctorPermissions = await prisma.permission.findMany({
+    where: { permissionKey: { in: [...doctorPermissionKeys] } },
+    select: { id: true },
+  });
+  await prisma.rolePermission.createMany({
+    data: doctorPermissions.map((p) => ({ roleId: doctorRole.id, permissionId: p.id })),
+    skipDuplicates: true,
+  });
+
+  const teamLeaderPermissionKeys = [
+    "dispatch:list",
+    "dispatch:read",
+    "dispatch:update",
+    "bookings:list",
+    "bookings:read",
+    "bookings:scope_all",
+    "medical_teams:list",
+    "medical_teams:read",
+    "medical_teams:create",
+    "medical_teams:update",
+    "vehicles:list",
+    "vehicles:read",
+    "vehicles:update",
+    "patients:list",
+    "patients:read",
+    "dashboard:tile_dispatch_upcoming",
+    "dashboard:tile_dispatch_ongoing",
+    "dashboard:tile_bookings_pending",
+    "dashboard:tile_bookings_accepted",
+    "dashboard:tile_count_vehicles",
+    "dashboard:global_search",
+    "invoices:read",
+    "invoices:scope_all",
+  ] as const;
+
+  const teamLeaderPermissions = await prisma.permission.findMany({
+    where: { permissionKey: { in: [...teamLeaderPermissionKeys] } },
+    select: { id: true },
+  });
+  await prisma.rolePermission.createMany({
+    data: teamLeaderPermissions.map((p) => ({ roleId: teamLeaderRole.id, permissionId: p.id })),
+    skipDuplicates: true,
+  });
+
   // Ensure a default company settings row exists (white-label configuration)
   const existingCompanySettings = await prisma.companySettings.findFirst({
     orderBy: { updatedAt: "desc" },
@@ -620,6 +706,77 @@ async function main() {
       isActive: true,
       baseConsultationFee: 0,
     },
+  });
+
+  const devTestPasswordHash = await bcrypt.hash("123456", 10);
+
+  const testAdminUser = await prisma.user.upsert({
+    where: { email: "admin@test.com" },
+    update: {
+      fullName: "Test Admin",
+      phoneNumber: "+10000001001",
+      roleId: adminRoleForInventory?.id ?? superAdminRole.id,
+      isActive: true,
+      baseConsultationFee: 0,
+      password: devTestPasswordHash,
+    },
+    create: {
+      fullName: "Test Admin",
+      email: "admin@test.com",
+      password: devTestPasswordHash,
+      phoneNumber: "+10000001001",
+      roleId: adminRoleForInventory?.id ?? superAdminRole.id,
+      isActive: true,
+      baseConsultationFee: 0,
+    },
+  });
+
+  const testDoctorUser = await prisma.user.upsert({
+    where: { email: "doctor@test.com" },
+    update: {
+      fullName: "Test Doctor",
+      phoneNumber: "+10000001002",
+      roleId: doctorRole.id,
+      isActive: true,
+      baseConsultationFee: 0,
+      password: devTestPasswordHash,
+    },
+    create: {
+      fullName: "Test Doctor",
+      email: "doctor@test.com",
+      password: devTestPasswordHash,
+      phoneNumber: "+10000001002",
+      roleId: doctorRole.id,
+      isActive: true,
+      baseConsultationFee: 0,
+    },
+  });
+
+  const testTeamLeaderUser = await prisma.user.upsert({
+    where: { email: "team_leader@test.com" },
+    update: {
+      fullName: "Test Team Leader",
+      phoneNumber: "+10000001003",
+      roleId: teamLeaderRole.id,
+      isActive: true,
+      baseConsultationFee: 0,
+      password: devTestPasswordHash,
+    },
+    create: {
+      fullName: "Test Team Leader",
+      email: "team_leader@test.com",
+      password: devTestPasswordHash,
+      phoneNumber: "+10000001003",
+      roleId: teamLeaderRole.id,
+      isActive: true,
+      baseConsultationFee: 0,
+    },
+  });
+
+  await prisma.opdEligibleDoctor.upsert({
+    where: { userId: testDoctorUser.id },
+    create: { userId: testDoctorUser.id, isActive: true },
+    update: { isActive: true },
   });
 
   // Ensure admin role also has booking-related permissions for dashboard usage
@@ -876,13 +1033,18 @@ async function main() {
   // Ensure demo medical team has members so dispatch assignment is available in UI previews
   await prisma.teamMember.upsert({
     where: { teamId_userId: { teamId: team.id, userId: superAdminUser.id } },
-    update: { isLead: true },
-    create: { teamId: team.id, userId: superAdminUser.id, isLead: true },
+    update: { isLead: false },
+    create: { teamId: team.id, userId: superAdminUser.id, isLead: false },
   });
   await prisma.teamMember.upsert({
     where: { teamId_userId: { teamId: team.id, userId: inventoryAgent.id } },
     update: { isLead: false },
     create: { teamId: team.id, userId: inventoryAgent.id, isLead: false },
+  });
+  await prisma.teamMember.upsert({
+    where: { teamId_userId: { teamId: team.id, userId: testTeamLeaderUser.id } },
+    update: { isLead: true },
+    create: { teamId: team.id, userId: testTeamLeaderUser.id, isLead: true },
   });
 
   // Sample patient
@@ -1165,6 +1327,11 @@ async function main() {
   console.log("Password:", superAdminPassword);
   console.log("Role:", superAdminRole.roleName);
   console.log("Permissions attached:", allPermissions.length);
+  console.log("");
+  console.log("Dev test accounts (password: 123456 for all):");
+  console.log("  admin@test.com     → Admin role");
+  console.log("  doctor@test.com      → Doctor role");
+  console.log("  team_leader@test.com → TeamLeader role");
   console.log("Demo data seeded: vehicle, team, patient, bookings.");
   console.log("Subscription plan types and demo plan seeded.");
   console.log("Inventory demo data seeded: medicines, items, batches, substore, transfer.");
